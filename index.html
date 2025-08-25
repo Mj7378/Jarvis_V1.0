@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>J.A.R.V.I.S. Voice Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'orbitron': ['Orbitron', 'sans-serif'],
+              'sans': ['Roboto', 'sans-serif'],
+            },
+            colors: {
+              'jarvis-dark': '#0c101d',
+              'jarvis-panel': 'rgba(12, 16, 29, 0.7)',
+              'jarvis-cyan': '#00ffff',
+              'jarvis-border': 'rgba(0, 255, 255, 0.2)',
+            },
+            animation: {
+              'spin-slow': 'spin 8s linear infinite',
+              'spin-medium': 'spin 4s linear infinite',
+              'spin-fast': 'spin 2s linear infinite',
+              'pulse-strong': 'pulse-strong 2s infinite ease-in-out',
+            },
+            keyframes: {
+              'pulse-strong': {
+                '0%, 100%': { transform: 'scale(1)', opacity: '1', filter: 'brightness(1)' },
+                '50%': { transform: 'scale(1.05)', opacity: '0.9', filter: 'brightness(1.5)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/css">
+      body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #0c101d;
+        background-image:
+            linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 2rem 2rem;
+        color: #e2e8f0;
+        overflow: hidden;
+      }
+      .styled-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .styled-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .styled-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 255, 255, 0.3);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      .styled-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(0, 255, 255, 0.5);
+      }
+      
+      .hud-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        padding: 1rem;
+      }
+      
+      .hud-panel {
+        position: absolute;
+        background: radial-gradient(circle at center, rgba(18, 26, 43, 0.7) 0%, rgba(18, 26, 43, 0.85) 100%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color, rgba(0, 255, 255, 0.2));
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1), inset 0 0 15px rgba(0, 255, 255, 0.05);
+        clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .hud-panel::before, .hud-panel::after {
+        content: '';
+        position: absolute;
+        width: 25px;
+        height: 25px;
+        pointer-events: none;
+        border-color: var(--corner-color, #00ffff);
+        border-style: solid;
+      }
+      .hud-panel::before {
+        top: -2px; left: -2px; border-width: 2px 0 0 2px;
+      }
+      .hud-panel::after {
+        bottom: -2px; right: -2px; border-width: 0 2px 2px 0;
+      }
+      
+      .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1rem;
+        color: #93c5fd;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+      }
+      
+      /* Positioning */
+      .hud-header {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        right: 1rem;
+        height: 60px;
+        z-index: 10;
+        background: 
+            linear-gradient(to right, rgba(0, 255, 255, 0.1), transparent 50%),
+            linear-gradient(to left, rgba(0, 255, 255, 0.1), transparent 50%);
+        background-repeat: no-repeat;
+        background-position: top left, top right;
+        background-size: 50% 1px;
+        overflow: hidden; /* Hide overflowing pseudo-elements */
+      }
+       .hud-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, rgba(0, 255, 255, 0.2), transparent);
+      }
+      .hud-left-panel {
+        position: absolute;
+        top: calc(60px + 2rem);
+        left: 1rem;
+        bottom: 1rem;
+        width: 380px;
+        animation: slide-in-left 0.5s ease-out forwards;
+      }
+      .hud-right-panel {
+        position: absolute;
+        top: calc(60px + 2rem);
+        right: 1rem;
+        bottom: 1rem;
+        width: 320px;
+        animation: slide-in-right 0.5s ease-out forwards;
+      }
+      .hud-bottom-panel {
+        position: absolute;
+        bottom: 1rem;
+        left: calc(380px + 2rem);
+        right: calc(320px + 2rem);
+        height: 80px;
+        animation: slide-in-bottom 0.5s ease-out forwards;
+      }
+
+      /* Header Sci-Fi Styles */
+       .title-container {
+        padding: 0 1.5rem 0 2rem;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        background: rgba(12, 16, 29, 0.5);
+        position: relative;
+        clip-path: polygon(0 0, 100% 0, calc(100% - 30px) 100%, 0 100%);
+      }
+      .title-wing {
+        width: 30px;
+        height: 100%;
+        background-color: rgba(0, 255, 255, 0.1);
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+      }
+      .info-block {
+        padding: 0 1.5rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-right: 1px solid var(--jarvis-border, rgba(0, 255, 255, 0.2));
+        position: relative;
+      }
+      .info-block::before, .info-block::after {
+        content: '';
+        position: absolute;
+        height: 4px;
+        width: 1px;
+        background: var(--jarvis-cyan, #00ffff);
+        opacity: 0.5;
+      }
+      .info-block::before { top: 8px; left: 8px; }
+      .info-block::after { bottom: 8px; right: 8px; }
+      .info-label {
+        font-size: 0.65rem;
+        color: var(--jarvis-cyan, #00ffff);
+        opacity: 0.7;
+        letter-spacing: 0.1em;
+        margin-bottom: 2px;
+      }
+      .info-value { font-weight: 700; }
+      
+      @keyframes slide-in-left { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes slide-in-right { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes slide-in-bottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+      @keyframes fade-in-fast {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .animate-fade-in-fast {
+        animation: fade-in-fast 0.3s ease-out forwards;
+      }
+      
+      @keyframes arc-rotate {
+        from { transform: rotate(0deg); } to { transform: rotate(360deg); }
+      }
+      @keyframes arc-rotate-reverse {
+        from { transform: rotate(360deg); } to { transform: rotate(0deg); }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "react/": "https://esm.sh/react@^19.1.1/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.15.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
