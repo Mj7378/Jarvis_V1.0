@@ -32,12 +32,9 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
   const reverseAnimationClass = isThinking || isSpeaking ? 'animate-spin-fast' : 'animate-spin-medium';
   
   return (
-    <div 
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center w-[400px] h-[400px]"
-        style={{ top: 'calc(50% - 40px)' }}
-    >
+    <div className="relative flex flex-col items-center justify-center w-full h-full">
         <div 
-            className="relative w-72 h-72 cursor-default group" 
+            className="relative w-48 h-48 sm:w-60 sm:h-60 lg:w-72 lg:h-72 cursor-default group" 
             role="img"
             aria-label="J.A.R.V.I.S. Core Interface"
         >
@@ -59,7 +56,7 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
                     ${!isThinking && !isSpeaking ? 'group-hover:bg-primary-t-20' : ''}
                 `}
             >
-                <div className={`w-24 h-24 rounded-full bg-slate-900/50 flex items-center justify-center border border-primary-t-20 transition-all duration-300 group-hover:border-primary-t-70 relative overflow-hidden
+                <div className={`w-1/3 h-1/3 rounded-full bg-slate-900/50 flex items-center justify-center border border-primary-t-20 transition-all duration-300 group-hover:border-primary-t-70 relative overflow-hidden
                     ${isThinking ? 'border-yellow-500' : ''}
                     ${isSpeaking ? 'border-purple-500' : ''}
                 `}>
@@ -71,11 +68,11 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
                              } as React.CSSProperties}
                         ></div>
                      )}
-                     <GeminiIcon className="w-10 h-10 text-slate-400 group-hover:text-primary transition-colors" />
+                     <GeminiIcon className="w-1/2 h-1/2 text-slate-400 group-hover:text-primary transition-colors" />
                 </div>
             </div>
         </div>
-        <p className={`font-orbitron text-lg mt-8 uppercase tracking-widest transition-colors duration-300 ${getStatusColor()}`}>
+        <p className={`font-orbitron text-base md:text-lg mt-4 md:mt-8 uppercase tracking-widest transition-colors duration-300 ${getStatusColor()}`}>
             {getStatusText()}
         </p>
     </div>

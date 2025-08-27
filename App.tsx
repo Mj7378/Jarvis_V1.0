@@ -16,10 +16,11 @@ import DiagnosticsMode from './components/DiagnosticsMode';
 import BootingUp from './components/BootingUp';
 import Shutdown from './components/Shutdown';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
-import { PowerIcon, SettingsIcon } from './components/Icons';
+import { PowerIcon, SettingsIcon, MicrophoneIcon } from './components/Icons';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import PreBootScreen from './components/PreBootScreen';
 import { SettingsModal } from './components/SettingsModal';
+import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 
 // Helper function to convert hex to an RGB string "r, g, b"
 const hexToRgb = (hex: string): string | null => {
@@ -474,7 +475,72 @@ const App: React.FC = () => {
     }
   };
 
-  const isInputBusy = appState === AppState.THINKING || appState === AppState.SPEAKING;
+  // --- Speech Recognition ---
+  const handleSpeechTranscription = useCallback((transcript: string) => {
+      setAppState(AppState.IDLE);
+      if (transcript.trim()) {
+          sounds.playSuccess();
+          processUserMessage(transcript);
+      } else {
+          sounds.playDeactivate();
+      }
+  }, [processUserMessage, sounds]);
+
+  const {
+      isListening,
+      startListening,
+      stopListening,
+      hasRecognitionSupport,
+      error: speechError,
+  } = useSpeechRecognition({ onEnd: handleSpeechTranscription });
+
+  useEffect(() => {
+    if (speechError) {
+        handleError({
+            code: 'SPEECH_RECOGNITION_ERROR',
+            title: 'Microphone Error',
+            message: "There was a problem with the speech recognition service.",
+            details: speechError,
+            action: "Please check your microphone connection and browser permissions."
+        });
+        if (isListening) {
+           stopListening();
+        }
+        setAppState(AppState.ERROR);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speechError, handleError]);
+
+  const toggleListening = () => {
+    if (isBusy) return;
+
+    if (isListening) {
+        sounds.playDeactivate();
+        stopListening();
+        setAppState(AppState.IDLE);
+    } else {
+        cancel();
+        setInputValue('');
+        sounds.playActivate();
+        setAppState(AppState.LISTENING);
+        startListening();
+    }
+  };
+
+  const isInputBusy = appState === AppState.THINKING || appState === AppState.SPEAKING || appState === AppState.LISTENING;
+
+  const getPlaceholderText = () => {
+    switch(appState) {
+        case AppState.LISTENING:
+            return "Listening... Speak your command.";
+        case AppState.THINKING:
+            return "J.A.R.V.I.S. is thinking...";
+        case AppState.SPEAKING:
+            return "J.A.R.V.I.S. is speaking...";
+        default:
+            return "Enter command...";
+    }
+  };
 
   // Clock Formatting Logic (moved from Header)
   const seconds = time.getSeconds();
@@ -545,87 +611,106 @@ const App: React.FC = () => {
             onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
         />
 
-        {/* --- Integrated Header Elements --- */}
-        <div className="absolute top-4 left-4 flex items-center h-[60px] z-10">
-            <h1 className="font-orbitron text-3xl text-primary text-primary-shadow tracking-widest">
-                J.A.R.V.I.S.
-            </h1>
-        </div>
+        <header className="hud-header">
+            <div className="flex items-center h-full">
+                <h1 className="font-orbitron text-3xl text-primary text-primary-shadow tracking-widest">
+                    J.A.R.V.I.S.
+                </h1>
+            </div>
 
-        <div className="absolute top-4 right-4 flex items-center h-[60px] text-sm text-slate-300 font-mono z-10">
-            <div className="pl-6 pr-6 flex items-center gap-4 h-full">
-                <div className="relative w-12 h-12 flex-shrink-0">
-                    <svg className="w-full h-full" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="45" className="stroke-primary-t-20" strokeWidth="4" fill="none" />
-                        <circle
-                            cx="50" cy="50" r="45"
-                            className="stroke-primary" strokeWidth="4" fill="none"
-                            strokeLinecap="round" transform="rotate(-90 50 50)"
-                            style={{
-                                strokeDasharray: circumference,
-                                strokeDashoffset: circumference - (seconds / 60) * circumference,
-                                transition: 'stroke-dashoffset 0.3s linear',
-                            }}
-                        />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center font-mono text-primary text-lg font-bold">
-                        {seconds.toString().padStart(2, '0')}
+            <div className="flex items-center h-full text-sm text-slate-300 font-mono">
+                <div className="pl-6 pr-6 flex items-center gap-4 h-full">
+                    <div className="relative w-12 h-12 flex-shrink-0">
+                        <svg className="w-full h-full" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" className="stroke-primary-t-20" strokeWidth="4" fill="none" />
+                            <circle
+                                cx="50" cy="50" r="45"
+                                className="stroke-primary" strokeWidth="4" fill="none"
+                                strokeLinecap="round" transform="rotate(-90 50 50)"
+                                style={{
+                                    strokeDasharray: circumference,
+                                    strokeDashoffset: circumference - (seconds / 60) * circumference,
+                                    transition: 'stroke-dashoffset 0.3s linear',
+                                }}
+                            />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center font-mono text-lg font-bold text-primary">
+                            {seconds.toString().padStart(2, '0')}
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <div className="font-mono text-2xl text-slate-100 tracking-wider flex items-baseline">
+                            <span>{hours.toString().padStart(2, '0')}</span>
+                            <span className="animate-pulse mx-px">:</span>
+                            <span>{minutes.toString().padStart(2, '0')}</span>
+                            <span className="text-base ml-2">{ampm}</span>
+                        </div>
+                        <div className="font-sans text-xs text-slate-400 tracking-widest mt-1">
+                            {dayOfWeek} | {formattedDate}
+                        </div>
                     </div>
                 </div>
-                <div className="text-right">
-                    <div className="font-mono text-2xl text-slate-100 tracking-wider flex items-baseline">
-                        <span>{hours.toString().padStart(2, '0')}</span>
-                        <span className="animate-pulse mx-px">:</span>
-                        <span>{minutes.toString().padStart(2, '0')}</span>
-                        <span className="text-base ml-2">{ampm}</span>
-                    </div>
-                    <div className="font-sans text-xs text-slate-400 tracking-widest mt-1">
-                        {dayOfWeek} | {formattedDate}
-                    </div>
+                <div className="h-full flex items-center pr-6 pl-6 border-l-2 border-primary-t-20">
+                    <button 
+                        onClick={() => { sounds.playOpen(); setIsSettingsModalOpen(true); }}
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-primary-t-20 hover:text-primary border border-primary-t-20 hover:border-primary transition-colors mr-4"
+                        aria-label="Open Settings"
+                    >
+                        <SettingsIcon className="w-6 h-6" />
+                    </button>
+                    <button 
+                        onClick={handleShutdown} 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/50 hover:border-red-400 transition-colors"
+                        aria-label="Shutdown System"
+                    >
+                        <PowerIcon className="w-6 h-6" />
+                    </button>
                 </div>
             </div>
-            <div className="h-full flex items-center pr-6 pl-6 border-l-2 border-primary-t-20">
-                <button 
-                    onClick={() => { sounds.playOpen(); setIsSettingsModalOpen(true); }}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-primary-t-20 hover:text-primary border border-primary-t-20 hover:border-primary transition-colors mr-4"
-                    aria-label="Open Settings"
-                >
-                    <SettingsIcon className="w-6 h-6" />
-                </button>
-                <button 
-                    onClick={handleShutdown} 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/50 hover:border-red-400 transition-colors"
-                    aria-label="Shutdown System"
-                >
-                    <PowerIcon className="w-6 h-6" />
-                </button>
-            </div>
-        </div>
-        {/* --- End Integrated Header Elements --- */}
+        </header>
 
 
         <div className="hud-panel hud-left-panel">
             <ChatLog history={chatHistory} appState={appState} />
         </div>
         
-        <CoreInterface appState={appState} />
+        <div className="hud-core-container">
+            <CoreInterface appState={appState} />
+        </div>
+        
+        <div className="hud-right-panel-placeholder"></div>
 
         <div className="hud-bottom-panel !p-0">
-             <form onSubmit={handleFormSubmit} className="w-full h-full">
-                <div className="relative h-full">
-                    <input 
-                        type="text" 
-                        value={inputValue} 
-                        onChange={(e) => setInputValue(e.target.value)} 
-                        placeholder={isInputBusy ? (appState === AppState.SPEAKING ? "J.A.R.V.I.S. is speaking..." : "J.A.R.V.I.S. is thinking...") : "Enter command..."} 
-                        disabled={isInputBusy} 
-                        className="w-full h-full bg-transparent border-none focus:ring-0 px-6 text-slate-200 text-lg placeholder:text-slate-500"
-                        aria-label="Command input" 
-                    />
+             <form onSubmit={handleFormSubmit} className="w-full h-full flex items-center pr-4">
+                <input 
+                    type="text" 
+                    value={inputValue} 
+                    onChange={(e) => setInputValue(e.target.value)} 
+                    placeholder={getPlaceholderText()}
+                    disabled={isInputBusy} 
+                    className="flex-grow h-full bg-transparent border-none focus:ring-0 px-6 text-slate-200 text-lg placeholder:text-slate-500"
+                    aria-label="Command input" 
+                />
+                <div className="flex items-center space-x-2 flex-shrink-0">
+                    {hasRecognitionSupport && (
+                        <button
+                            type="button"
+                            onClick={toggleListening}
+                            disabled={isBusy}
+                            className={`p-2 rounded-md transition-colors ${
+                                appState === AppState.LISTENING
+                                    ? 'text-red-500 bg-red-500/20 animate-pulse'
+                                    : 'text-primary hover:bg-primary-t-20'
+                            } disabled:text-slate-600 disabled:hover:bg-transparent`}
+                            aria-label={appState === AppState.LISTENING ? "Stop listening" : "Use voice command"}
+                        >
+                            <MicrophoneIcon className="w-7 h-7" />
+                        </button>
+                    )}
                     <button 
                         type="submit" 
-                        disabled={!inputValue} 
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-md text-primary hover:bg-primary-t-20 disabled:text-slate-600 disabled:hover:bg-transparent transition-colors"
+                        disabled={!inputValue || appState === AppState.LISTENING} 
+                        className="p-2 rounded-md text-primary hover:bg-primary-t-20 disabled:text-slate-600 disabled:hover:bg-transparent transition-colors"
                         aria-label="Send command"
                     >
                         <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
