@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { getVideo } from '../utils/db';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -36,19 +37,22 @@ const DefaultBootAnimation: React.FC<{ onComplete: () => void, sounds: ReturnTyp
     
     BOOT_SEQUENCE.forEach((line, index) => {
       currentDelay += line.delay;
-      const timer = setTimeout(() => {
+      // FIX: Use window.setTimeout to ensure it returns a number, resolving TypeScript conflicts with Node.js types.
+      const timer = window.setTimeout(() => {
         setVisibleLines(prev => prev + 1);
         setProgress(((index + 1) / BOOT_SEQUENCE.length) * 100);
       }, currentDelay);
       timers.push(timer);
     });
 
-    const sequenceCompleteTimer = setTimeout(() => {
+    // FIX: Argument of type 'Timeout' is not assignable to parameter of type 'number'.
+    const sequenceCompleteTimer = window.setTimeout(() => {
       setSequenceComplete(true);
     }, currentDelay + 500);
     timers.push(sequenceCompleteTimer);
 
-    const onCompleteTimer = setTimeout(() => {
+    // FIX: Argument of type 'Timeout' is not assignable to parameter of type 'number'.
+    const onCompleteTimer = window.setTimeout(() => {
       onComplete();
     }, currentDelay + 2500);
     timers.push(onCompleteTimer);
@@ -115,37 +119,28 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
           setVideoUrl(objectUrl);
           setBootMode('video');
         } else {
-          // Custom video not found, fallback to default setting
-          if (bootupAnimation === 'video') {
-            setVideoUrl('/assets/jarvis_boot.mp4');
-            setBootMode('video');
-          } else {
-            setBootMode('holographic');
-          }
+          // This can happen if DB is cleared or has an error after setting.
+          console.warn("Custom boot video was selected but not found in storage. Falling back to holographic.");
+          setBootMode('holographic');
         }
       } catch (error) {
         console.error("Failed to load custom boot video:", error);
-        // Fallback on error
-        if (bootupAnimation === 'video') {
-            setVideoUrl('/assets/jarvis_boot.mp4');
-            setBootMode('video');
-        } else {
-            setBootMode('holographic');
-        }
+        setBootMode('holographic'); // Fallback on any error
       }
     };
 
-    if (useCustomVideo) {
-      setBootMode('loading');
-      loadCustomVideo();
-    } else {
-      // Not using custom video, just use the default setting
-      if (bootupAnimation === 'video') {
-        setVideoUrl('/assets/jarvis_boot.mp4');
-        setBootMode('video');
+    if (bootupAnimation === 'video') {
+      if (useCustomVideo) {
+        setBootMode('loading');
+        loadCustomVideo();
       } else {
+        // This case should be prevented by the UI logic, but as a safeguard:
+        console.warn("Video boot animation was selected without a custom video. Defaulting to holographic animation.");
         setBootMode('holographic');
       }
+    } else {
+      // bootupAnimation is 'holographic'
+      setBootMode('holographic');
     }
 
     return () => {
@@ -154,6 +149,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
       }
     };
   }, [useCustomVideo, bootupAnimation]);
+
 
   const renderContent = () => {
     switch (bootMode) {
@@ -167,7 +163,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
             onEnded={onComplete}
             onError={(e) => {
               console.error("Boot video failed to play.", e);
-              // If the video fails (e.g., 404), fallback to holographic
+              // If the video fails for any reason (e.g., corrupted file), fallback to holographic
               setBootMode('holographic');
             }}
             className="absolute inset-0 w-full h-full object-cover"
@@ -177,7 +173,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
         return <DefaultBootAnimation onComplete={onComplete} sounds={sounds} />;
       case 'loading':
       default:
-        return <p className="font-orbitron animate-pulse">CHECKING BOOT CONFIGURATION...</p>;
+        return <p className="font-orbitron animate-pulse">LOADING CUSTOM ASSETS...</p>;
     }
   };
 

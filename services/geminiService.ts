@@ -1,5 +1,5 @@
-import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig, Type } from '@google/genai';
-import type { ChatMessage, Source, CodePrototype, TripPlanData, AppError } from '../types';
+import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig } from '@google/genai';
+import type { ChatMessage, Source, AppError } from '../types';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set");
@@ -166,97 +166,6 @@ export async function getAiResponseStream(
   } catch (error) {
     throw handleGeminiError(error, "AI Response Stream");
   }
-}
-
-export async function generateStrategicBriefing(topic: string): Promise<{ content: string; sources: Source[] }> {
-    try {
-        const prompt = `Generate a structured strategic briefing on the topic: "${topic}". 
-        The briefing should be comprehensive, well-organized with markdown headings (##), and cover key aspects, recent developments, and potential implications. 
-        Provide a neutral, factual overview.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{googleSearch: {}}],
-                systemInstruction: "You are a strategic analyst AI. Your task is to synthesize information from reliable sources to produce clear, concise, and actionable intelligence briefings."
-            },
-        });
-
-        const content = response.text;
-        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-            ?.map(c => c.web)
-            .filter((s): s is Source => !!s?.uri) || [];
-        
-        const uniqueSources = Array.from(new Map<string, Source>(sources.map(item => [item.uri, item])).values());
-
-        return { content, sources: uniqueSources };
-    } catch (error) {
-        throw handleGeminiError(error, "Strategic Briefing");
-    }
-}
-
-export async function generateCodePrototype(task: string, language: string): Promise<CodePrototype> {
-    try {
-        const prompt = `Task: ${task}\nLanguage: ${language}`;
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                systemInstruction: "You are a senior software engineer specializing in rapid prototyping. Create clean, efficient, and well-commented code. Provide a concise explanation of your approach, dependencies, and how to run the code.",
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        language: { type: Type.STRING },
-                        code: { type: Type.STRING },
-                        explanation: { type: Type.STRING }
-                    }
-                }
-            }
-        });
-
-        const jsonString = response.text.trim();
-        return JSON.parse(jsonString) as CodePrototype;
-
-    } catch (error) {
-        throw handleGeminiError(error, "Code Prototyping");
-    }
-}
-
-export async function generateTripPlan(data: TripPlanData): Promise<string> {
-    try {
-        const prompt = `Create a detailed travel itinerary for a trip with the following details:
-- Destination: ${data.destination}
-- Start Date: ${data.startDate}
-- End Date: ${data.endDate}
-- Number of Travelers: ${data.travelers}
-- Budget (USD): ${data.budget}
-
-The itinerary should include:
-- A day-by-day plan with suggested activities, sights, and experiences.
-- Recommendations for accommodation (e.g., types of hotels, neighborhoods).
-- Dining suggestions (mention different budget levels).
-- Transportation tips for getting around the destination.
-- An estimated budget breakdown.
-
-Format the response using markdown. Use ### for headings for each section (e.g., ### Day 1: Arrival and Exploration).`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{googleSearch: {}}],
-                systemInstruction: "You are a world-class travel agent AI. Your task is to create highly detailed, practical, and inspiring travel itineraries based on user requirements. Use real-time information to suggest flights, accommodations, and activities."
-            },
-        });
-        
-        return response.text;
-
-    } catch (error) {
-        throw handleGeminiError(error, "Trip Plan Generation");
-    }
 }
 
 export async function streamTranslateText(text: string): Promise<AsyncGenerator<GenerateContentResponse>> {

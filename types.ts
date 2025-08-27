@@ -30,20 +30,6 @@ export interface DeviceControlCommand {
 
 export type AICommand = DeviceControlCommand;
 
-export interface CodePrototype {
-    language: string;
-    code: string;
-    explanation: string;
-}
-
-export interface TripPlanData {
-  destination: string;
-  startDate: string;
-  endDate: string;
-  travelers: string;
-  budget: string;
-}
-
 export interface AppError {
   code: string;
   title: string;
@@ -66,6 +52,7 @@ export interface ThemeSettings {
     rate: number;
     pitch: number;
   };
+  wakeWord: string;
   aiModel: 'gemini-2.5-flash' | 'gemini-pro';
 }
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAiResponseStream } from './services/geminiService';
 import { useChatHistory } from './hooks/useChatHistory';
@@ -7,7 +8,6 @@ import { saveVideo, deleteVideo } from './utils/db';
 import ChatLog from './components/ChatLog';
 import VisionMode from './components/VisionMode';
 import ActionModal, { ActionModalProps } from './components/ActionModal';
-import { RightSidebar } from './components/RightSidebar';
 import CoreInterface from './components/CoreInterface';
 import DesignMode from './components/DesignMode';
 import SimulationMode from './components/SimulationMode';
@@ -16,9 +16,10 @@ import DiagnosticsMode from './components/DiagnosticsMode';
 import BootingUp from './components/BootingUp';
 import Shutdown from './components/Shutdown';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
-import { PowerIcon } from './components/Icons';
+import { PowerIcon, SettingsIcon } from './components/Icons';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import PreBootScreen from './components/PreBootScreen';
+import { SettingsModal } from './components/SettingsModal';
 
 // Helper function to convert hex to an RGB string "r, g, b"
 const hexToRgb = (hex: string): string | null => {
@@ -39,6 +40,7 @@ const DEFAULT_THEME: ThemeSettings = {
   voiceOutputEnabled: true,
   uiSoundsEnabled: true,
   voiceProfile: { rate: 1.1, pitch: 1.1 },
+  wakeWord: 'wake up Jarvis',
   aiModel: 'gemini-2.5-flash',
 };
 
@@ -52,8 +54,10 @@ const App: React.FC = () => {
   const [activeMode, setActiveMode] = useState<string | null>(null);
   const [modeData, setModeData] = useState<any>(null);
   const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Theme Settings State
+  const [isLoadingTheme, setIsLoadingTheme] = useState(true);
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(DEFAULT_THEME);
   
   // Clock state (moved from Header)
@@ -80,6 +84,8 @@ const App: React.FC = () => {
     } catch (e) {
       console.error('Failed to load theme from localStorage', e);
       setThemeSettings(DEFAULT_THEME);
+    } finally {
+        setIsLoadingTheme(false);
     }
   }, []);
   
@@ -131,6 +137,7 @@ const App: React.FC = () => {
         voiceOutputEnabled: themeSettings.voiceOutputEnabled,
         uiSoundsEnabled: themeSettings.uiSoundsEnabled,
         voiceProfile: themeSettings.voiceProfile,
+        wakeWord: themeSettings.wakeWord,
         aiModel: themeSettings.aiModel,
       };
       localStorage.setItem('jarvisTheme', JSON.stringify(themeToSave));
@@ -453,7 +460,7 @@ const App: React.FC = () => {
   const handleRemoveCustomBootVideo = async () => {
     try {
       await deleteVideo();
-      setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: false }));
+      setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: false, bootupAnimation: 'holographic' }));
       alert("Custom boot video has been removed.");
     } catch (e) {
       console.error("Failed to remove boot video:", e);
@@ -483,8 +490,16 @@ const App: React.FC = () => {
   const dayOfWeek = time.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   const circumference = 2 * Math.PI * 45; // r=45
 
+  if (isLoadingTheme) {
+    return (
+        <div className="fixed inset-0 bg-jarvis-dark flex items-center justify-center" aria-busy="true" aria-label="Loading settings">
+            <div className="w-4 h-4 bg-primary rounded-full animate-pulse-dot"></div>
+        </div>
+    );
+  }
+
   if (appStatus === 'pre-boot') {
-    return <PreBootScreen onInitiate={() => setAppStatus('booting')} />;
+    return <PreBootScreen onInitiate={() => setAppStatus('booting')} wakeWord={themeSettings.wakeWord} />;
   }
 
   if (appStatus === 'booting') {
@@ -512,6 +527,22 @@ const App: React.FC = () => {
                 setThemeSettings(p => ({ ...p, voiceProfile: profile }));
                 setIsCalibrationModalOpen(false);
             }}
+        />
+        <SettingsModal
+            isOpen={isSettingsModalOpen}
+            onClose={() => { sounds.playClose(); setIsSettingsModalOpen(false); }}
+            onCameraClick={() => { sounds.playActivate(); setIsVisionMode(true); }}
+            isBusy={isBusy}
+            onWeather={handleWeather}
+            onSelfHeal={handleSelfHeal}
+            onDesignMode={handleDesignMode}
+            onSimulationMode={handleSimulationMode}
+            onCalibrateVoice={() => { sounds.playOpen(); setIsCalibrationModalOpen(true); }}
+            sounds={sounds}
+            themeSettings={themeSettings}
+            onThemeChange={setThemeSettings}
+            onSetCustomBootVideo={handleSetCustomBootVideo}
+            onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
         />
 
         {/* --- Integrated Header Elements --- */}
@@ -555,6 +586,13 @@ const App: React.FC = () => {
             </div>
             <div className="h-full flex items-center pr-6 pl-6 border-l-2 border-primary-t-20">
                 <button 
+                    onClick={() => { sounds.playOpen(); setIsSettingsModalOpen(true); }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-primary-t-20 hover:text-primary border border-primary-t-20 hover:border-primary transition-colors mr-4"
+                    aria-label="Open Settings"
+                >
+                    <SettingsIcon className="w-6 h-6" />
+                </button>
+                <button 
                     onClick={handleShutdown} 
                     className="w-10 h-10 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/50 hover:border-red-400 transition-colors"
                     aria-label="Shutdown System"
@@ -571,23 +609,6 @@ const App: React.FC = () => {
         </div>
         
         <CoreInterface appState={appState} />
-
-        <div className="hud-panel hud-right-panel">
-             <RightSidebar 
-                onCameraClick={() => { sounds.playActivate(); setIsVisionMode(true); }}
-                isBusy={isBusy}
-                onWeather={handleWeather}
-                onSelfHeal={handleSelfHeal}
-                onDesignMode={handleDesignMode}
-                onSimulationMode={handleSimulationMode}
-                onCalibrateVoice={() => { sounds.playOpen(); setIsCalibrationModalOpen(true); }}
-                sounds={sounds}
-                themeSettings={themeSettings}
-                onThemeChange={setThemeSettings}
-                onSetCustomBootVideo={handleSetCustomBootVideo}
-                onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
-            />
-        </div>
 
         <div className="hud-bottom-panel !p-0">
              <form onSubmit={handleFormSubmit} className="w-full h-full">

@@ -2,6 +2,7 @@
   "name": "Jarvis_V1.0",
   "description": "A text-based AI assistant inspired by Iron Man's J.A.R.V.I.S., using Gemini for conversation and featuring a futuristic HUD.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }

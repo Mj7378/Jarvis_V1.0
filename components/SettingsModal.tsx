@@ -1,10 +1,11 @@
-
 import React, { useRef } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon, SettingsIcon, CloseIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
-interface RightSidebarProps {
+interface SettingsModalProps {
+    isOpen: boolean;
+    onClose: () => void;
     onCameraClick: () => void;
     isBusy: boolean;
     onWeather: () => void;
@@ -19,7 +20,7 @@ interface RightSidebarProps {
     onRemoveCustomBootVideo: () => void;
 }
 
-const SystemControls: React.FC<Pick<RightSidebarProps, 'onCameraClick' | 'isBusy' | 'onWeather' | 'onSelfHeal'>> = (props) => {
+const SystemControls: React.FC<Pick<SettingsModalProps, 'onCameraClick' | 'isBusy' | 'onWeather' | 'onSelfHeal'>> = (props) => {
     const { onCameraClick, isBusy, onWeather, onSelfHeal } = props;
     const controls = [
         { name: 'Camera', icon: '📷', action: onCameraClick, disabled: isBusy },
@@ -41,7 +42,7 @@ const SystemControls: React.FC<Pick<RightSidebarProps, 'onCameraClick' | 'isBusy
     );
 };
 
-const QuickActions: React.FC<Pick<RightSidebarProps, 'isBusy' | 'onDesignMode' | 'onSimulationMode'>> = (props) => {
+const QuickActions: React.FC<Pick<SettingsModalProps, 'isBusy' | 'onDesignMode' | 'onSimulationMode'>> = (props) => {
     const { isBusy, onDesignMode, onSimulationMode } = props;
     const actions = [
         { name: 'Design Mode', icon: <GenerateImageIcon className="w-4 h-4 inline-block" />, action: onDesignMode },
@@ -67,7 +68,7 @@ const QuickActions: React.FC<Pick<RightSidebarProps, 'isBusy' | 'onDesignMode' |
     );
 };
 
-const ModelSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
+const ModelSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
     const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         sounds.playClick();
         onThemeChange(prev => ({ ...prev, aiModel: e.target.value as 'gemini-2.5-flash' | 'gemini-pro' }));
@@ -105,7 +106,7 @@ const PRESETS = [
     { name: 'Cosmic Purple', color: '#9d6eff' },
 ];
 
-const VoiceSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
+const VoiceSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
     const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
         sounds.playClick();
         onThemeChange(prev => ({ ...prev, [key]: value }));
@@ -170,7 +171,7 @@ const VoiceSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'on
 };
 
 
-const ThemeSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onSetCustomBootVideo' | 'onRemoveCustomBootVideo'>> = ({ themeSettings, onThemeChange, sounds, onSetCustomBootVideo, onRemoveCustomBootVideo }) => {
+const ThemeSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onSetCustomBootVideo' | 'onRemoveCustomBootVideo'>> = ({ themeSettings, onThemeChange, sounds, onSetCustomBootVideo, onRemoveCustomBootVideo }) => {
     
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -359,14 +360,52 @@ const ThemeSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'on
     );
 };
 
-export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
+export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
+    const { isOpen, onClose, ...otherProps } = props;
+
+    if (!isOpen) return null;
+
     return (
-        <aside className="flex flex-col h-full space-y-4 overflow-y-auto styled-scrollbar pr-1 -mr-4 -my-5 py-5">
-            <SystemControls {...props} />
-            <QuickActions {...props} />
-            <ModelSettingsPanel {...props} />
-            <VoiceSettingsPanel {...props} />
-            <ThemeSettingsPanel {...props} />
-        </aside>
+        <div
+            className="fixed inset-0 bg-black/70 z-40 flex justify-end backdrop-blur-sm"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-title"
+        >
+            <div
+                className="hud-panel !absolute !top-0 !right-0 !bottom-0 !left-auto w-[360px] m-4 animate-slide-in-right-fast !p-0"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Modal Header */}
+                <div className="flex justify-between items-center p-4 border-b border-primary-t-20 flex-shrink-0">
+                    <h2 id="settings-title" className="panel-title !mb-0 !pb-0 !border-none text-lg">
+                        <SettingsIcon className="w-6 h-6" />
+                        <span>System Settings</span>
+                    </h2>
+                    <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700">
+                        <CloseIcon className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto styled-scrollbar p-4 space-y-4">
+                    <SystemControls {...otherProps} />
+                    <QuickActions {...otherProps} />
+                    <ModelSettingsPanel {...otherProps} />
+                    <VoiceSettingsPanel {...otherProps} />
+                    <ThemeSettingsPanel {...otherProps} />
+                </div>
+            </div>
+            <style>{`
+                @keyframes slide-in-right-fast {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                .animate-slide-in-right-fast {
+                    animation: slide-in-right-fast 0.4s ease-out forwards;
+                }
+            `}</style>
+        </div>
     );
 };
