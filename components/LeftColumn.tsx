@@ -1,6 +1,5 @@
 import React from 'react';
 import { AppState } from '../types';
-import SystemStatus from './SystemStatus';
 import { GeminiIcon } from './Icons';
 
 interface LeftColumnProps {
@@ -57,6 +56,5 @@ export const LeftColumn: React.FC<LeftColumnProps> = ({ appState }) => (
     <aside className="flex flex-col h-full space-y-4">
         <Header />
         <SystemInfoPanel appState={appState} />
-        <SystemStatus />
     </aside>
 );

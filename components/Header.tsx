@@ -31,7 +31,7 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
     const circumference = 2 * Math.PI * 45; // r=45
 
     return (
-        <header className="hud-header hud-panel flex items-center justify-between !py-0 !px-0">
+        <header className="hud-header hud-panel flex items-center !py-0 !px-0">
             {/* Left side: Title */}
             <div className="flex items-center h-full">
                 <div className="title-container">
@@ -45,7 +45,7 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
             </div>
 
             {/* Right side: Clock & Controls */}
-            <div className="flex items-center h-full text-sm text-slate-300 font-mono">
+            <div className="flex items-center h-full text-sm text-slate-300 font-mono ml-auto">
                 {/* Upgraded System Clock */}
                 <div className="pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
                     <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">

@@ -16,7 +16,6 @@ export enum AppState {
   VISION = 'VISION',
   ERROR = 'ERROR',
   SPEAKING = 'SPEAKING',
-  // FIX: Add LISTENING state to AppState enum
   LISTENING = 'LISTENING',
 }
 
@@ -53,9 +52,7 @@ export interface ThemeSettings {
     rate: number;
     pitch: number;
   };
-  // FIX: Add wakeWord property
   wakeWord: string;
-  // FIX: Restrict aiModel to only allowed models
   aiModel: 'gemini-2.5-flash';
 }
 

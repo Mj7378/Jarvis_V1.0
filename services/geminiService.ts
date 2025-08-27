@@ -184,23 +184,23 @@ export async function getAiResponseStream(
   }
 }
 
+// FIX: Add missing streamTranslateText function for Universal Translator component.
 export async function streamTranslateText(text: string): Promise<AsyncGenerator<GenerateContentResponse>> {
-    try {
-        const model = 'gemini-2.5-flash';
-        const prompt = `Translate the following text into English:\n\n${text}`;
-        
-        const response = await ai.models.generateContentStream({
-            model,
-            contents: prompt,
-            config: {
-                systemInstruction: "You are a universal translator. Provide a fluent, real-time English translation of any text you receive. Be accurate and natural."
-            }
-        });
-
-        return response;
-    } catch (error) {
-        throw handleGeminiError(error, "Translation");
-    }
+  try {
+    const response = await ai.models.generateContentStream({
+      model: 'gemini-2.5-flash',
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are a universal translator. Translate the following text into English. Provide only the translated text, without any additional explanations or context. Text to translate: "${text}"` }]
+      }],
+      config: {
+        systemInstruction: "You are an advanced AI assistant that specializes in real-time translation.",
+      },
+    });
+    return response;
+  } catch (error) {
+    throw handleGeminiError(error, "Stream Translation");
+  }
 }
 
 export async function transcribeAudio(base64Data: string, mimeType: string): Promise<string> {

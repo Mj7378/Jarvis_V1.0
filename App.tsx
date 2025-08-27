@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // Services, Hooks, Utils
-import { getAiResponseStream, generateImage, generateVideo, getVideoOperationStatus } from './services/geminiService';
+import { getAiResponseStream } from './services/geminiService';
 import { useChatHistory } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
-import { saveVideo, deleteVideo, getVideo } from './utils/db';
+import { useSpeechRecognition } from './hooks/useSpeechRecognition';
+import { saveVideo, deleteVideo } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, Source, AICommand, DeviceControlCommand, AppError, ThemeSettings } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
@@ -22,10 +22,11 @@ import DiagnosticsMode from './components/DiagnosticsMode';
 import BootingUp from './components/BootingUp';
 import PreBootScreen from './components/PreBootScreen';
 import { SettingsModal } from './components/SettingsModal';
-import { SettingsIcon } from './components/Icons';
 import Header from './components/Header';
-import { LeftColumn } from './components/LeftColumn';
 import Shutdown from './components/Shutdown';
+import UserInput from './components/UserInput';
+import VoiceCalibrationModal from './components/VoiceCalibrationModal';
+
 
 // System Lifecycle States
 type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
@@ -53,24 +54,13 @@ const DEFAULT_THEME: ThemeSettings = {
   aiModel: 'gemini-2.5-flash',
 };
 
-// Shutdown Sequence Component
-const ShutdownSequence: React.FC<{ onComplete: () => void; sounds: ReturnType<typeof useSoundEffects>}> = ({ onComplete, sounds }) => {
-    useEffect(() => {
-        sounds.playDeactivate();
-        const timer = setTimeout(onComplete, 2000); // Wait for disintegration animation
-        return () => clearTimeout(timer);
-    }, [onComplete, sounds]);
-
-    return null; // The animation is handled by a class on the main container
-};
-
 const App: React.FC = () => {
   // System Lifecycle
   const [systemState, setSystemState] = useState<SystemState>('PRE_BOOT');
 
   // Core App State
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
-  const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage } = useChatHistory();
+  const { chatHistory, addMessage, appendToLastMessage, removeLastMessage } = useChatHistory();
   const [currentError, setCurrentError] = useState<AppError | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
@@ -82,13 +72,42 @@ const App: React.FC = () => {
   const sounds = useSoundEffects(themeSettings.uiSoundsEnabled);
   const { speak, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(themeSettings.voiceProfile);
 
-  // Modes
+  // Modes & Modals
   const [isVisionMode, setIsVisionMode] = useState(false);
   const [isDiagnosticsMode, setIsDiagnosticsMode] = useState(false);
   const [designModePrompt, setDesignModePrompt] = useState<string | null>(null);
   const [simulationModePrompt, setSimulationModePrompt] = useState<string | null>(null);
   const [actionModalProps, setActionModalProps] = useState<Omit<ActionModalProps, 'isOpen' | 'onClose'>>({ title: '', inputs: [], onSubmit: () => {} });
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
+
+  // Voice Recognition
+  const handleSpeechResult = (transcript: string) => {
+    if (transcript.trim()) {
+      handleSendMessage(transcript);
+    }
+    setAppState(AppState.IDLE);
+  };
+  const { transcript, isListening, startListening, stopListening, error: speechError } = useSpeechRecognition({ onEnd: handleSpeechResult });
+
+  useEffect(() => {
+    if (speechError) {
+      setCurrentError({ code: 'SPEECH_ERROR', title: 'Speech Recognition Error', message: speechError });
+      setAppState(AppState.ERROR);
+    }
+  }, [speechError]);
+  
+  const handleToggleListening = useCallback(() => {
+    if (isListening) {
+      stopListening();
+      setAppState(AppState.IDLE);
+    } else {
+      sounds.playClick();
+      startListening();
+      setAppState(AppState.LISTENING);
+    }
+  }, [isListening, stopListening, startListening, sounds]);
+
 
   // Apply theme settings to the document
   useEffect(() => {
@@ -105,6 +124,7 @@ const App: React.FC = () => {
     }
 
     document.body.classList.toggle('grid-active', themeSettings.showGrid);
+    document.body.classList.toggle('text-flicker-active', themeSettings.showTextFlicker);
   }, [themeSettings]);
 
 
@@ -263,6 +283,11 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCalibrationComplete = (profile: { rate: number; pitch: number }) => {
+    setThemeSettings(prev => ({ ...prev, voiceProfile: profile }));
+    setIsCalibrationOpen(false);
+  };
+
   // Lifecycle rendering
   if (systemState === 'PRE_BOOT') {
     return <PreBootScreen onInitiate={() => setSystemState('BOOTING')} />;
@@ -280,10 +305,6 @@ const App: React.FC = () => {
         <main className={`hud-container ${systemState === 'SNAP_DISINTEGRATION' ? 'system-terminating' : ''}`}>
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
             
-            <div className="hud-left-panel hud-panel">
-                <LeftColumn appState={appState} />
-            </div>
-
             <div className="hud-core-container">
                 <div className="chat-log-container">
                     <ChatLog history={chatHistory} appState={appState} />
@@ -292,16 +313,11 @@ const App: React.FC = () => {
             </div>
             
             <div className="hud-bottom-panel hud-panel items-center justify-center !p-2 md:!p-4">
-                <input
-                    type="text"
-                    placeholder="Enter command..."
-                    className="w-full bg-transparent border-none focus:ring-0 text-center text-primary"
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value) {
-                            handleSendMessage(e.currentTarget.value);
-                            e.currentTarget.value = '';
-                        }
-                    }}
+                <UserInput 
+                    onSendMessage={handleSendMessage}
+                    onToggleListening={handleToggleListening}
+                    appState={appState}
+                    isListening={isListening}
                 />
             </div>
             
@@ -321,6 +337,7 @@ const App: React.FC = () => {
             onSelfHeal={handleSelfHeal}
             onDesignMode={handleOpenDesignMode}
             onSimulationMode={handleOpenSimulationMode}
+            onCalibrateVoice={() => setIsCalibrationOpen(true)}
             sounds={sounds}
             themeSettings={themeSettings}
             onThemeChange={setThemeSettings}
@@ -332,6 +349,8 @@ const App: React.FC = () => {
         {designModePrompt && <DesignMode prompt={designModePrompt} onComplete={(p, img) => { addMessage({ role: 'user', content: `Design concept: ${p}`, imageUrl: img }); setDesignModePrompt(null); }} onCancel={() => setDesignModePrompt(null)} />}
         {simulationModePrompt && <SimulationMode prompt={simulationModePrompt} onComplete={(p) => { addMessage({ role: 'model', content: `Simulation complete for: ${p}. Video is available.` }); setSimulationModePrompt(null); }} onCancel={() => setSimulationModePrompt(null)} />}
         {isDiagnosticsMode && <DiagnosticsMode onComplete={handleDiagnosticsComplete} />}
+        {isCalibrationOpen && <VoiceCalibrationModal isOpen={isCalibrationOpen} onClose={() => setIsCalibrationOpen(false)} onComplete={handleCalibrationComplete} />}
+
         <ErrorModal isOpen={!!currentError} onClose={() => setCurrentError(null)} error={currentError} />
         <ActionModal isOpen={isActionModalOpen} onClose={() => setIsActionModalOpen(false)} {...actionModalProps} />
     </div>

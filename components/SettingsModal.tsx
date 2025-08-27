@@ -1,6 +1,5 @@
-
 import React, { useRef } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon, SettingsIcon, CloseIcon, PowerIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, SettingsIcon, CloseIcon, PowerIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -14,6 +13,7 @@ interface SettingsModalProps {
     onSelfHeal: () => void;
     onDesignMode: () => void;
     onSimulationMode: () => void;
+    onCalibrateVoice: () => void;
     sounds: ReturnType<typeof useSoundEffects>;
     themeSettings: ThemeSettings;
     onThemeChange: (settings: ThemeSettings | ((prev: ThemeSettings) => ThemeSettings)) => void;
@@ -78,28 +78,6 @@ const QuickActions: React.FC<Pick<SettingsModalProps, 'isBusy' | 'onDesignMode' 
     );
 };
 
-// FIX: Update model selection to a static display, removing deprecated 'gemini-pro' option.
-const ModelSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
-    return (
-        <div className="bg-black/20 p-4">
-            <h2 className="panel-title text-secondary">
-                <GeminiIcon className="w-5 h-5" />
-                <span>AI Model</span>
-            </h2>
-            <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <label className="text-sm text-slate-300">Active Model</label>
-                    <div
-                        className="bg-slate-800/80 border border-primary-t-20 rounded-md p-2 px-4 text-slate-200 text-sm"
-                    >
-                        Gemini 2.5 Flash
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const PRESETS = [
     { name: 'J.A.R.V.I.S. Cyan', color: '#00ffff' },
     { name: 'Stark Red', color: '#ff4d4d' },
@@ -108,7 +86,7 @@ const PRESETS = [
     { name: 'Cosmic Purple', color: '#9d6eff' },
 ];
 
-const VoiceSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
+const VoiceSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
     const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
         sounds.playClick();
         onThemeChange(prev => ({ ...prev, [key]: value }));
@@ -151,6 +129,22 @@ const VoiceSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'o
                         </label>
                     </div>
                 </div>
+                <div className="flex items-center justify-between">
+                    <label htmlFor="wakeword-input" className="text-sm text-slate-300">Wake Word</label>
+                    <input
+                        id="wakeword-input"
+                        type="text"
+                        value={themeSettings.wakeWord}
+                        onChange={(e) => handleSettingChange('wakeWord', e.target.value.toUpperCase())}
+                        className="w-36 bg-slate-800/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                    />
+                </div>
+                 <button 
+                    onClick={onCalibrateVoice}
+                    className="w-full text-center py-2 mt-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-colors"
+                >
+                    Calibrate Voice
+                </button>
             </div>
         </div>
     );
@@ -378,7 +372,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 <div className="flex-1 overflow-y-auto styled-scrollbar p-4 space-y-4">
                     <SystemControls {...otherProps} />
                     <QuickActions {...otherProps} />
-                    <ModelSettingsPanel {...otherProps} />
                     <VoiceSettingsPanel {...otherProps} />
                     <ThemeSettingsPanel {...otherProps} />
                 </div>
