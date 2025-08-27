@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { PowerIcon } from './Icons';
+import { PowerIcon, SettingsIcon } from './Icons';
 
-const Header: React.FC<{ onShutdown: () => void; }> = ({ onShutdown }) => {
+const Header: React.FC<{ onShutdown: () => void; onOpenSettings: () => void; }> = ({ onShutdown, onOpenSettings }) => {
     const [time, setTime] = useState(new Date());
 
     useEffect(() => {
@@ -35,7 +35,7 @@ const Header: React.FC<{ onShutdown: () => void; }> = ({ onShutdown }) => {
             <div className="flex items-center h-full">
                 <div className="title-container">
                     <h1 
-                        className="font-orbitron text-3xl text-primary text-primary-shadow tracking-widest"
+                        className="font-orbitron text-2xl md:text-3xl text-primary text-primary-shadow tracking-widest"
                     >
                         J.A.R.V.I.S.
                     </h1>
@@ -43,11 +43,11 @@ const Header: React.FC<{ onShutdown: () => void; }> = ({ onShutdown }) => {
                 <div className="title-wing"></div>
             </div>
 
-            {/* Right side: Clock & Shutdown */}
+            {/* Right side: Clock & Controls */}
             <div className="flex items-center h-full text-sm text-slate-300 font-mono">
                 {/* Upgraded System Clock */}
-                <div className="pl-6 pr-6 flex items-center gap-4 h-full">
-                    <div className="relative w-12 h-12 flex-shrink-0">
+                <div className="pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
+                    <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
                         <svg className="w-full h-full" viewBox="0 0 100 100">
                             {/* Background track */}
                             <circle cx="50" cy="50" r="45" className="stroke-primary-t-20" strokeWidth="4" fill="none" />
@@ -68,24 +68,31 @@ const Header: React.FC<{ onShutdown: () => void; }> = ({ onShutdown }) => {
                                 }}
                             />
                         </svg>
-                        <div className="absolute inset-0 flex items-center justify-center font-mono text-primary text-lg font-bold">
+                        <div className="absolute inset-0 flex items-center justify-center font-mono text-primary text-base md:text-lg font-bold">
                             {seconds.toString().padStart(2, '0')}
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="font-mono text-2xl text-slate-100 tracking-wider flex items-baseline">
+                        <div className="font-mono text-xl md:text-2xl text-slate-100 tracking-wider flex items-baseline">
                             <span>{hours.toString().padStart(2, '0')}</span>
                             <span className="animate-pulse mx-px">:</span>
                             <span>{minutes.toString().padStart(2, '0')}</span>
                             <span className="text-base ml-2">{ampm}</span>
                         </div>
-                        <div className="font-sans text-xs text-slate-400 tracking-widest mt-1">
+                        <div className="font-sans text-xs text-slate-400 tracking-widest mt-1 hidden sm:block">
                             {dayOfWeek} | {formattedDate}
                         </div>
                     </div>
                 </div>
-                {/* Shutdown Button */}
-                <div className="h-full flex items-center pr-6 pl-6 border-l-2 border-primary-t-20">
+                {/* Controls */}
+                <div className="h-full flex items-center pr-4 md:pr-6 pl-4 md:pl-6 border-l-2 border-primary-t-20">
+                    <button
+                        onClick={onOpenSettings}
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-colors mr-2 md:mr-4"
+                        aria-label="Open Settings"
+                    >
+                        <SettingsIcon className="w-6 h-6" />
+                    </button>
                     <button 
                         onClick={onShutdown} 
                         className="w-10 h-10 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/50 hover:border-red-400 transition-colors"

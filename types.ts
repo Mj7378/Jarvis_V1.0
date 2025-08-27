@@ -15,13 +15,14 @@ export enum AppState {
   THINKING = 'THINKING',
   VISION = 'VISION',
   ERROR = 'ERROR',
-  LISTENING = 'LISTENING',
   SPEAKING = 'SPEAKING',
+  // FIX: Add LISTENING state to AppState enum
+  LISTENING = 'LISTENING',
 }
 
 export interface DeviceControlCommand {
     action: 'device_control';
-    command: 'open_url' | 'search' | 'navigate' | 'unsupported' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm';
+    command: 'open_url' | 'search' | 'navigate' | 'unsupported' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown';
     app: string;
     params: any;
     spoken_response: string;
@@ -52,8 +53,10 @@ export interface ThemeSettings {
     rate: number;
     pitch: number;
   };
+  // FIX: Add wakeWord property
   wakeWord: string;
-  aiModel: 'gemini-2.5-flash' | 'gemini-pro';
+  // FIX: Restrict aiModel to only allowed models
+  aiModel: 'gemini-2.5-flash';
 }
 
 declare global {

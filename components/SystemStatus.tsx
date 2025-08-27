@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const SystemStatus: React.FC<{ error: string }> = ({ error }) => {
+const SystemStatus: React.FC = () => {
   const [stats, setStats] = useState({
     cpu: 0,
     memory: 0,
@@ -48,9 +48,6 @@ const SystemStatus: React.FC<{ error: string }> = ({ error }) => {
         <StatBar label="CPU Load" value={stats.cpu} unit="%" max={100} />
         <StatBar label="Memory Usage" value={stats.memory} unit="%" max={100} />
         <StatBar label="Network Activity" value={stats.network} unit="Mbps" max={100} />
-      </div>
-      <div className="mt-3 pt-2 border-t border-primary-t-20">
-         <p className="text-center text-xs text-red-400 min-h-[1.25rem]">{error}</p>
       </div>
     </div>
   );

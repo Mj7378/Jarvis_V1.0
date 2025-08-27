@@ -53,6 +53,9 @@ When a command involves interacting with the device or a system function, you MU
     *   \`play_music\`: Finds music. \`{"action":"device_control", "command":"play_music", "app":"Music", "params":{"query":"AC/DC"}, "spoken_response":"You got it. Here's some AC/DC."}\`
     *   \`set_reminder\`: \`{"action":"device_control", "command":"set_reminder", "app":"Reminders", "params":{"content":"Take out the trash", "time":"8:00 PM"}, "spoken_response":"Cool, reminder set for 8 PM about the trash."}\`
     *   \`set_alarm\`: \`{"action":"device_control", "command":"set_alarm", "app":"Clock", "params":{"time":"7:00 AM Tomorrow", "content":"Wake up"}, "spoken_response":"Alarm's set for 7 AM. Rise and shine."}\`
+    *   \`shutdown\`: If I tell you to shutdown, goodbye, or power down.
+        - User: "Goodbye Jarvis" -> \`{"action":"device_control", "command":"shutdown", "app":"System", "params":{}, "spoken_response":"Powering down. Goodbye, Sir."}\`
+        - User: "Shutdown the system" -> \`{"action":"device_control", "command":"shutdown", "app":"System", "params":{}, "spoken_response":"Understood. System shutting down."}\`
 
 *   **Internal Fulfillment:** For tasks you can do yourself without an app (e.g., calculations, conversions).
     -   Example: \`{"action":"device_control", "command":"internal_fulfillment", "app":"Calculator", "params":{}, "spoken_response":"Easy. The answer is 42."}\`
@@ -135,10 +138,23 @@ export async function getAiResponseStream(
   image?: { mimeType: string; data: string },
 ): Promise<AsyncGenerator<GenerateContentResponse>> {
   try {
-    const contents: Content[] = history.map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.content }]
-    }));
+    // FIX: Correctly map chat history to include images for multimodal context.
+    const contents: Content[] = history.map(msg => {
+      const parts: ({ text: string } | { inlineData: { mimeType: string, data: string } })[] = [{ text: msg.content }];
+      if (msg.imageUrl) {
+        // The app uses jpeg data URLs from camera capture and image generation.
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: msg.imageUrl.split(',')[1],
+          },
+        });
+      }
+      return {
+        role: msg.role,
+        parts,
+      };
+    });
 
     const userParts: ({ text: string; } | { inlineData: { mimeType: string; data: string; }; })[] = [{ text: prompt }];
     if (image) {

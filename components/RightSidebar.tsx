@@ -1,4 +1,5 @@
 
+
 import React, { useRef } from 'react';
 import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -67,12 +68,8 @@ const QuickActions: React.FC<Pick<RightSidebarProps, 'isBusy' | 'onDesignMode' |
     );
 };
 
+// FIX: Update model selection to a static display, removing deprecated 'gemini-pro' option.
 const ModelSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
-    const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        sounds.playClick();
-        onThemeChange(prev => ({ ...prev, aiModel: e.target.value as 'gemini-2.5-flash' | 'gemini-pro' }));
-    };
-
     return (
         <div className="bg-black/20 p-4">
             <h2 className="panel-title text-secondary">
@@ -81,16 +78,12 @@ const ModelSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'on
             </h2>
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <label htmlFor="model-select" className="text-sm text-slate-300 cursor-pointer">Active Model</label>
-                    <select
-                        id="model-select"
-                        value={themeSettings.aiModel}
-                        onChange={handleModelChange}
-                        className="bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                    <label className="text-sm text-slate-300">Active Model</label>
+                    <div
+                        className="bg-slate-800/80 border border-primary-t-20 rounded-md p-2 px-4 text-slate-200 text-sm"
                     >
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                        <option value="gemini-pro">Gemini Pro</option>
-                    </select>
+                        Gemini 2.5 Flash
+                    </div>
                 </div>
             </div>
         </div>

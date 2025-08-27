@@ -149,17 +149,19 @@
       /* --- New Responsive Grid Layout --- */
       .hud-container {
         display: grid;
-        grid-template-columns: 380px 1fr 320px;
-        grid-template-rows: 60px 1fr 80px;
-        grid-template-areas:
-            "header header header"
-            "left   core   right"
-            "left   input  right";
         width: 100vw;
-        height: 100vh;
-        padding: 1rem;
-        gap: 1rem;
+        height: 100dvh; /* Use dvh for better mobile viewport handling */
+        padding: 0.5rem;
+        gap: 0.5rem;
         overflow: hidden;
+        
+        /* Mobile First: Default to a stacked layout */
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto; /* Header, Core, Input */
+        grid-template-areas:
+            "header"
+            "core"
+            "input";
       }
 
       .hud-header { 
@@ -169,11 +171,12 @@
         justify-content: space-between; 
         align-items: center; 
       }
-      .hud-left-panel { 
-        grid-area: left; 
-        min-height: 0; 
-        animation: slide-in-left 0.5s ease-out forwards;
+      
+      /* On mobile, left and right panels are hidden by default */
+      .hud-left-panel, .hud-right-panel-placeholder { 
+        display: none;
       }
+
       .hud-core-container { 
         grid-area: core; 
         position: relative; 
@@ -182,14 +185,59 @@
         justify-content: center; 
         min-height: 0; 
       }
-      .hud-right-panel-placeholder { 
-        grid-area: right; 
-        animation: slide-in-right 0.5s ease-out forwards;
-      }
+      
       .hud-bottom-panel { 
         grid-area: input; 
-        position: relative; 
+        position: relative;
         animation: slide-in-bottom 0.5s ease-out forwards;
+      }
+      
+      /* The chat log wrapper which is absolutely positioned */
+      .chat-log-container {
+        position: absolute;
+        inset: 0.5rem;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* Tablet Layout (e.g., landscape phones, small tablets) */
+      @media (min-width: 768px) {
+        .hud-container {
+            padding: 1rem;
+            gap: 1rem;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: auto 1fr auto;
+            grid-template-areas:
+                "header header"
+                "left   core"
+                "left   input";
+        }
+        .hud-left-panel {
+            display: flex; /* Show left panel */
+            grid-area: left; 
+            min-height: 0;
+            animation: slide-in-left 0.5s ease-out forwards;
+        }
+        .chat-log-container {
+            inset: 1rem;
+        }
+      }
+
+      /* Desktop Layout */
+      @media (min-width: 1200px) {
+        .hud-container {
+            grid-template-columns: 380px 1fr 320px;
+            grid-template-rows: 60px 1fr 80px;
+            grid-template-areas:
+                "header header header"
+                "left   core   right"
+                "left   input  right";
+        }
+        .hud-right-panel-placeholder {
+            display: flex; /* Show right panel */
+            grid-area: right;
+            animation: slide-in-right 0.5s ease-out forwards;
+        }
       }
 
       .info-block {
@@ -266,294 +314,56 @@
         animation: glitch-anim-2 2s infinite linear alternate-reverse;
       }
       @keyframes glitch { 0%, 100% { transform: translate(0); } 20% { transform: translate(-3px, 3px); } 40% { transform: translate(-3px, -3px); } 60% { transform: translate(3px, 3px); } 80% { transform: translate(3px, -3px); } }
-      @keyframes glitch-anim-1 { 0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); } 10% { clip-path: polygon(0 40%, 100% 40%, 100% 45%, 0 45%); } 20% { clip-path: polygon(0 20%, 100% 20%, 100% 22%, 0 22%); } 30% { clip-path: polygon(0 60%, 100% 60%, 100% 62%, 0 62%); } 40% { clip-path: polygon(0 85%, 100% 85%, 100% 88%, 0 88%); } 50% { clip-path: polygon(0 50%, 100% 50%, 100% 52%, 0 52%); } 60% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%); } 70% { clip-path: polygon(0 70%, 100% 70%, 100% 72%, 0 72%); } 80% { clip-path: polygon(0 95%, 100% 95%, 100% 99%, 0 99%); } 90% { clip-path: polygon(0 30%, 100% 30%, 100% 32%, 0 32%); } 100% { clip-path: polygon(0 75%, 100% 75%, 100% 78%, 0 78%); } }
-      @keyframes glitch-anim-2 { 0% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%); } 10% { clip-path: polygon(0 50%, 100% 50%, 100% 51%, 0 51%); } 20% { clip-path: polygon(0 80%, 100% 80%, 100% 81%, 0 81%); } 30% { clip-path: polygon(0 25%, 100% 25%, 100% 26%, 0 26%); } 40% { clip-path: polygon(0 1%, 100% 1%, 100% 2%, 0 2%); } 50% { clip-path: polygon(0 65%, 100% 65%, 100% 66%, 0 66%); } 60% { clip-path: polygon(0 90%, 100% 90%, 100% 91%, 0 91%); } 70% { clip-path: polygon(0 40%, 100% 40%, 100% 41%, 0 41%); } 80% { clip-path: polygon(0 15%, 100% 15%, 100% 16%, 0 16%); } 90% { clip-path: polygon(0 70%, 100% 70%, 100% 71%, 0 71%); } 100% { clip-path: polygon(0 35%, 100% 35%, 100% 36%, 0 36%); } }
-    
-      /* --- New Cinematic Bootup/Shutdown Animations --- */
-      .holographic-container {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        perspective: 1000px;
-        transform-style: preserve-3d;
-      }
+      @keyframes glitch-anim-1 { 0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); } 10% { clip-path: polygon(0 40%, 100% 40%, 100% 45%, 0 45%); } 20% { clip-path: polygon(0 20%, 100% 20%, 100% 22%, 0 22%); } 30% { clip-path: polygon(0 60%, 100% 60%, 100% 62%, 0 62%); } 40% { clip-path: polygon(0 85%, 100% 85%, 100% 88%, 0 88%); } 50% { clip-path: polygon(0 50%, 100% 50%, 100% 52%, 0 52%); } 60% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%); } 70% { clip-path: polygon(0 70%, 100% 70%, 100% 72%, 0 72%); } 80% { clip-path: polygon(0 95%, 100% 95%, 100% 99%, 0 99%); } 90% { clip-path: polygon(0 30%, 100% 30%, 100% 32%, 0 32%); } 100% { clip-path: polygon(0 55%, 100% 55%, 100% 58%, 0 58%); } }
+      @keyframes glitch-anim-2 { 0% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%); } 15% { clip-path: polygon(0 30%, 100% 30%, 100% 33%, 0 33%); } 25% { clip-path: polygon(0 90%, 100% 90%, 100% 95%, 0 95%); } 40% { clip-path: polygon(0 50%, 100% 50%, 100% 52%, 0 52%); } 55% { clip-path: polygon(0 22%, 100% 22%, 100% 25%, 0 25%); } 68% { clip-path: polygon(0 75%, 100% 75%, 100% 78%, 0 78%); } 75% { clip-path: polygon(0 42%, 100% 42%, 100% 45%, 0 45%); } 88% { clip-path: polygon(0 65%, 100% 65%, 100% 69%, 0 69%); } 100% { clip-path: polygon(0 15%, 100% 15%, 100% 18%, 0 18%); } }
 
-      .holographic-element {
-        position: absolute;
-        border-radius: 50%;
-        border-style: solid;
-        animation-duration: 3s;
-        animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
-        animation-iteration-count: 1;
-        animation-fill-mode: forwards;
-        transform-style: preserve-3d;
-        filter: drop-shadow(0 0 10px var(--primary-color-hex));
+      /* --- ENHANCED: Endgame Snap Shutdown Animation --- */
+      @keyframes snap-disintegration {
+        0% {
+          opacity: 1;
+          transform: scale(1);
+          filter: blur(0px) saturate(1);
+        }
+        50% {
+          /* A brief moment of instability and glow before dissolving */
+          opacity: 0.9;
+          transform: scale(1.01) skew(-3deg, 2deg);
+          filter: blur(1px) saturate(2) brightness(1.5);
+        }
+        100% {
+          opacity: 0;
+          /* Move up and away as if turning to dust in the wind */
+          transform: scale(0.6) skew(5deg, -5deg) translate(100px, -150px);
+          filter: blur(20px) saturate(0);
+        }
       }
-
-      /* Bootup Animations */
-      @keyframes holo-construct {
-        from { transform: var(--transform-from); opacity: 0; }
-        to { transform: var(--transform-to); opacity: 1; }
+      .system-terminating > * {
+        animation: snap-disintegration 2s forwards cubic-bezier(0.55, 0.085, 0.68, 0.53);
+        transform-origin: 50% 50%; /* Disintegrate from the center of each element */
+        will-change: transform, opacity, filter;
+        pointer-events: none; /* Disable interaction during animation */
       }
       
-      .boot .h-ring-1 { --transform-from: rotateY(90deg) translateZ(-500px) scale(0.5); --transform-to: rotateY(0deg) translateZ(0px) scale(1); animation-name: holo-construct; }
-      .boot .h-ring-2 { --transform-from: rotateX(-90deg) translateZ(-500px) scale(0.5); --transform-to: rotateX(0deg) translateZ(0px) scale(1); animation-name: holo-construct; animation-delay: 0.2s; }
-      .boot .h-ring-3 { --transform-from: rotateY(-75deg) rotateX(20deg) translateZ(300px) scale(1.5); --transform-to: rotateY(0deg) rotateX(0deg) translateZ(0px) scale(1); animation-name: holo-construct; animation-delay: 0.4s; }
-      .boot .h-ring-4 { --transform-from: rotateZ(180deg) scale(0.2); --transform-to: rotateZ(0deg) scale(1); animation-name: holo-construct; animation-delay: 0.6s; }
-      .boot .h-core { --transform-from: scale(0); --transform-to: scale(1); animation-name: holo-construct; animation-duration: 1.5s; animation-delay: 1s; }
-
-      .h-ring-1 { width: 40vmin; height: 40vmin; border: 2px solid var(--primary-color-hex); }
-      .h-ring-2 { width: 38vmin; height: 38vmin; border: 1px dashed var(--primary-color-hex); opacity: 0.8; }
-      .h-ring-3 { width: 25vmin; height: 25vmin; border: 3px solid var(--primary-color-hex); background: radial-gradient(circle, rgba(var(--primary-color-rgb),0) 0%, rgba(var(--primary-color-rgb),0.1) 100%);}
-      .h-ring-4 { width: 42vmin; height: 42vmin; border: 1px solid var(--primary-color-hex); opacity: 0.5; border-style: dotted; }
-      .h-core { width: 5vmin; height: 5vmin; background: var(--primary-color-hex); border-radius: 50%; animation: core-pulse 2s infinite ease-in-out; }
-
-      @keyframes core-pulse {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 20px 5px var(--primary-color-hex); }
-        50% { transform: scale(1.2); box-shadow: 0 0 35px 10px var(--primary-color-hex); }
-      }
-      
-      /* Shutdown Animations */
-      .shutdown .holographic-element {
-        --primary-color-hex: #ff4d4d;
-        --primary-color-rgb: 255, 77, 77;
-        animation-name: holo-deconstruct;
-        animation-duration: 1.5s;
-        animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
-      }
-
-      @keyframes holo-deconstruct {
-        from { transform: var(--transform-to); opacity: 1; }
-        to { transform: var(--transform-from); opacity: 0; }
-      }
-
-      .shutdown .h-ring-1 { animation-delay: 0.4s; }
-      .shutdown .h-ring-2 { animation-delay: 0.2s; }
-      .shutdown .h-ring-3 { animation-delay: 0.0s; }
-      .shutdown .h-ring-4 { animation-delay: 0.6s; }
-      .shutdown .h-core { animation-delay: 0s; animation-name: holo-deconstruct, core-implode; animation-duration: 1.5s, 1.5s; }
-      
-      @keyframes core-implode {
-        0% { transform: scale(1.2); box-shadow: 0 0 35px 10px var(--primary-color-hex); }
-        100% { transform: scale(0); box-shadow: 0 0 50px 20px var(--primary-color-hex); }
-      }
-
-      /* Scanline Overlay */
-      .scanline-overlay {
-        position: fixed;
-        inset: 0;
-        background: linear-gradient(to bottom, rgba(12, 16, 29, 0) 0%, rgba(12, 16, 29, 0.5) 50%, rgba(12, 16, 29, 0) 100%);
-        background-size: 100% 8px;
-        animation: scanline-anim 10s linear infinite;
-        pointer-events: none;
-        opacity: 0.3;
-        z-index: 20;
-        display: none; /* Controlled by body class */
-      }
-      body.scanlines-active .scanline-overlay {
-        display: block;
-      }
-      @keyframes scanline-anim {
-        from { background-position: 0 0; }
-        to { background-position: 0 -200px; }
-      }
-      
-      /* Typing effect for boot text */
-      @keyframes typing {
-        from { width: 0; }
-        to { width: 100%; }
-      }
-      @keyframes blink-caret {
-        from, to { border-color: transparent; }
-        50% { border-color: var(--primary-color-hex); }
-      }
-      .typewriter p {
-        overflow: hidden;
-        border-right: .15em solid var(--primary-color-hex);
-        white-space: nowrap;
-        margin: 0.2rem 0;
-        letter-spacing: .1em;
-        animation: typing 1s steps(40, end), blink-caret .75s step-end infinite;
-        animation-fill-mode: forwards;
-      }
-
-      body.flicker-active .panel-title,
-      body.flicker-active .text-primary-shadow {
-        animation: text-flicker 150ms infinite;
-      }
-
-      /* --- Custom Theme Utility Classes --- */
-      .text-primary { color: var(--primary-color-hex); }
-      .text-primary-shadow { text-shadow: 0 0 10px var(--primary-color-hex); }
-      .text-secondary { color: #93c5fd; } /* This remains constant for panel titles */
-      .text-primary-accent { color: var(--primary-color-hex); opacity: 0.7; }
-
-      .bg-primary { background-color: var(--primary-color-hex); }
-      .bg-primary-t-80 { background-color: rgba(var(--primary-color-rgb), 0.8); }
-      .bg-primary-t-20 { background-color: rgba(var(--primary-color-rgb), 0.2); }
-      
-      .border-primary { border-color: var(--primary-color-hex); }
-      .border-b-primary { border-bottom-color: var(--primary-color-hex); }
-      .border-primary-t-20 { border-color: rgba(var(--primary-color-rgb), 0.2); }
-      .border-primary-t-50 { border-color: rgba(var(--primary-color-rgb), 0.5); }
-      .border-primary-t-70 { border-color: rgba(var(--primary-color-rgb), 0.7); }
-
-      .stroke-primary { stroke: var(--primary-color-hex); }
-      .stroke-primary-t-20 { stroke: rgba(var(--primary-color-rgb), 0.2); }
-
-      .shadow-primary { --tw-shadow-color: var(--primary-color-hex); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow); }
-      .shadow-primary\/20 { --tw-shadow-color: rgba(var(--primary-color-rgb), 0.2); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow); }
-
-
-      .accent-primary { accent-color: var(--primary-color-hex); }
-
-      .hover\:bg-primary-t-20:hover { background-color: rgba(var(--primary-color-rgb), 0.2); }
-      .hover\:border-primary-t-70:hover { border-color: rgba(var(--primary-color-rgb), 0.7); }
-      .hover\:border-primary-t-50:hover { border-color: rgba(var(--primary-color-rgb), 0.5); }
-      .hover\:bg-primary:hover { background-color: var(--primary-color-hex); }
-
-      .ring-primary:focus { --tw-ring-color: var(--primary-color-hex); }
-      
-      /* Toggle Switch */
-      .toggle-label {
-        display: inline-block;
-        width: 44px;
-        height: 24px;
-        background-color: #334155;
-        border-radius: 9999px;
-        position: relative;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      .toggle-dot {
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 20px;
-        height: 20px;
-        background-color: white;
-        border-radius: 9999px;
-        transition: transform 0.2s;
-      }
-      .toggle-checkbox:checked + .toggle-label {
-        background-color: var(--primary-color-hex);
-      }
-      .toggle-checkbox:checked + .toggle-label .toggle-dot {
-        transform: translateX(20px);
-      }
-
-      /* Custom Select */
-      select {
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(var(--primary-color-rgb), 0.8)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 0.5rem center;
-        background-size: 1.2em;
-        padding-right: 2rem; /* make space for the arrow */
-      }
-
-      /* --- New Termination Alert Styles --- */
-      .system-terminating {
-          --primary-color-hex: #ff4d4d;
-          --primary-color-rgb: 255, 77, 77;
-          animation: critical-flicker 100ms infinite;
-      }
-
-      .system-terminating .hud-panel {
-          border-color: rgba(255, 77, 77, 0.8) !important;
-          animation: panel-glitch-fast 150ms infinite;
-      }
-      .system-terminating .hud-core-container .animate-pulse-speak,
-      .system-terminating .hud-core-container .bg-yellow-500\/20 {
-          --tw-shadow-color: #ff4d4d !important;
-          animation: core-pulse-red 0.5s infinite ease-in-out !important;
-          background-color: rgba(255, 77, 77, 0.2) !important;
-      }
-
-      @keyframes critical-flicker {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.98; }
-      }
-
-      @keyframes panel-glitch-fast {
-          0% { transform: translate(0, 0); }
-          25% { transform: translate(-2px, 1px); }
-          50% { transform: translate(1px, -1px); }
-          75% { transform: translate(2px, 2px); }
-          100% { transform: translate(-1px, -2px); }
-      }
-
-      @keyframes core-pulse-red {
-          0%, 100% { transform: scale(1); box-shadow: 0 0 40px var(--tw-shadow-color); }
-          50% { transform: scale(1.05); box-shadow: 0 0 60px var(--tw-shadow-color); }
-      }
-
-      /* --- Responsive Media Queries --- */
-      /* Tablet styles */
-      @media (max-width: 1200px) {
-          .hud-container {
-              grid-template-columns: 320px 1fr;
-              grid-template-areas:
-                  "header header"
-                  "left   core"
-                  "left   input";
-          }
-          .hud-right-panel-placeholder { display: none; }
-      }
-
-      /* Mobile styles */
-      @media (max-width: 768px) {
-          .hud-container {
-              grid-template-columns: 1fr;
-              grid-template-rows: 50px auto 1fr 60px; /* header, core, chat, input */
-              grid-template-areas:
-                  "header"
-                  "core"
-                  "left"
-                  "input";
-              padding: 0.5rem;
-              gap: 0.5rem;
-          }
-
-          .hud-core-container {
-            min-height: 160px;
-          }
-
-          /* Responsive typography and elements in header */
-          .hud-header .font-orbitron.text-3xl { font-size: 1.5rem; line-height: 2rem; }
-          .hud-header .font-mono.text-2xl { font-size: 1.25rem; line-height: 1.75rem; }
-          .hud-header .relative.w-12.h-12 { width: 2.5rem; height: 2.5rem; }
-          .hud-header .font-mono.text-lg { font-size: 0.875rem; line-height: 1.25rem; }
-          .hud-header .w-10.h-10 { width: 2rem; height: 2rem; }
-          .hud-header .w-6.h-6 { width: 1.25rem; height: 1.25rem; }
-          .hud-header .pr-6.pl-6 { padding-left: 0.75rem; padding-right: 0.75rem; }
-          .hud-header .mr-4 { margin-right: 0.5rem; }
-
-          /* Responsive bootup/shutdown text */
-          .glitch[data-text] { font-size: 2.5rem !important; }
-          h1.text-7xl, h1.text-8xl, h1.text-9xl { font-size: 2.5rem !important; }
-
-          /* Fix settings modal width on mobile */
-          .hud-panel.w-\[360px\] { width: 90vw; }
-      }
+      /* Stagger the animation for a more dramatic, chaotic disintegration effect */
+      .system-terminating .hud-core-container { animation-delay: 0.1s; }
+      .system-terminating .hud-right-panel-placeholder { animation-delay: 0.3s; }
+      .system-terminating .hud-left-panel { animation-delay: 0.5s; }
+      .system-terminating .hud-bottom-panel { animation-delay: 0.7s; }
+      .system-terminating .hud-header { animation-delay: 0.9s; }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.1.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
-    "react/": "https://esm.sh/react@^19.1.1/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.15.0"
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.15.0"
   }
 }
 </script>
 </head>
   <body>
-    <div class="scanline-overlay"></div>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
