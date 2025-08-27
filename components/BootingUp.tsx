@@ -163,9 +163,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
             key={videoUrl} // Add key to force re-render if URL changes
             src={videoUrl!}
             autoPlay
-            muted
             playsInline
-            onCanPlay={() => sounds.playActivate()}
             onEnded={onComplete}
             onError={(e) => {
               console.error("Boot video failed to play.", e);

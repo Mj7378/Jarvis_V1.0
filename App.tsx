@@ -18,6 +18,7 @@ import Shutdown from './components/Shutdown';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { PowerIcon } from './components/Icons';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
+import PreBootScreen from './components/PreBootScreen';
 
 // Helper function to convert hex to an RGB string "r, g, b"
 const hexToRgb = (hex: string): string | null => {
@@ -42,7 +43,7 @@ const DEFAULT_THEME: ThemeSettings = {
 };
 
 const App: React.FC = () => {
-  const [appStatus, setAppStatus] = useState<'booting' | 'running' | 'shutting_down'>('booting');
+  const [appStatus, setAppStatus] = useState<'pre-boot' | 'booting' | 'running' | 'shutting_down'>('pre-boot');
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [error, setError] = useState<AppError | null>(null);
   const [isVisionMode, setIsVisionMode] = useState(false);
@@ -481,6 +482,10 @@ const App: React.FC = () => {
   const formattedDate = `${day}/${month}/${year}`;
   const dayOfWeek = time.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   const circumference = 2 * Math.PI * 45; // r=45
+
+  if (appStatus === 'pre-boot') {
+    return <PreBootScreen onInitiate={() => setAppStatus('booting')} />;
+  }
 
   if (appStatus === 'booting') {
     return <BootingUp onComplete={() => setAppStatus('running')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
