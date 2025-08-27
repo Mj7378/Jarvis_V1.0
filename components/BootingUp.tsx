@@ -19,6 +19,7 @@ const BOOT_SEQUENCE = [
 interface BootingUpProps {
   onComplete: () => void;
   useCustomVideo: boolean;
+  bootupAnimation: 'holographic' | 'video';
 }
 
 const DefaultBootAnimation: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
@@ -96,14 +97,14 @@ const DefaultBootAnimation: React.FC<{ onComplete: () => void }> = ({ onComplete
 };
 
 
-const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo }) => {
+const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootupAnimation }) => {
   const [bootMode, setBootMode] = useState<'loading' | 'video' | 'holographic'>('loading');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let objectUrl: string | null = null;
 
-    const loadVideo = async () => {
+    const loadCustomVideo = async () => {
       try {
         const videoFile = await getVideo();
         if (videoFile) {
@@ -111,22 +112,37 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo }) => 
           setVideoUrl(objectUrl);
           setBootMode('video');
         } else {
-          console.warn("Custom boot video not found. Falling back to default animation.");
-          setBootMode('holographic');
+          // Custom video not found, fallback to default setting
+          if (bootupAnimation === 'video') {
+            setVideoUrl('/assets/jarvis_boot.mp4');
+            setBootMode('video');
+          } else {
+            setBootMode('holographic');
+          }
         }
       } catch (error) {
         console.error("Failed to load custom boot video:", error);
-        setBootMode('holographic');
+        // Fallback on error
+        if (bootupAnimation === 'video') {
+            setVideoUrl('/assets/jarvis_boot.mp4');
+            setBootMode('video');
+        } else {
+            setBootMode('holographic');
+        }
       }
     };
 
     if (useCustomVideo) {
-      // Set to loading first to unmount the default animation and its timers
-      // before awaiting the async video loading. This fixes the race condition.
       setBootMode('loading');
-      loadVideo();
+      loadCustomVideo();
     } else {
-      setBootMode('holographic');
+      // Not using custom video, just use the default setting
+      if (bootupAnimation === 'video') {
+        setVideoUrl('/assets/jarvis_boot.mp4');
+        setBootMode('video');
+      } else {
+        setBootMode('holographic');
+      }
     }
 
     return () => {
@@ -134,20 +150,22 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo }) => 
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [useCustomVideo]);
+  }, [useCustomVideo, bootupAnimation]);
 
   const renderContent = () => {
     switch (bootMode) {
       case 'video':
         return (
           <video
+            key={videoUrl} // Add key to force re-render if URL changes
             src={videoUrl!}
             autoPlay
             muted
             playsInline
             onEnded={onComplete}
             onError={(e) => {
-              console.error("Custom boot video failed to play.", e);
+              console.error("Boot video failed to play.", e);
+              // If the video fails (e.g., 404), fallback to holographic
               setBootMode('holographic');
             }}
             className="absolute inset-0 w-full h-full object-cover"
@@ -157,9 +175,10 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo }) => 
         return <DefaultBootAnimation onComplete={onComplete} />;
       case 'loading':
       default:
-        return <p className="font-orbitron animate-pulse">INITIALIZING BOOT SEQUENCE...</p>;
+        return <p className="font-orbitron animate-pulse">CHECKING BOOT CONFIGURATION...</p>;
     }
   };
+
 
   return (
     <div className="fixed inset-0 bg-jarvis-dark text-primary font-mono flex items-center justify-center p-8 overflow-hidden animate-fade-in-fast">

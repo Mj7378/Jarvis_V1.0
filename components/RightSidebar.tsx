@@ -199,6 +199,36 @@ const ThemeSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'on
                     </div>
                 </div>
 
+                {/* Default Boot Animation */}
+                {!themeSettings.hasCustomBootVideo && (
+                    <div className="space-y-3 pt-2 border-t border-primary-t-20">
+                        <p className="text-sm text-slate-300">Default Boot Animation</p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => handleSettingChange('bootupAnimation', 'holographic')}
+                                className={`flex-1 text-center py-2 text-sm rounded-md border transition-colors ${
+                                    themeSettings.bootupAnimation === 'holographic'
+                                        ? 'bg-primary-t-20 border-primary'
+                                        : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700/80'
+                                }`}
+                            >
+                                Holographic
+                            </button>
+                            <button
+                                onClick={() => handleSettingChange('bootupAnimation', 'video')}
+                                className={`flex-1 text-center py-2 text-sm rounded-md border transition-colors ${
+                                    themeSettings.bootupAnimation === 'video'
+                                        ? 'bg-primary-t-20 border-primary'
+                                        : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700/80'
+                                }`}
+                            >
+                                Video
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+
                 {/* Boot Video */}
                 <div className="space-y-3 pt-2 border-t border-primary-t-20">
                      <p className="text-sm text-slate-300">Custom Boot Video</p>

@@ -33,6 +33,7 @@ const DEFAULT_THEME: ThemeSettings = {
   showScanlines: true,
   showTextFlicker: false,
   hasCustomBootVideo: false,
+  bootupAnimation: 'holographic',
 };
 
 const App: React.FC = () => {
@@ -99,8 +100,17 @@ const App: React.FC = () => {
       document.body.classList.toggle('scanlines-active', themeSettings.showScanlines);
       document.body.classList.toggle('flicker-active', themeSettings.showTextFlicker);
 
-      // Save to localStorage
-      localStorage.setItem('jarvisTheme', JSON.stringify(themeSettings));
+      // Save to localStorage - Sanitized to prevent circular structure errors
+      const themeToSave: ThemeSettings = {
+        primaryColor: themeSettings.primaryColor,
+        panelColor: themeSettings.panelColor,
+        showGrid: themeSettings.showGrid,
+        showScanlines: themeSettings.showScanlines,
+        showTextFlicker: themeSettings.showTextFlicker,
+        hasCustomBootVideo: themeSettings.hasCustomBootVideo,
+        bootupAnimation: themeSettings.bootupAnimation,
+      };
+      localStorage.setItem('jarvisTheme', JSON.stringify(themeToSave));
     } catch (e) {
       console.error('Failed to apply or save theme', e);
     }
@@ -431,7 +441,7 @@ const App: React.FC = () => {
   const circumference = 2 * Math.PI * 45; // r=45
 
   if (appStatus === 'booting') {
-    return <BootingUp onComplete={() => setAppStatus('running')} useCustomVideo={themeSettings.hasCustomBootVideo} />;
+    return <BootingUp onComplete={() => setAppStatus('running')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} />;
   }
 
   if (appStatus === 'shutting_down') {

@@ -60,6 +60,7 @@ export interface ThemeSettings {
   showScanlines: boolean;
   showTextFlicker: boolean;
   hasCustomBootVideo: boolean;
+  bootupAnimation: 'holographic' | 'video';
 }
 
 declare global {
