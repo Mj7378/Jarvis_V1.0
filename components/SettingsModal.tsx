@@ -1,11 +1,13 @@
+
 import React, { useRef } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon, SettingsIcon, CloseIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon, SettingsIcon, CloseIcon, PowerIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onShutdown: () => void;
     onCameraClick: () => void;
     isBusy: boolean;
     onWeather: () => void;
@@ -19,8 +21,8 @@ interface SettingsModalProps {
     onRemoveCustomBootVideo: () => void;
 }
 
-const SystemControls: React.FC<Pick<SettingsModalProps, 'onCameraClick' | 'isBusy' | 'onWeather' | 'onSelfHeal'>> = (props) => {
-    const { onCameraClick, isBusy, onWeather, onSelfHeal } = props;
+const SystemControls: React.FC<Pick<SettingsModalProps, 'onCameraClick' | 'isBusy' | 'onWeather' | 'onSelfHeal' | 'onShutdown'>> = (props) => {
+    const { onCameraClick, isBusy, onWeather, onSelfHeal, onShutdown } = props;
     const controls = [
         { name: 'Camera', icon: '📷', action: onCameraClick, disabled: isBusy },
         { name: 'Weather', icon: '🌦️', action: onWeather, disabled: isBusy },
@@ -36,6 +38,15 @@ const SystemControls: React.FC<Pick<SettingsModalProps, 'onCameraClick' | 'isBus
                         <p className="text-xs mt-1 text-slate-300">{control.name}</p>
                     </button>
                 ))}
+                <button
+                     key="Shutdown"
+                     onClick={onShutdown}
+                     disabled={isBusy}
+                     className="col-span-2 text-center p-2 bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/50 hover:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2 text-red-300 h-16"
+                >
+                    <PowerIcon className="w-6 h-6" />
+                    <span className="font-orbitron tracking-wider text-base">SHUTDOWN</span>
+                </button>
             </div>
         </div>
     );
@@ -349,7 +360,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             aria-labelledby="settings-title"
         >
             <div
-                className="hud-panel !absolute !top-0 !right-0 !bottom-0 !left-auto w-[360px] m-4 animate-slide-in-right-fast !p-0"
+                className="hud-panel !absolute !top-0 !right-0 !bottom-0 !left-auto w-[360px] m-4 animate-slide-in-right-fast !p-0 flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Modal Header */}

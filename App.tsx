@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // Services, Hooks, Utils
@@ -28,6 +25,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { SettingsIcon } from './components/Icons';
 import Header from './components/Header';
 import { LeftColumn } from './components/LeftColumn';
+import Shutdown from './components/Shutdown';
 
 // System Lifecycle States
 type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
@@ -51,7 +49,6 @@ const DEFAULT_THEME: ThemeSettings = {
   voiceOutputEnabled: true,
   uiSoundsEnabled: true,
   voiceProfile: { rate: 1.1, pitch: 1.1 },
-  // FIX: Add default wakeWord to ThemeSettings
   wakeWord: 'JARVIS',
   aiModel: 'gemini-2.5-flash',
 };
@@ -67,321 +64,278 @@ const ShutdownSequence: React.FC<{ onComplete: () => void; sounds: ReturnType<ty
     return null; // The animation is handled by a class on the main container
 };
 
-// InputBar Component for text input
-const InputBar: React.FC<{
-  onSend: (text: string) => void;
-  isBusy: boolean;
-}> = ({ onSend, isBusy }) => {
-  const [inputValue, setInputValue] = useState('');
+const App: React.FC = () => {
+  // System Lifecycle
+  const [systemState, setSystemState] = useState<SystemState>('PRE_BOOT');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim() && !isBusy) {
-      onSend(inputValue.trim());
-      setInputValue('');
+  // Core App State
+  const [appState, setAppState] = useState<AppState>(AppState.IDLE);
+  const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage } = useChatHistory();
+  const [currentError, setCurrentError] = useState<AppError | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Theme & Settings
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(DEFAULT_THEME);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Sound & Speech
+  const sounds = useSoundEffects(themeSettings.uiSoundsEnabled);
+  const { speak, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(themeSettings.voiceProfile);
+
+  // Modes
+  const [isVisionMode, setIsVisionMode] = useState(false);
+  const [isDiagnosticsMode, setIsDiagnosticsMode] = useState(false);
+  const [designModePrompt, setDesignModePrompt] = useState<string | null>(null);
+  const [simulationModePrompt, setSimulationModePrompt] = useState<string | null>(null);
+  const [actionModalProps, setActionModalProps] = useState<Omit<ActionModalProps, 'isOpen' | 'onClose'>>({ title: '', inputs: [], onSubmit: () => {} });
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+
+  // Apply theme settings to the document
+  useEffect(() => {
+    const root = document.documentElement;
+    const primaryRgb = hexToRgb(themeSettings.primaryColor);
+    const panelRgb = hexToRgb(themeSettings.panelColor);
+    
+    if (primaryRgb) {
+      root.style.setProperty('--primary-color-hex', themeSettings.primaryColor);
+      root.style.setProperty('--primary-color-rgb', primaryRgb);
+    }
+    if (panelRgb) {
+        root.style.setProperty('--panel-color-rgb', panelRgb);
+    }
+
+    document.body.classList.toggle('grid-active', themeSettings.showGrid);
+  }, [themeSettings]);
+
+
+  // Shutdown logic
+  const handleShutdown = useCallback(() => {
+    sounds.playDeactivate();
+    setSystemState('SNAP_DISINTEGRATION');
+    setTimeout(() => {
+      // Fully reset to pre-boot state
+      setSystemState('PRE_BOOT');
+      setAppState(AppState.IDLE);
+      setIsSettingsOpen(false);
+    }, 2000); // Reset after animation
+  }, [sounds]);
+
+  const handleDeviceCommand = useCallback((command: DeviceControlCommand) => {
+    addMessage({ role: 'model', content: command.spoken_response });
+    if(themeSettings.voiceOutputEnabled) speak(command.spoken_response);
+
+    switch (command.command) {
+      case 'open_url':
+        window.open(command.params.url, '_blank');
+        break;
+      case 'search':
+        const searchUrl = command.app === 'YouTube' 
+          ? `https://www.youtube.com/results?search_query=${encodeURIComponent(command.params.query)}`
+          : `https://www.google.com/search?q=${encodeURIComponent(command.params.query)}`;
+        window.open(searchUrl, '_blank');
+        break;
+       case 'shutdown':
+        setTimeout(handleShutdown, 1000); // Delay to allow speech to finish
+        break;
+      // Other cases can be added here (navigate, play_music, etc.)
+    }
+  }, [addMessage, speak, themeSettings.voiceOutputEnabled, handleShutdown]);
+
+
+  const processAiResponse = useCallback(async (prompt: string, image?: { mimeType: string; data: string; }) => {
+    setAppState(AppState.THINKING);
+    if(abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    try {
+        const stream = await getAiResponseStream(prompt, chatHistory, themeSettings.aiModel, image);
+        let fullResponse = "";
+        let isFirstChunk = true;
+        let isCommand = false;
+
+        for await (const chunk of stream) {
+            if (abortControllerRef.current.signal.aborted) {
+                console.log("Stream aborted by user.");
+                if(isCommand) removeLastMessage();
+                setAppState(AppState.IDLE);
+                return;
+            }
+
+            const chunkText = chunk.text;
+            if (!chunkText) continue;
+
+            if(isFirstChunk) {
+                isFirstChunk = false;
+                if(chunkText.trim().startsWith('{')) {
+                    isCommand = true;
+                    addMessage({ role: 'model', content: "" }); // Placeholder for command
+                } else {
+                    addMessage({ role: 'model', content: chunkText });
+                }
+                fullResponse = chunkText;
+            } else {
+                fullResponse += chunkText;
+                if(!isCommand) {
+                    appendToLastMessage(chunkText);
+                }
+            }
+        }
+        
+        // After stream ends
+        if (isCommand) {
+            removeLastMessage();
+            try {
+                const commandJson: AICommand = JSON.parse(fullResponse);
+                handleDeviceCommand(commandJson as DeviceControlCommand);
+            } catch (e) {
+                console.error("Failed to parse AI command:", e, "Response:", fullResponse);
+                addMessage({ role: 'model', content: "I seem to have encountered a syntax error in my own command protocols. My apologies." });
+            }
+        } else {
+            if(themeSettings.voiceOutputEnabled) speak(fullResponse);
+        }
+
+    } catch (error: any) {
+        const appErr = error.appError || { code: 'UNKNOWN', title: 'Error', message: error.message };
+        setCurrentError(appErr);
+        setAppState(AppState.ERROR);
+    } finally {
+        setAppState(AppState.IDLE);
+    }
+  }, [chatHistory, themeSettings.aiModel, appendToLastMessage, addMessage, handleDeviceCommand, removeLastMessage, speak, themeSettings.voiceOutputEnabled]);
+
+  const handleSendMessage = useCallback((prompt: string, imageUrl?: string) => {
+    addMessage({ role: 'user', content: prompt, imageUrl });
+    if(imageUrl) {
+        const base64Data = imageUrl.split(',')[1];
+        processAiResponse(prompt, { mimeType: 'image/jpeg', data: base64Data });
+    } else {
+        processAiResponse(prompt);
+    }
+  }, [addMessage, processAiResponse]);
+
+  const handleSelfHeal = () => {
+    setIsDiagnosticsMode(true);
+  };
+  
+  const handleDiagnosticsComplete = (summary: string) => {
+    setIsDiagnosticsMode(false);
+    addMessage({ role: 'model', content: summary });
+  }
+
+  const handleOpenDesignMode = () => {
+    setActionModalProps({
+        title: 'Enter Design Mode',
+        inputs: [{ id: 'prompt', label: 'Describe the design concept:', type: 'textarea', placeholder: 'e.g., a futuristic arc reactor HUD' }],
+        onSubmit: (data) => setDesignModePrompt(data.prompt),
+        submitLabel: 'Generate'
+    });
+    setIsActionModalOpen(true);
+  };
+
+  const handleOpenSimulationMode = () => {
+    setActionModalProps({
+        title: 'Enter Simulation Mode',
+        inputs: [{ id: 'prompt', label: 'Describe the simulation scenario:', type: 'textarea', placeholder: 'e.g., a high-speed chase through a neon city' }],
+        onSubmit: (data) => setSimulationModePrompt(data.prompt),
+        submitLabel: 'Simulate'
+    });
+    setIsActionModalOpen(true);
+  };
+  
+  const handleSetCustomBootVideo = async (file: File) => {
+    try {
+        await saveVideo(file);
+        setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: true, bootupAnimation: 'video' }));
+    } catch(err) {
+        setCurrentError({ code: 'DB_ERROR', title: 'Storage Error', message: 'Could not save the custom boot video.'});
     }
   };
 
+  const handleRemoveCustomBootVideo = async () => {
+    try {
+        await deleteVideo();
+        setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: false, bootupAnimation: 'holographic' }));
+    } catch(err) {
+        setCurrentError({ code: 'DB_ERROR', title: 'Storage Error', message: 'Could not remove the custom boot video.'});
+    }
+  };
+
+  // Lifecycle rendering
+  if (systemState === 'PRE_BOOT') {
+    return <PreBootScreen onInitiate={() => setSystemState('BOOTING')} />;
+  }
+  if (systemState === 'BOOTING') {
+    return <BootingUp onComplete={() => setSystemState('ACTIVE')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
+  }
+  if(systemState === 'SHUTTING_DOWN') {
+      return <Shutdown />;
+  }
+
+  // The main app view
   return (
-    <form onSubmit={handleSubmit} className="hud-panel !p-2 flex items-center gap-2 h-full">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        placeholder="Enter command..."
-        disabled={isBusy}
-        className="flex-1 bg-transparent border-none focus:ring-0 text-slate-200 placeholder-slate-500 text-base md:text-lg px-2 md:px-4"
-        aria-label="User input"
-      />
-      <button 
-        type="submit" 
-        disabled={isBusy || !inputValue.trim()}
-        className="w-12 h-12 md:w-14 md:h-14 bg-primary-t-20 rounded-md flex items-center justify-center text-primary hover:bg-primary hover:text-jarvis-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
-        aria-label="Send command"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-        </svg>
-      </button>
-    </form>
-  );
-};
-
-const App: React.FC = () => {
-    // SYSTEM STATE
-    const [systemState, setSystemState] = useState<SystemState>('PRE_BOOT');
-    const [appState, setAppState] = useState<AppState>(AppState.IDLE);
-    const [error, setError] = useState<AppError | null>(null);
-    const [themeSettings, setThemeSettings] = useState<ThemeSettings>(DEFAULT_THEME);
-    
-    // MODAL/VIEW STATE
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [isVisionMode, setIsVisionMode] = useState(false);
-    const [designModeProps, setDesignModeProps] = useState({ active: false, prompt: '' });
-    const [simulationModeProps, setSimulationModeProps] = useState({ active: false, prompt: '' });
-    const [isDiagnosticsMode, setIsDiagnosticsMode] = useState(false);
-    const [actionModalProps, setActionModalProps] = useState<Omit<ActionModalProps, 'isOpen'|'onClose'>>({ title: '', inputs: [], onSubmit: () => {} });
-    const [isActionModalOpen, setIsActionModalOpen] = useState(false);
-
-    // HOOKS & REFS
-    const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage } = useChatHistory();
-    const sounds = useSoundEffects(themeSettings.uiSoundsEnabled);
-    const { speak, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(themeSettings.voiceProfile);
-    const abortControllerRef = useRef<AbortController | null>(null);
-
-    useEffect(() => {
-        if (isSpeaking) {
-            setAppState(AppState.SPEAKING);
-        } else if (appState === AppState.SPEAKING) {
-            setAppState(AppState.IDLE);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isSpeaking]);
-
-    // THEME MANAGEMENT
-    useEffect(() => {
-        const root = document.documentElement;
-        const body = document.body;
-        root.style.setProperty('--primary-color-hex', themeSettings.primaryColor);
-        const rgb = hexToRgb(themeSettings.primaryColor);
-        if (rgb) root.style.setProperty('--primary-color-rgb', rgb);
-        
-        const panelRgb = hexToRgb(themeSettings.panelColor);
-        if (panelRgb) root.style.setProperty('--panel-color-rgb', panelRgb);
-
-        body.classList.toggle('grid-active', themeSettings.showGrid);
-    }, [themeSettings]);
-
-    useEffect(() => {
-        getVideo().then(videoFile => {
-            if (videoFile) {
-                setThemeSettings(prev => ({...prev, hasCustomBootVideo: true}));
-            }
-        });
-    }, []);
-
-    // UI ACTION HANDLERS
-    const handleShutdown = () => {
-        setSystemState('SNAP_DISINTEGRATION');
-    };
-
-    // DEVICE COMMAND HANDLER
-    const handleDeviceCommand = (command: DeviceControlCommand) => {
-        switch (command.command) {
-            case 'open_url':
-                window.open(command.params.url, '_blank');
-                break;
-            case 'search':
-                const searchUrl = command.app === 'YouTube' 
-                    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(command.params.query)}`
-                    : `https://www.google.com/search?q=${encodeURIComponent(command.params.query)}`;
-                window.open(searchUrl, '_blank');
-                break;
-            case 'navigate':
-                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(command.params.query)}`, '_blank');
-                break;
-            case 'shutdown':
-                // Add a small delay so the user can read/hear the response before the UI disintegrates.
-                setTimeout(handleShutdown, 1500);
-                break;
-            // Internal fulfillment might trigger modals
-            default:
-                // For unsupported or internal commands, the spoken_response is sufficient.
-                break;
-        }
-    };
-
-    // MAIN SEND FUNCTION
-    const handleSend = useCallback(async (prompt: string, imageUrl?: string) => {
-        if (isSpeaking) cancelSpeech();
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            console.log("Previous request aborted.");
-        }
-        abortControllerRef.current = new AbortController();
-
-        const imagePart = imageUrl ? { mimeType: 'image/jpeg', data: imageUrl.split(',')[1] } : undefined;
-        addMessage({ role: 'user', content: prompt, imageUrl });
-        setAppState(AppState.THINKING);
-        addMessage({ role: 'model', content: '' });
-
-        try {
-            const stream = await getAiResponseStream(prompt, chatHistory, themeSettings.aiModel, imagePart);
-            let fullResponse = "";
-            let commandJson: AICommand | null = null;
-
-            for await (const chunk of stream) {
-                fullResponse += chunk.text;
-                updateLastMessage({ content: fullResponse });
-
-                if (chunk.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-                    const sources: Source[] = chunk.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({
-                        uri: c.web.uri,
-                        title: c.web.title
-                    }));
-                    if(sources.length > 0) updateLastMessage({ sources });
-                }
-            }
-
-            try {
-                commandJson = JSON.parse(fullResponse);
-            } catch (e) {
-                // Not a valid JSON command, treat as plain text.
-            }
-            
-            if (commandJson?.action === 'device_control') {
-                updateLastMessage({ content: commandJson.spoken_response });
-                if(themeSettings.voiceOutputEnabled) speak(commandJson.spoken_response);
-                handleDeviceCommand(commandJson as DeviceControlCommand);
-            } else if (themeSettings.voiceOutputEnabled) {
-                speak(fullResponse);
-            }
-
-        } catch (error: any) {
-            console.error("Gemini Error:", error);
-            const appErr: AppError = error.appError || { code: 'UNKNOWN_ERROR', title: 'AI Error', message: String(error.message || 'An unknown error occurred.') };
-            setError(appErr);
-            removeLastMessage();
-        } finally {
-            if(appState !== AppState.SPEAKING) setAppState(AppState.IDLE);
-        }
-    }, [chatHistory, themeSettings.aiModel, themeSettings.voiceOutputEnabled, isSpeaking, addMessage, updateLastMessage, removeLastMessage, speak, cancelSpeech, appState]);
-    
-    const handleSetCustomBootVideo = async (file: File) => {
-        try {
-            await saveVideo(file);
-            setThemeSettings(prev => ({...prev, hasCustomBootVideo: true, bootupAnimation: 'video' }));
-        } catch (e) {
-            setError({ code: 'DB_ERROR', title: 'Storage Error', message: 'Could not save the custom boot video.' });
-        }
-    };
-
-    const handleRemoveCustomBootVideo = async () => {
-        try {
-            await deleteVideo();
-            setThemeSettings(prev => ({...prev, hasCustomBootVideo: false, bootupAnimation: 'holographic' }));
-        } catch(e) {
-             setError({ code: 'DB_ERROR', title: 'Storage Error', message: 'Could not remove the custom boot video.' });
-        }
-    };
-
-    const openActionModal = (props: Omit<ActionModalProps, 'isOpen'|'onClose'>) => {
-        setActionModalProps(props);
-        setIsActionModalOpen(true);
-    };
-
-    const handleDesignMode = () => {
-        openActionModal({
-            title: "Enter Design Prompt",
-            inputs: [{ id: 'prompt', label: 'Describe the image to generate', type: 'textarea', placeholder: 'e.g., a holographic blueprint for a new arc reactor' }],
-            onSubmit: (data) => setDesignModeProps({ active: true, prompt: data.prompt }),
-            submitLabel: "Generate"
-        });
-    };
-    
-    const handleSimulationMode = () => {
-        openActionModal({
-            title: "Enter Simulation Prompt",
-            inputs: [{ id: 'prompt', label: 'Describe the video to simulate', type: 'textarea', placeholder: 'e.g., a high-speed flight through a futuristic city' }],
-            onSubmit: (data) => setSimulationModeProps({ active: true, prompt: data.prompt }),
-            submitLabel: "Simulate"
-        });
-    };
-
-    // RENDER LOGIC
-    if (systemState === 'PRE_BOOT') {
-        return <PreBootScreen onInitiate={() => { sounds.playActivate(); setSystemState('BOOTING'); }} />;
-    }
-    if (systemState === 'BOOTING') {
-        return <BootingUp onComplete={() => setSystemState('ACTIVE')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
-    }
-    
-    const isBusy = appState === AppState.THINKING || appState === AppState.SPEAKING;
-
-    return (
+    <div id="jarvis-container" className={`w-screen h-screen bg-jarvis-dark text-slate-200 transition-opacity duration-500 ${systemState === 'ACTIVE' ? 'opacity-100' : 'opacity-0'}`}>
         <main className={`hud-container ${systemState === 'SNAP_DISINTEGRATION' ? 'system-terminating' : ''}`}>
-          {systemState === 'SNAP_DISINTEGRATION' && <ShutdownSequence onComplete={() => { /* Could navigate away or just show a blank screen */ }} sounds={sounds} />}
-          <Header onShutdown={handleShutdown} onOpenSettings={() => { sounds.playOpen(); setIsSettingsOpen(true); }} />
-          
-          <div className="hud-left-panel hud-panel">
-            <LeftColumn appState={appState} />
-          </div>
-
-          <div className="hud-core-container">
-            <CoreInterface appState={appState} />
-            <div className="chat-log-container">
-              <ChatLog history={chatHistory} appState={appState} />
+            <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+            
+            <div className="hud-left-panel hud-panel">
+                <LeftColumn appState={appState} />
             </div>
-          </div>
-          
-          {/* This panel is now just a placeholder for desktop layout */}
-          <div className="hud-right-panel-placeholder hud-panel">
-          </div>
 
-          <div className="hud-bottom-panel">
-             <InputBar onSend={handleSend} isBusy={isBusy} />
-          </div>
-          
-          {/* MODALS & OVERLAYS */}
-          <SettingsModal 
-            isOpen={isSettingsOpen} 
-            onClose={() => { sounds.playClose(); setIsSettingsOpen(false); }} 
-            isBusy={isBusy}
+            <div className="hud-core-container">
+                <div className="chat-log-container">
+                    <ChatLog history={chatHistory} appState={appState} />
+                </div>
+                <CoreInterface appState={appState} />
+            </div>
+            
+            <div className="hud-bottom-panel hud-panel items-center justify-center !p-2 md:!p-4">
+                <input
+                    type="text"
+                    placeholder="Enter command..."
+                    className="w-full bg-transparent border-none focus:ring-0 text-center text-primary"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value) {
+                            handleSendMessage(e.currentTarget.value);
+                            e.currentTarget.value = '';
+                        }
+                    }}
+                />
+            </div>
+            
+            <div className="hud-right-panel-placeholder hud-panel">
+                {/* This is a placeholder; the settings modal will overlay it when active */}
+            </div>
+        </main>
+        
+        {/* Modals and Overlays */}
+        <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            onShutdown={handleShutdown}
+            onCameraClick={() => setIsVisionMode(true)}
+            isBusy={appState !== AppState.IDLE}
+            onWeather={() => handleSendMessage("What's the weather like?")}
+            onSelfHeal={handleSelfHeal}
+            onDesignMode={handleOpenDesignMode}
+            onSimulationMode={handleOpenSimulationMode}
+            sounds={sounds}
             themeSettings={themeSettings}
             onThemeChange={setThemeSettings}
-            sounds={sounds}
             onSetCustomBootVideo={handleSetCustomBootVideo}
             onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
-            onCameraClick={() => { setIsSettingsOpen(false); setIsVisionMode(true); }}
-            onSelfHeal={() => { setIsSettingsOpen(false); setIsDiagnosticsMode(true); }}
-            onDesignMode={() => { setIsSettingsOpen(false); handleDesignMode(); }}
-            onSimulationMode={() => { setIsSettingsOpen(false); handleSimulationMode(); }}
-            onWeather={() => handleSend("What's the weather like?")}
-          />
-          <ErrorModal isOpen={!!error} onClose={() => setError(null)} error={error} />
-          <ActionModal 
-            isOpen={isActionModalOpen} 
-            onClose={() => setIsActionModalOpen(false)} 
-            {...actionModalProps} 
-          />
-          {isVisionMode && (
-            <VisionMode 
-                onCapture={(dataUrl) => {
-                    setIsVisionMode(false);
-                    handleSend("Describe what you see in this image.", dataUrl);
-                }} 
-                onClose={() => setIsVisionMode(false)} 
-            />
-          )}
-          {isDiagnosticsMode && (
-              <DiagnosticsMode onComplete={(summary) => {
-                  setIsDiagnosticsMode(false);
-                  handleSend(`The system diagnostics are complete. Here is the summary:\n${summary}`);
-              }} />
-          )}
-          {designModeProps.active && (
-              <DesignMode 
-                prompt={designModeProps.prompt}
-                onCancel={() => setDesignModeProps({ active: false, prompt: ''})}
-                onComplete={(prompt, imageDataUrl) => {
-                    setDesignModeProps({ active: false, prompt: ''});
-                    addMessage({ role: 'user', content: `Original prompt: "${prompt}"`});
-                    addMessage({ role: 'model', content: "Here is the design you requested.", imageUrl: imageDataUrl });
-                }}
-              />
-          )}
-          {simulationModeProps.active && (
-              <SimulationMode
-                prompt={simulationModeProps.prompt}
-                onCancel={() => setSimulationModeProps({ active: false, prompt: ''})}
-                onComplete={(prompt) => {
-                    setSimulationModeProps({ active: false, prompt: ''});
-                    handleSend(`Simulation complete for prompt: "${prompt}". Please note that I cannot display the video directly in the chat log yet.`);
-                }}
-              />
-          )}
-        </main>
-    );
+        />
+
+        {isVisionMode && <VisionMode onCapture={(img) => { handleSendMessage("Analyze this image.", img); setIsVisionMode(false); }} onClose={() => setIsVisionMode(false)} />}
+        {designModePrompt && <DesignMode prompt={designModePrompt} onComplete={(p, img) => { addMessage({ role: 'user', content: `Design concept: ${p}`, imageUrl: img }); setDesignModePrompt(null); }} onCancel={() => setDesignModePrompt(null)} />}
+        {simulationModePrompt && <SimulationMode prompt={simulationModePrompt} onComplete={(p) => { addMessage({ role: 'model', content: `Simulation complete for: ${p}. Video is available.` }); setSimulationModePrompt(null); }} onCancel={() => setSimulationModePrompt(null)} />}
+        {isDiagnosticsMode && <DiagnosticsMode onComplete={handleDiagnosticsComplete} />}
+        <ErrorModal isOpen={!!currentError} onClose={() => setCurrentError(null)} error={currentError} />
+        <ActionModal isOpen={isActionModalOpen} onClose={() => setIsActionModalOpen(false)} {...actionModalProps} />
+    </div>
+  );
 };
 
 export default App;

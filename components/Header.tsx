@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { PowerIcon, SettingsIcon } from './Icons';
 
-const Header: React.FC<{ onShutdown: () => void; onOpenSettings: () => void; }> = ({ onShutdown, onOpenSettings }) => {
+const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) => {
     const [time, setTime] = useState(new Date());
 
     useEffect(() => {
@@ -88,17 +89,10 @@ const Header: React.FC<{ onShutdown: () => void; onOpenSettings: () => void; }> 
                 <div className="h-full flex items-center pr-4 md:pr-6 pl-4 md:pl-6 border-l-2 border-primary-t-20">
                     <button
                         onClick={onOpenSettings}
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-colors mr-2 md:mr-4"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-colors"
                         aria-label="Open Settings"
                     >
                         <SettingsIcon className="w-6 h-6" />
-                    </button>
-                    <button 
-                        onClick={onShutdown} 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/50 hover:border-red-400 transition-colors"
-                        aria-label="Shutdown System"
-                    >
-                        <PowerIcon className="w-6 h-6" />
                     </button>
                 </div>
             </div>
