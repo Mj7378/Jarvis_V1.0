@@ -131,11 +131,10 @@ const handleGeminiError = (error: unknown, context: string): Error => {
 export async function getAiResponseStream(
   prompt: string, 
   history: ChatMessage[],
+  model: string,
   image?: { mimeType: string; data: string },
 ): Promise<AsyncGenerator<GenerateContentResponse>> {
   try {
-    const model = 'gemini-2.5-flash';
-
     const contents: Content[] = history.map(msg => ({
       role: msg.role,
       parts: [{ text: msg.content }]

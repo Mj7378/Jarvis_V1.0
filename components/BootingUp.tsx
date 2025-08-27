@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getVideo } from '../utils/db';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 
 const BOOT_SEQUENCE = [
   { text: 'J.A.R.V.I.S. BIOS v1.0 initializing...', delay: 100 },
@@ -20,14 +21,16 @@ interface BootingUpProps {
   onComplete: () => void;
   useCustomVideo: boolean;
   bootupAnimation: 'holographic' | 'video';
+  sounds: ReturnType<typeof useSoundEffects>;
 }
 
-const DefaultBootAnimation: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+const DefaultBootAnimation: React.FC<{ onComplete: () => void, sounds: ReturnType<typeof useSoundEffects> }> = ({ onComplete, sounds }) => {
   const [visibleLines, setVisibleLines] = useState<number>(0);
   const [progress, setProgress] = useState(0);
   const [sequenceComplete, setSequenceComplete] = useState(false);
 
   useEffect(() => {
+    sounds.playActivate();
     const timers: number[] = [];
     let currentDelay = 0;
     
@@ -97,7 +100,7 @@ const DefaultBootAnimation: React.FC<{ onComplete: () => void }> = ({ onComplete
 };
 
 
-const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootupAnimation }) => {
+const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootupAnimation, sounds }) => {
   const [bootMode, setBootMode] = useState<'loading' | 'video' | 'holographic'>('loading');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
@@ -162,6 +165,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
             autoPlay
             muted
             playsInline
+            onCanPlay={() => sounds.playActivate()}
             onEnded={onComplete}
             onError={(e) => {
               console.error("Boot video failed to play.", e);
@@ -172,7 +176,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
           />
         );
       case 'holographic':
-        return <DefaultBootAnimation onComplete={onComplete} />;
+        return <DefaultBootAnimation onComplete={onComplete} sounds={sounds} />;
       case 'loading':
       default:
         return <p className="font-orbitron animate-pulse">CHECKING BOOT CONFIGURATION...</p>;

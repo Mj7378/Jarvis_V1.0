@@ -8,10 +8,12 @@ interface CoreInterfaceProps {
 
 const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
   const isThinking = appState === AppState.THINKING;
+  const isSpeaking = appState === AppState.SPEAKING;
 
   const getStatusText = () => {
     switch (appState) {
       case AppState.THINKING: return "Thinking";
+      case AppState.SPEAKING: return "Speaking";
       case AppState.ERROR: return "Error";
       default: return "Standby";
     }
@@ -20,13 +22,14 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
   const getStatusColor = () => {
     switch (appState) {
       case AppState.THINKING: return "text-yellow-400";
+      case AppState.SPEAKING: return "text-purple-400";
       case AppState.ERROR: return "text-red-400";
       default: return "text-primary";
     }
   };
 
-  const animationClass = isThinking ? 'animate-spin-medium' : 'animate-spin-slow';
-  const reverseAnimationClass = isThinking ? 'animate-spin-fast' : 'animate-spin-medium';
+  const animationClass = isThinking || isSpeaking ? 'animate-spin-medium' : 'animate-spin-slow';
+  const reverseAnimationClass = isThinking || isSpeaking ? 'animate-spin-fast' : 'animate-spin-medium';
   
   return (
     <div 
@@ -52,14 +55,21 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
             <div 
                 className={`absolute inset-0 flex items-center justify-center rounded-full transition-all duration-300
                     ${isThinking ? 'bg-yellow-500/20 shadow-[0_0_30px] shadow-yellow-500' : ''}
-                    ${!isThinking ? 'group-hover:bg-primary-t-20' : ''}
+                    ${isSpeaking ? 'bg-purple-500/20 shadow-[0_0_45px] shadow-purple-500/80 animate-pulse-speak shadow-primary' : ''}
+                    ${!isThinking && !isSpeaking ? 'group-hover:bg-primary-t-20' : ''}
                 `}
             >
                 <div className={`w-24 h-24 rounded-full bg-slate-900/50 flex items-center justify-center border border-primary-t-20 transition-all duration-300 group-hover:border-primary-t-70 relative overflow-hidden
                     ${isThinking ? 'border-yellow-500' : ''}
+                    ${isSpeaking ? 'border-purple-500' : ''}
                 `}>
-                     {isThinking && (
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-yellow-300/50 to-transparent animate-scan-line"></div>
+                     {(isThinking || isSpeaking) && (
+                        <div 
+                            className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-transparent animate-scan-line"
+                            style={{ 
+                                '--tw-gradient-via': isThinking ? 'rgba(250, 204, 21, 0.5)' : 'rgba(192, 132, 252, 0.5)',
+                             } as React.CSSProperties}
+                        ></div>
                      )}
                      <GeminiIcon className="w-10 h-10 text-slate-400 group-hover:text-primary transition-colors" />
                 </div>

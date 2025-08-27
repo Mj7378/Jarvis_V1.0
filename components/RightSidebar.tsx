@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -10,9 +10,10 @@ interface RightSidebarProps {
     onSelfHeal: () => void;
     onDesignMode: () => void;
     onSimulationMode: () => void;
+    onCalibrateVoice: () => void;
     sounds: ReturnType<typeof useSoundEffects>;
     themeSettings: ThemeSettings;
-    onThemeChange: (settings: ThemeSettings) => void;
+    onThemeChange: (settings: ThemeSettings | ((prev: ThemeSettings) => ThemeSettings)) => void;
     onSetCustomBootVideo: (file: File) => void;
     onRemoveCustomBootVideo: () => void;
 }
@@ -65,6 +66,36 @@ const QuickActions: React.FC<Pick<RightSidebarProps, 'isBusy' | 'onDesignMode' |
     );
 };
 
+const ModelSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
+    const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        sounds.playClick();
+        onThemeChange(prev => ({ ...prev, aiModel: e.target.value as 'gemini-2.5-flash' | 'gemini-pro' }));
+    };
+
+    return (
+        <div className="bg-black/20 p-4">
+            <h2 className="panel-title text-secondary">
+                <GeminiIcon className="w-5 h-5" />
+                <span>AI Model</span>
+            </h2>
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <label htmlFor="model-select" className="text-sm text-slate-300 cursor-pointer">Active Model</label>
+                    <select
+                        id="model-select"
+                        value={themeSettings.aiModel}
+                        onChange={handleModelChange}
+                        className="bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                    >
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-pro">Gemini Pro</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const PRESETS = [
     { name: 'J.A.R.V.I.S. Cyan', color: '#00ffff' },
     { name: 'Stark Red', color: '#ff4d4d' },
@@ -73,13 +104,68 @@ const PRESETS = [
     { name: 'Cosmic Purple', color: '#9d6eff' },
 ];
 
+const VoiceSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
+    const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
+        sounds.playClick();
+        onThemeChange(prev => ({ ...prev, [key]: value }));
+    };
+
+    return (
+        <div className="bg-black/20 p-4">
+            <h2 className="panel-title text-secondary">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                <span>Voice & Audio</span>
+            </h2>
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <label htmlFor="voice-toggle" className="text-sm text-slate-300 cursor-pointer">J.A.R.V.I.S. Voice</label>
+                    <div className="relative">
+                        <input 
+                            type="checkbox" 
+                            id="voice-toggle"
+                            checked={themeSettings.voiceOutputEnabled}
+                            onChange={(e) => handleSettingChange('voiceOutputEnabled', e.target.checked)}
+                            className="toggle-checkbox absolute w-full h-full opacity-0"
+                        />
+                        <label htmlFor="voice-toggle" className="toggle-label">
+                            <div className="toggle-dot"></div>
+                        </label>
+                    </div>
+                </div>
+                <div className="flex items-center justify-between">
+                    <label htmlFor="sounds-toggle" className="text-sm text-slate-300 cursor-pointer">UI Sounds</label>
+                    <div className="relative">
+                        <input 
+                            type="checkbox" 
+                            id="sounds-toggle"
+                            checked={themeSettings.uiSoundsEnabled}
+                            onChange={(e) => handleSettingChange('uiSoundsEnabled', e.target.checked)}
+                            className="toggle-checkbox absolute w-full h-full opacity-0"
+                        />
+                        <label htmlFor="sounds-toggle" className="toggle-label">
+                            <div className="toggle-dot"></div>
+                        </label>
+                    </div>
+                </div>
+                 <button 
+                    onClick={onCalibrateVoice}
+                    className="w-full text-center py-2 mt-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-colors"
+                >
+                    Calibrate Voice
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
 const ThemeSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onSetCustomBootVideo' | 'onRemoveCustomBootVideo'>> = ({ themeSettings, onThemeChange, sounds, onSetCustomBootVideo, onRemoveCustomBootVideo }) => {
     
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
         sounds.playClick();
-        onThemeChange({ ...themeSettings, [key]: value });
+        onThemeChange(prev => ({ ...prev, [key]: value }));
     };
 
     const handleBootFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,6 +354,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
         <aside className="flex flex-col h-full space-y-4 overflow-y-auto styled-scrollbar pr-1 -mr-4 -my-5 py-5">
             <SystemControls {...props} />
             <QuickActions {...props} />
+            <ModelSettingsPanel {...props} />
+            <VoiceSettingsPanel {...props} />
             <ThemeSettingsPanel {...props} />
         </aside>
     );

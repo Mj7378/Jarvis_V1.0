@@ -15,7 +15,6 @@ export enum AppState {
   THINKING = 'THINKING',
   VISION = 'VISION',
   ERROR = 'ERROR',
-  // Fix: Added LISTENING and SPEAKING to AppState enum as they were used in UI components but not defined.
   LISTENING = 'LISTENING',
   SPEAKING = 'SPEAKING',
 }
@@ -61,6 +60,13 @@ export interface ThemeSettings {
   showTextFlicker: boolean;
   hasCustomBootVideo: boolean;
   bootupAnimation: 'holographic' | 'video';
+  voiceOutputEnabled: boolean;
+  uiSoundsEnabled: boolean;
+  voiceProfile: {
+    rate: number;
+    pitch: number;
+  };
+  aiModel: 'gemini-2.5-flash' | 'gemini-pro';
 }
 
 declare global {

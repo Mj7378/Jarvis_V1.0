@@ -15,8 +15,9 @@ import ErrorModal from './components/ErrorModal';
 import DiagnosticsMode from './components/DiagnosticsMode';
 import BootingUp from './components/BootingUp';
 import Shutdown from './components/Shutdown';
-import { useSoundEffects } from './hooks/useSoundEffects';
+import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { PowerIcon } from './components/Icons';
+import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 
 // Helper function to convert hex to an RGB string "r, g, b"
 const hexToRgb = (hex: string): string | null => {
@@ -34,6 +35,10 @@ const DEFAULT_THEME: ThemeSettings = {
   showTextFlicker: false,
   hasCustomBootVideo: false,
   bootupAnimation: 'holographic',
+  voiceOutputEnabled: true,
+  uiSoundsEnabled: true,
+  voiceProfile: { rate: 1.1, pitch: 1.1 },
+  aiModel: 'gemini-2.5-flash',
 };
 
 const App: React.FC = () => {
@@ -45,6 +50,7 @@ const App: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [activeMode, setActiveMode] = useState<string | null>(null);
   const [modeData, setModeData] = useState<any>(null);
+  const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState(false);
 
   // Theme Settings State
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(DEFAULT_THEME);
@@ -53,7 +59,8 @@ const App: React.FC = () => {
   const [time, setTime] = useState(new Date());
 
   const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage } = useChatHistory();
-  const sounds = useSoundEffects();
+  const sounds = useSoundEffects(themeSettings.uiSoundsEnabled);
+  const { speak, cancel, isSpeaking } = useSpeechSynthesis(themeSettings.voiceProfile);
 
   const isProcessingRef = useRef(false);
   const isCancelledRef = useRef(false);
@@ -80,6 +87,17 @@ const App: React.FC = () => {
     const timerId = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timerId);
   }, []);
+
+  // Sync appState with isSpeaking status from the speech hook
+  useEffect(() => {
+    if (isSpeaking) {
+        setAppState(AppState.SPEAKING);
+    } else if (appState === AppState.SPEAKING) {
+        // Only transition from SPEAKING to IDLE if speech has finished
+        setAppState(AppState.IDLE);
+    }
+  }, [isSpeaking, appState]);
+
 
   // Apply theme and save to local storage on change
   useEffect(() => {
@@ -109,6 +127,10 @@ const App: React.FC = () => {
         showTextFlicker: themeSettings.showTextFlicker,
         hasCustomBootVideo: themeSettings.hasCustomBootVideo,
         bootupAnimation: themeSettings.bootupAnimation,
+        voiceOutputEnabled: themeSettings.voiceOutputEnabled,
+        uiSoundsEnabled: themeSettings.uiSoundsEnabled,
+        voiceProfile: themeSettings.voiceProfile,
+        aiModel: themeSettings.aiModel,
       };
       localStorage.setItem('jarvisTheme', JSON.stringify(themeToSave));
     } catch (e) {
@@ -184,9 +206,10 @@ const App: React.FC = () => {
       const effectivePrompt = promptForApi || userMessageText;
       
       const historyForApi = chatHistory;
-      const stream = await getAiResponseStream(effectivePrompt, historyForApi, image_data);
+      const stream = await getAiResponseStream(effectivePrompt, historyForApi, themeSettings.aiModel, image_data);
 
       let fullResponse = '';
+      let spokenResponse = '';
       let isJsonResponse = false;
       let sources: Source[] = [];
       let firstChunk = true;
@@ -218,6 +241,7 @@ const App: React.FC = () => {
         removeLastMessage();
         isProcessingRef.current = false;
         setAppState(AppState.IDLE);
+        cancel();
         return;
       }
 
@@ -226,22 +250,30 @@ const App: React.FC = () => {
               const command: AICommand = JSON.parse(fullResponse);
               if (command && command.action) {
                   updateLastMessage({ content: command.spoken_response });
+                  spokenResponse = command.spoken_response;
                   if (command.action === 'device_control') {
                       executeDeviceCommand(command);
                   }
               }
           } catch (e) {
               // It looked like JSON but wasn't. Treat as conversational.
+              spokenResponse = fullResponse;
               const uniqueSources = Array.from(new Map(sources.map(item => [item.uri, item])).values());
               updateLastMessage({ content: fullResponse, sources: uniqueSources });
           }
       } else {
+          spokenResponse = fullResponse;
           const uniqueSources = Array.from(new Map(sources.map(item => [item.uri, item])).values());
           updateLastMessage({ content: fullResponse, sources: uniqueSources });
       }
       
       isProcessingRef.current = false;
       setAppState(AppState.IDLE);
+
+      if (themeSettings.voiceOutputEnabled && spokenResponse) {
+          speak(spokenResponse);
+      }
+
 
     } catch (err) {
       if (isCancelledRef.current) {
@@ -266,7 +298,7 @@ const App: React.FC = () => {
       }
       setAppState(AppState.ERROR);
     }
-  }, [addMessage, updateLastMessage, chatHistory, removeLastMessage, handleError]);
+  }, [addMessage, updateLastMessage, chatHistory, removeLastMessage, handleError, themeSettings.voiceOutputEnabled, themeSettings.aiModel, speak, cancel]);
 
   const handleVisionCapture = (imageDataUrl: string) => {
     sounds.playSuccess();
@@ -274,7 +306,7 @@ const App: React.FC = () => {
     processUserMessage("Analyze this image.", undefined, imageDataUrl);
   };
   
-  const isBusy = appState === AppState.THINKING;
+  const isBusy = appState === AppState.THINKING || appState === AppState.SPEAKING;
 
   const handleWeather = () => {
     sounds.playOpen();
@@ -310,6 +342,9 @@ const App: React.FC = () => {
         content: `✅ **Diagnostics Complete:** System integrity restored. All functions operating at 100%.\n\n${summary}`
     });
     setAppState(AppState.IDLE);
+    if (themeSettings.voiceOutputEnabled) {
+        speak("Diagnostics complete. All systems are now operating at 100%.");
+    }
   };
   
   const handleDesignMode = () => {
@@ -346,23 +381,27 @@ const App: React.FC = () => {
 
   const handleDesignComplete = (prompt: string, imageDataUrl: string) => {
       sounds.playSuccess();
+      const message = `Design concept for "${prompt}" has been generated.`;
       addMessage({
           role: 'model',
-          content: `Design concept for "${prompt}" has been generated.`,
+          content: message,
           imageUrl: imageDataUrl,
       });
       setActiveMode(null);
       setModeData(null);
+      if (themeSettings.voiceOutputEnabled) speak(message);
   };
 
   const handleSimulationComplete = (prompt: string) => {
       sounds.playSuccess();
+      const message = `Simulation complete. The scenario for "${prompt}" has been rendered and viewed.`;
       addMessage({
           role: 'model',
-          content: `✅ **Simulation Complete:** The simulation for "*${prompt}*" has been rendered and viewed.`
+          content: message,
       });
       setActiveMode(null);
       setModeData(null);
+      if (themeSettings.voiceOutputEnabled) speak(message);
   };
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => { 
@@ -370,12 +409,15 @@ const App: React.FC = () => {
       sounds.playClick();
       if (appState === AppState.THINKING) {
         isCancelledRef.current = true;
+      } else if (appState === AppState.SPEAKING) {
+        cancel();
       }
       processUserMessage(inputValue); 
   };
   
   const handleShutdown = () => {
     sounds.playDeactivate();
+    cancel();
     setAppStatus('shutting_down');
   };
 
@@ -424,7 +466,7 @@ const App: React.FC = () => {
     }
   };
 
-  const isInputBusy = appState === AppState.THINKING;
+  const isInputBusy = appState === AppState.THINKING || appState === AppState.SPEAKING;
 
   // Clock Formatting Logic (moved from Header)
   const seconds = time.getSeconds();
@@ -441,7 +483,7 @@ const App: React.FC = () => {
   const circumference = 2 * Math.PI * 45; // r=45
 
   if (appStatus === 'booting') {
-    return <BootingUp onComplete={() => setAppStatus('running')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} />;
+    return <BootingUp onComplete={() => setAppStatus('running')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
   }
 
   if (appStatus === 'shutting_down') {
@@ -457,6 +499,15 @@ const App: React.FC = () => {
         
         <ErrorModal isOpen={!!error} onClose={() => { sounds.playClose(); setError(null); }} error={error} />
         <ActionModal isOpen={!!modalConfig} onClose={handleCloseModal} {...modalConfig} onSubmit={(data) => { sounds.playSuccess(); modalConfig?.onSubmit(data); setModalConfig(null); }} />
+        <VoiceCalibrationModal 
+            isOpen={isCalibrationModalOpen}
+            onClose={() => { sounds.playClose(); setIsCalibrationModalOpen(false); }}
+            onComplete={(profile) => {
+                sounds.playSuccess();
+                setThemeSettings(p => ({ ...p, voiceProfile: profile }));
+                setIsCalibrationModalOpen(false);
+            }}
+        />
 
         {/* --- Integrated Header Elements --- */}
         <div className="absolute top-4 left-4 flex items-center h-[60px] z-10">
@@ -524,6 +575,7 @@ const App: React.FC = () => {
                 onSelfHeal={handleSelfHeal}
                 onDesignMode={handleDesignMode}
                 onSimulationMode={handleSimulationMode}
+                onCalibrateVoice={() => { sounds.playOpen(); setIsCalibrationModalOpen(true); }}
                 sounds={sounds}
                 themeSettings={themeSettings}
                 onThemeChange={setThemeSettings}
@@ -539,7 +591,7 @@ const App: React.FC = () => {
                         type="text" 
                         value={inputValue} 
                         onChange={(e) => setInputValue(e.target.value)} 
-                        placeholder={isInputBusy ? "J.A.R.V.I.S. is thinking..." : "Enter command..."} 
+                        placeholder={isInputBusy ? (appState === AppState.SPEAKING ? "J.A.R.V.I.S. is speaking..." : "J.A.R.V.I.S. is thinking...") : "Enter command..."} 
                         disabled={isInputBusy} 
                         className="w-full h-full bg-transparent border-none focus:ring-0 px-6 text-slate-200 text-lg placeholder:text-slate-500"
                         aria-label="Command input" 

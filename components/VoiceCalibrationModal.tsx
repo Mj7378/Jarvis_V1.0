@@ -3,6 +3,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { transcribeAudio } from '../services/geminiService';
 
 interface VoiceCalibrationModalProps {
+  isOpen: boolean;
   onClose: () => void;
   onComplete: (profile: { rate: number; pitch: number }) => void;
 }
@@ -24,15 +25,15 @@ const fileToBase64 = (file: File): Promise<string> =>
 // Helper to get audio duration
 const getAudioDuration = (file: File): Promise<number> =>
   new Promise((resolve, reject) => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const reader = new FileReader();
-    reader.readAsArrayBuffer(file);
-    reader.onload = () => {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      audioContext.decodeAudioData(reader.result as ArrayBuffer)
+    reader.onload = (e) => {
+      audioContext.decodeAudioData(e.target?.result as ArrayBuffer)
         .then(buffer => resolve(buffer.duration))
         .catch(error => reject(new Error("Could not decode audio file. Please use a standard format like MP3 or WAV.")));
     };
     reader.onerror = error => reject(error);
+    reader.readAsArrayBuffer(file);
   });
   
 const PaceIcon: React.FC = () => (
@@ -61,7 +62,7 @@ const FeedbackCard: React.FC<{ icon: React.ReactNode; title: string; value: stri
 );
 
 
-const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ onClose, onComplete }) => {
+const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, onClose, onComplete }) => {
   const [calibrationState, setCalibrationState] = useState<CalibrationState>('idle');
   const [activeTab, setActiveTab] = useState<CalibrationMode>('record');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -131,8 +132,8 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ onClose, 
         paceFeedback = "Your pace is quite fast and efficient. I will accelerate my responses to keep up.";
     }
     
-    let rate = (wpm / 150) * 1.1;
-    rate = Math.max(0.5, Math.min(2.0, rate));
+    let rate = (wpm / 150); // Base rate is 1.0 at 150 WPM
+    rate = Math.max(0.8, Math.min(1.5, rate));
 
     setAnalysisResult({
         rate: parseFloat(rate.toFixed(2)),
@@ -402,12 +403,13 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ onClose, 
     }
   };
 
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in-fast">
       <div className="hud-panel w-full max-w-lg m-4">
         <div className="relative p-2">
-            <button onClick={onClose} className="absolute top-0 right-0 p-2 text-slate-500 hover:text-white">
+            <button onClick={onClose} className="absolute top-0 right-0 p-2 text-slate-500 hover:text-white z-10">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
