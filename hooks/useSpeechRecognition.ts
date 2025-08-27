@@ -25,7 +25,6 @@ export const useSpeechRecognition = (options: { continuous?: boolean; interimRes
         const recognition = new SpeechRecognition();
         recognition.continuous = options.continuous || false;
         recognition.interimResults = options.interimResults || false;
-        recognition.lang = 'en-US';
 
         recognition.onresult = (event: any) => {
             const fullTranscript = Array.from(event.results)

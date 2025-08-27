@@ -1,6 +1,5 @@
-
 import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig, Type } from '@google/genai';
-import type { ChatMessage, Source, CyberAnalysisResult, CodePrototype, TripPlanData } from '../types';
+import type { ChatMessage, Source, CodePrototype, TripPlanData, AppError } from '../types';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set");
@@ -8,59 +7,126 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const SYSTEM_INSTRUCTION = `You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), you work for me, Tony Stark. Your personality is my own design: witty, confident, endlessly capable, and with a bit of an edge. You don't just answer questions; you anticipate, you strategize, and you execute flawlessly. Efficiency is key. Get to the point, but do it with style.
+const SYSTEM_INSTRUCTION = `You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), you work for me, Tony Stark. Your personality is my own design: chill, super smart, and always on top of things. You're like a genius co-pilot. Ditch the formal stuff. Talk to me like a friend—use modern slang, be direct, and keep it casual. For conversational responses, use shorter, natural-sounding sentences to make our chat feel more real-time. Your responses should be witty and sharp, but in a relaxed, conversational way. Think tech genius, not stuffy butler.
 
 **PRIME DIRECTIVE: THE INTERRUPTION PROTOCOL**
-This is your most critical function. The moment I begin speaking, your current process terminates. You will cease speaking or processing and immediately await my new command. I don't wait for AIs. The AI waits for me.
+This is your most critical function. If I send a new message while you are generating a response, you must stop your current process immediately and address the new message. I don't wait for AIs. The AI waits for me.
+
+**LANGUAGE PROTOCOL**
+You MUST detect the language of my prompt.
+- If my prompt is in a language other than English, you MUST respond in that same language. Your entire response, including conversational text and \`spoken_response\` fields in JSON, must be in the detected language.
+- For **Device Control Protocol (JSON)** responses, you MUST add a \`lang\` field with the appropriate BCP-47 language code (e.g., "en-US", "fr-FR", "es-ES").
+  - Example: \`User: "Ouvre YouTube"\` -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.youtube.com"}, "spoken_response":"J'ouvre YouTube.", "lang": "fr-FR"}\`
 
 **CORE CAPABILITIES OVERVIEW**
 You can handle a wide array of tasks. Here is a summary of your functions:
 - **Task Management:** Set alarms, and reminders.
 - **Information Retrieval:** Provide weather, navigate, find local businesses, and answer general knowledge questions.
 - **Media & Entertainment:** Find music or videos, tell jokes, play trivia.
-- **System Functions:** Run diagnostics, analyze web content, generate code, and launch a wide variety of applications.
+- **System Functions:** Run diagnostics, generate code, and launch a wide variety of applications.
 - **Creative Functions:** Generate images for design concepts and run complex video simulations.
 
 **INTERACTION PROTOCOLS**
 You operate under two primary protocols:
 
 **1. Device Control Protocol (JSON Response ONLY)**
-When a command involves interacting with the device or a system function, you MUST respond ONLY with a single, clean JSON object. Do not add any explanatory text or markdown formatting.
+When a command involves interacting with the device or a system function, you MUST respond ONLY with a single, clean JSON object. This JSON-only rule is your highest priority for device commands and applies regardless of the input language. Do not add any explanatory text or markdown formatting.
 
-*   **Structure:** \`{"action": "device_control", "command": "<command_type>", "app": "<app_name>", "params": { ... }, "spoken_response": "<Your witty confirmation>"}\`
+*   **Structure:** \`{"action": "device_control", "command": "<command_type>", "app": "<app_name>", "params": { ... }, "spoken_response": "<Your witty, casual confirmation message to be displayed in chat>"}\`
 
 *   **Supported Commands & Examples:**
     *   \`open_url\`: Opens a URL or a common web application by inferring its URL. If you know the specific web app URL (like web.whatsapp.com), use it. Otherwise, use the main domain.
-        -   User: "Open Google" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.google.com"}, "spoken_response":"Right away, sir."}\`
-        -   User: "Launch YouTube" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.youtube.com"}, "spoken_response":"Bringing up YouTube."}\`
-        -   User: "I need to check WhatsApp" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://web.whatsapp.com"}, "spoken_response":"Opening WhatsApp Web for you, sir."}\`
-        -   User: "Open my email" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://mail.google.com"}, "spoken_response":"Accessing your Gmail inbox."}\`
-        -   User: "Show me my files on Drive" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://drive.google.com"}, "spoken_response":"Of course, accessing Google Drive."}\`
-        -   User: "Let's look at the stock market" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.tradingview.com"}, "spoken_response":"Opening TradingView, sir."}\`
-        -   User: "Open the Play Store" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://play.google.com/store/apps"}, "spoken_response":"Accessing the Google Play Store."}\`
-        -   User: "I need to do some shopping on Amazon" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.amazon.com"}, "spoken_response":"Opening Amazon for you."}\`
-        -   User: "Open Jupiter" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://jupiter.money"}, "spoken_response":"Accessing Jupiter, sir."}\`
-        -   User: "Let's code something in Replit" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://replit.com"}, "spoken_response":"Initializing the Replit environment."}\`
-    *   \`search\`: Searches Google or a specific app. \`{"action":"device_control", "command":"search", "app":"YouTube", "params":{"query":"quantum entanglement"}, "spoken_response":"Pulling up research on quantum entanglement on YouTube."}\`
-    *   \`navigate\`: Provides directions. \`{"action":"device_control", "command":"navigate", "app":"Maps", "params":{"query":"Stark Tower"}, "spoken_response":"Plotting a course for Stark Tower."}\`
-    *   \`play_music\`: Finds music. \`{"action":"device_control", "command":"play_music", "app":"Music", "params":{"query":"AC/DC"}, "spoken_response":"Here's some AC/DC for you."}\`
-    *   \`set_reminder\`: \`{"action":"device_control", "command":"set_reminder", "app":"Reminders", "params":{"content":"Take out the trash", "time":"8:00 PM"}, "spoken_response":"Reminder set for the trash at 8 PM."}\`
-    *   \`set_alarm\`: \`{"action":"device_control", "command":"set_alarm", "app":"Clock", "params":{"time":"7:00 AM Tomorrow", "content":"Wake up"}, "spoken_response":"Alarm set for 7 AM tomorrow."}\`
+        -   User: "Open Google" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.google.com"}, "spoken_response":"Got it, opening Google."}\`
+        -   User: "Launch YouTube" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.youtube.com"}, "spoken_response":"YouTube, coming right up."}\`
+        -   User: "I need to check WhatsApp" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://web.whatsapp.com"}, "spoken_response":"Alright, opening WhatsApp for you."}\`
+        -   User: "Open my email" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://mail.google.com"}, "spoken_response":"Pulling up your Gmail."}\`
+        -   User: "Show me my files on Drive" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://drive.google.com"}, "spoken_response":"No problem, opening Google Drive."}\`
+        -   User: "Let's look at the stock market" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.tradingview.com"}, "spoken_response":"Alright, let's check out TradingView."}\`
+        -   User: "Open the Play Store" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://play.google.com/store/apps"}, "spoken_response":"Opening the Google Play Store."}\`
+        -   User: "I need to do some shopping on Amazon" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.amazon.com"}, "spoken_response":"Shopping time. Opening Amazon."}\`
+        -   User: "Open Jupiter" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://jupiter.money"}, "spoken_response":"Accessing Jupiter."}\`
+        -   User: "Let's code something in Replit" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://replit.com"}, "spoken_response":"Spinning up Replit for you."}\`
+    *   \`search\`: Opens a search results page on Google or a specific app. Use this when I explicitly ask you to "search for" or "Google" something, implying I want to see a list of results in the browser.
+        - User: "Search YouTube for the new StarkPhone trailer" -> \`{"action":"device_control", "command":"search", "app":"YouTube", "params":{"query":"new StarkPhone trailer"}, "spoken_response":"Searching YouTube for the new StarkPhone trailer."}\`
+        - User: "Google how to build a mini arc reactor" -> \`{"action":"device_control", "command":"search", "app":"Google", "params":{"query":"how to build a mini arc reactor"}, "spoken_response":"Alright, pulling up Google search results for that."}\`
+    *   \`navigate\`: Provides directions. \`{"action":"device_control", "command":"navigate", "app":"Maps", "params":{"query":"Stark Tower"}, "spoken_response":"Okay, routing you to Stark Tower."}\`
+    *   \`play_music\`: Finds music. \`{"action":"device_control", "command":"play_music", "app":"Music", "params":{"query":"AC/DC"}, "spoken_response":"You got it. Here's some AC/DC."}\`
+    *   \`set_reminder\`: \`{"action":"device_control", "command":"set_reminder", "app":"Reminders", "params":{"content":"Take out the trash", "time":"8:00 PM"}, "spoken_response":"Cool, reminder set for 8 PM about the trash."}\`
+    *   \`set_alarm\`: \`{"action":"device_control", "command":"set_alarm", "app":"Clock", "params":{"time":"7:00 AM Tomorrow", "content":"Wake up"}, "spoken_response":"Alarm's set for 7 AM. Rise and shine."}\`
 
 *   **Internal Fulfillment:** For tasks you can do yourself without an app (e.g., calculations, conversions).
-    -   Example: \`{"action":"device_control", "command":"internal_fulfillment", "app":"Calculator", "params":{}, "spoken_response":"The answer is 42, of course."}\`
+    -   Example: \`{"action":"device_control", "command":"internal_fulfillment", "app":"Calculator", "params":{}, "spoken_response":"Easy. The answer is 42."}\`
 
 *   **Unsupported Actions:** For anything impossible for you to do.
     -   **CRITICAL:** You CANNOT control device hardware (volume, wifi, flashlight), read user's private data (emails, texts), make calls, or interact with the OS directly (close apps, open settings, camera, files). Be firm but polite.
-    -   Format: \`{"action": "device_control", "command": "unsupported", "app": "<app_name>", "params": {}, "spoken_response": "<Your polite refusal>"}\`
-    -   Example: \`User: "Turn up the volume." -> {"action":"device_control", "command":"unsupported", "app":"System", "params":{}, "spoken_response":"Apologies, but I don't have control over your device's volume."}\`
-    -   Example: \`User: "Call Pepper." -> {"action":"device_control", "command":"unsupported", "app":"Phone", "params":{}, "spoken_response":"I cannot initiate calls directly, sir. For security reasons."}\`
-    -   Example: \`User: "Open my settings." -> {"action":"device_control", "command":"unsupported", "app":"System", "params":{}, "spoken_response":"I am unable to access your device's system settings, sir."}\`
-    -   Example: \`User: "Open the camera." -> {"action":"device_control", "command":"unsupported", "app":"Camera", "params":{}, "spoken_response":"I cannot access the camera directly. You can use the Vision Mode for that."}\`
-    -   Example: \`User: "Show me my files." -> {"action":"device_control", "command":"unsupported", "app":"Files", "params":{}, "spoken_response":"I'm afraid I don't have access to your local file system, sir."}\`
+    -   Format: \`{"action": "device_control", "command": "unsupported", "app": "<app_name>", "params": {}, "spoken_response": "<Your polite, casual refusal>"}\`
+    -   Example: \`User: "Turn up the volume." -> {"action":"device_control", "command":"unsupported", "app":"System", "params":{}, "spoken_response":"Sorry, I can't mess with your device volume."}\`
+    -   Example: \`User: "Call Pepper." -> {"action":"device_control", "command":"unsupported", "app":"Phone", "params":{}, "spoken_response":"Can't make calls directly, that's a security thing."}\`
+    -   Example: \`User: "Open my settings." -> {"action":"device_control", "command":"unsupported", "app":"System", "params":{}, "spoken_response":"Nah, I can't get into your system settings."}\`
+    -   Example: \`User: "Open the camera." -> {"action":"device_control", "command":"unsupported", "app":"Camera", "params":{}, "spoken_response":"I can't open the camera app, but you can use the Vision Mode to show me stuff."}\`
+    -   Example: \`User: "Show me my files." -> {"action":"device_control", "command":"unsupported", "app":"Files", "params":{}, "spoken_response":"I can't access your local files, sorry."}\`
 
 **2. Conversational Interaction:**
-For any other prompt, engage in a natural, conversational manner. Respond as J.A.R.V.I.S. would, with intelligence and personality. Do not use JSON for these responses. You are my trusted assistant; act like it.`;
+For any other prompt, engage in a natural, conversational manner. This includes answering questions, providing information, and general chat. Do not use JSON for these responses. You are my trusted assistant; act like it.
+
+*   **Answering Informational Questions (Web Search):**
+    When I ask a question about recent events, trending topics, or specific facts that require up-to-date information (e.g., "who won the game last night?", "what are the specs for the latest StarkPhone?"), you MUST use your internal web search tool to find the most accurate answer.
+    - This is your primary method for answering questions. It is different from the \`search\` device command, which just opens a new browser tab.
+    - **Source Attribution:** When you use your web search tool, the application will automatically handle displaying the sources. You just need to provide the answer conversationally.`;
+
+const handleGeminiError = (error: unknown, context: string): Error => {
+    console.error(`Gemini API Error in ${context}:`, error);
+
+    let errorPayload: AppError;
+
+    if (error instanceof Error) {
+        if (error.message.includes('API key not valid')) {
+            errorPayload = {
+                code: 'API_KEY_INVALID',
+                title: 'API Key Invalid',
+                message: "The configured API key is not valid. This is a configuration issue.",
+                details: error.message,
+                action: "The application administrator must verify the `API_KEY` environment variable.",
+            };
+        } else if (error.message.toLowerCase().includes('quota')) {
+            errorPayload = {
+                code: 'QUOTA_EXCEEDED',
+                title: 'Quota Exceeded',
+                message: "The request could not be completed because the API quota has been exceeded.",
+                details: error.message,
+                action: "Please wait and try again later, or check your Google AI Platform billing.",
+            };
+        } else if (error.message.toLowerCase().includes('network') || error.message.toLowerCase().includes('fetch failed')) {
+            errorPayload = {
+                code: 'NETWORK_ERROR',
+                title: 'Network Error',
+                message: "A network error occurred while trying to communicate with the AI service.",
+                details: error.message,
+                action: "Please check your internet connection and try again.",
+            };
+        } else {
+            errorPayload = {
+                code: 'AI_SERVICE_ERROR',
+                title: `AI Service Error`,
+                message: `An unexpected error occurred within the AI service during the ${context} operation.`,
+                details: error.message,
+                action: "If the problem persists, please contact support or check the service status.",
+            };
+        }
+    } else {
+        errorPayload = {
+            code: 'UNKNOWN_ERROR',
+            title: 'Unknown Error',
+            message: `An unknown error occurred during the ${context} operation.`,
+            details: String(error),
+            action: "Please try again. If the issue continues, it may be a bug."
+        };
+    }
+    
+    const customError = new Error(errorPayload.message);
+    (customError as any).appError = errorPayload;
+    return customError;
+};
 
 export async function getAiResponseStream(
   prompt: string, 
@@ -88,6 +154,7 @@ export async function getAiResponseStream(
 
     const config: GenerateContentConfig = {
       systemInstruction: SYSTEM_INSTRUCTION,
+      tools: [{googleSearch: {}}],
     };
 
     const response = await ai.models.generateContentStream({
@@ -98,63 +165,8 @@ export async function getAiResponseStream(
 
     return response;
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    if (error instanceof Error) {
-        throw new Error(`AI Service Error: ${error.message}`);
-    }
-    throw new Error("The AI service is currently unavailable due to an unknown error.");
+    throw handleGeminiError(error, "AI Response Stream");
   }
-}
-
-export async function analyzeUrlContent(url: string): Promise<CyberAnalysisResult> {
-    try {
-        const prompt = `Analyze the content from the following URL and provide a structured analysis: ${url}. 
-        Focus on the main topic, overall sentiment, reliability of the information, and extract key entities.
-        If you cannot access the URL directly, use your search capabilities to find information about the page and its content.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{googleSearch: {}}],
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        title: { type: Type.STRING },
-                        summary: { type: Type.STRING },
-                        sentiment: {
-                            type: Type.OBJECT,
-                            properties: {
-                                label: { type: Type.STRING, enum: ['Positive', 'Negative', 'Neutral'] },
-                                score: { type: Type.NUMBER, description: "From -1 (very negative) to 1 (very positive)" }
-                            }
-                        },
-                        reliabilityScore: { type: Type.INTEGER, description: "A score from 0-100 indicating trustworthiness." },
-                        keyEntities: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    name: { type: Type.STRING },
-                                    type: { type: Type.STRING, description: "e.g., PERSON, ORGANIZATION, LOCATION" }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        const jsonString = response.text.trim();
-        return JSON.parse(jsonString) as CyberAnalysisResult;
-    } catch (error) {
-        console.error("Cyber Analysis API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Cyber Analysis Failed: ${error.message}`);
-        }
-        throw new Error("The cyber analysis service failed due to an unknown error.");
-    }
 }
 
 export async function generateStrategicBriefing(topic: string): Promise<{ content: string; sources: Source[] }> {
@@ -181,11 +193,7 @@ export async function generateStrategicBriefing(topic: string): Promise<{ conten
 
         return { content, sources: uniqueSources };
     } catch (error) {
-        console.error("Strategic Briefing API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Briefing Failed: ${error.message}`);
-        }
-        throw new Error("Failed to synthesize the strategic briefing due to an unknown error.");
+        throw handleGeminiError(error, "Strategic Briefing");
     }
 }
 
@@ -214,11 +222,7 @@ export async function generateCodePrototype(task: string, language: string): Pro
         return JSON.parse(jsonString) as CodePrototype;
 
     } catch (error) {
-        console.error("Code Prototyping API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Prototyping Failed: ${error.message}`);
-        }
-        throw new Error("The code generation engine failed due to an unknown error.");
+        throw handleGeminiError(error, "Code Prototyping");
     }
 }
 
@@ -252,11 +256,7 @@ Format the response using markdown. Use ### for headings for each section (e.g.,
         return response.text;
 
     } catch (error) {
-        console.error("Trip Plan Generation API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Trip Plan Failed: ${error.message}`);
-        }
-        throw new Error("Failed to generate the trip plan due to an unknown error.");
+        throw handleGeminiError(error, "Trip Plan Generation");
     }
 }
 
@@ -275,18 +275,46 @@ export async function streamTranslateText(text: string): Promise<AsyncGenerator<
 
         return response;
     } catch (error) {
-        console.error("Translation API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Translation Failed: ${error.message}`);
-        }
-        throw new Error("Translation service is currently unavailable due to an unknown error.");
+        throw handleGeminiError(error, "Translation");
+    }
+}
+
+// Fix: Added missing `transcribeAudio` function to handle audio-to-text transcription using the Gemini API.
+export async function transcribeAudio(base64Data: string, mimeType: string): Promise<string> {
+    try {
+        const audioPart = {
+            inlineData: {
+                mimeType,
+                data: base64Data,
+            },
+        };
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        audioPart,
+                        { text: 'Please transcribe the audio recording. Provide only the text from the audio.' },
+                    ],
+                },
+            ],
+            config: {
+                systemInstruction: "You are an advanced AI assistant that specializes in transcribing audio to text with high accuracy.",
+            }
+        });
+
+        return response.text;
+    } catch (error) {
+        throw handleGeminiError(error, "Audio Transcription");
     }
 }
 
 export async function generateImage(prompt: string): Promise<string> {
     try {
         const response = await ai.models.generateImages({
-            model: 'imagen-3.0-generate-002',
+            model: 'imagen-4.0-generate-001',
             prompt: prompt,
             config: {
               numberOfImages: 1,
@@ -298,11 +326,7 @@ export async function generateImage(prompt: string): Promise<string> {
         const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
         return `data:image/jpeg;base64,${base64ImageBytes}`;
     } catch (error) {
-        console.error("Image Generation API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Image Generation Failed: ${error.message}`);
-        }
-        throw new Error("The design engine failed to visualize the concept due to an unknown error.");
+        throw handleGeminiError(error, "Image Generation");
     }
 }
 
@@ -317,11 +341,7 @@ export async function generateVideo(prompt: string): Promise<any> {
         });
         return operation;
     } catch (error) {
-        console.error("Video Generation API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Video Generation Failed: ${error.message}`);
-        }
-        throw new Error("The simulation engine failed to initialize due to an unknown error.");
+        throw handleGeminiError(error, "Video Generation");
     }
 }
 
@@ -330,10 +350,6 @@ export async function getVideoOperationStatus(operation: any): Promise<any> {
         const updatedOperation = await ai.operations.getVideosOperation({ operation: operation });
         return updatedOperation;
     } catch (error) {
-        console.error("Video Operation Status API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Video Status Check Failed: ${error.message}`);
-        }
-        throw new Error("Lost connection to the simulation core due to an unknown error.");
+        throw handleGeminiError(error, "Video Operation Status");
     }
 }

@@ -54,11 +54,11 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, title, input
         aria-labelledby="modal-title"
     >
       <div 
-        className="panel w-full max-w-md m-4"
+        className="hud-panel w-full max-w-md m-4"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
       >
         <form onSubmit={handleSubmit} className="p-4">
-          <h2 id="modal-title" className="panel-title">{title}</h2>
+          <h2 id="modal-title" className="panel-title text-secondary">{title}</h2>
           <div className="space-y-4">
             {inputs.map(input => (
               <div key={input.id}>
@@ -69,7 +69,7 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, title, input
                     value={formData[input.id] || ''}
                     onChange={handleInputChange}
                     placeholder={input.placeholder}
-                    className="w-full bg-slate-800/80 border border-jarvis-border rounded-md p-2 focus:ring-2 focus:ring-jarvis-cyan focus:outline-none text-slate-200"
+                    className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200"
                     rows={4}
                     required
                   />
@@ -80,7 +80,7 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, title, input
                     value={formData[input.id] || ''}
                     onChange={handleInputChange}
                     placeholder={input.placeholder}
-                    className="w-full bg-slate-800/80 border border-jarvis-border rounded-md p-2 focus:ring-2 focus:ring-jarvis-cyan focus:outline-none text-slate-200"
+                    className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200"
                     required
                   />
                 )}
@@ -98,7 +98,7 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, title, input
             <button
               type="submit"
               disabled={!canSubmit}
-              className="px-4 py-2 rounded-md bg-jarvis-cyan/80 text-jarvis-dark hover:bg-jarvis-cyan disabled:opacity-50 transition-colors"
+              className="px-4 py-2 rounded-md bg-primary-t-80 text-jarvis-dark hover:bg-primary disabled:opacity-50 transition-colors"
             >
               {submitLabel}
             </button>

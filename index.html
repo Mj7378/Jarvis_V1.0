@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>J.A.R.V.I.S. Voice Assistant</title>
+    <title>J.A.R.V.I.S. AI Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    
     <script>
       tailwind.config = {
         theme: {
@@ -20,35 +21,68 @@
             colors: {
               'jarvis-dark': '#0c101d',
               'jarvis-panel': 'rgba(12, 16, 29, 0.7)',
-              'jarvis-cyan': '#00ffff',
-              'jarvis-border': 'rgba(0, 255, 255, 0.2)',
             },
             animation: {
               'spin-slow': 'spin 8s linear infinite',
               'spin-medium': 'spin 4s linear infinite',
               'spin-fast': 'spin 2s linear infinite',
               'pulse-strong': 'pulse-strong 2s infinite ease-in-out',
+              'pulse-green': 'pulse-green 2s infinite ease-in-out',
+              'pulse-speak': 'pulse-speak 1.5s infinite ease-in-out',
+              'scan-line': 'scan-line 1.5s ease-in-out infinite',
+              'pulse-dot': 'pulse-dot 1.2s infinite ease-in-out',
+              'text-flicker': 'text-flicker 150ms infinite',
             },
             keyframes: {
               'pulse-strong': {
                 '0%, 100%': { transform: 'scale(1)', opacity: '1', filter: 'brightness(1)' },
                 '50%': { transform: 'scale(1.05)', opacity: '0.9', filter: 'brightness(1.5)' },
-              }
+              },
+              'pulse-green': {
+                '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 20px rgba(0, 255, 128, 0.4)' },
+                '50%': { transform: 'scale(1.03)', boxShadow: '0 0 35px rgba(0, 255, 128, 0.7)' },
+              },
+              'pulse-speak': {
+                '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 30px var(--tw-shadow-color)', opacity: 0.7 },
+                '50%': { transform: 'scale(1.03)', boxShadow: '0 0 45px var(--tw-shadow-color)', opacity: 1 },
+              },
+              'scan-line': {
+                '0%': { transform: 'translateY(-100%)', opacity: 0 },
+                '50%': { opacity: 1 },
+                '100%': { transform: 'translateY(100%)', opacity: 0 },
+              },
+              'pulse-dot': {
+                '0%, 100%': { opacity: 0.2, transform: 'scale(0.8)' },
+                '50%': { opacity: 1, transform: 'scale(1)' },
+              },
+              'text-flicker': {
+                '0%': { opacity: 1, textShadow: '0 0 10px currentColor' },
+                '50%': { opacity: 0.5, textShadow: '0 0 2px currentColor' },
+                '100%': { opacity: 1, textShadow: '0 0 10px currentColor' },
+              },
             }
           }
         }
       }
     </script>
     <style type="text/css">
+      :root {
+        --jarvis-dark: #0c101d;
+        --primary-color-hex: #00ffff;
+        --primary-color-rgb: 0, 255, 255;
+        --panel-color-rgb: 18, 26, 43;
+      }
       body {
         font-family: 'Roboto', sans-serif;
-        background-color: #0c101d;
-        background-image:
-            linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
-        background-size: 2rem 2rem;
+        background-color: var(--jarvis-dark);
         color: #e2e8f0;
         overflow: hidden;
+      }
+      body.grid-active {
+        background-image:
+            linear-gradient(rgba(var(--primary-color-rgb), 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.05) 1px, transparent 1px);
+        background-size: 2rem 2rem;
       }
       .styled-scrollbar::-webkit-scrollbar {
         width: 8px;
@@ -57,13 +91,13 @@
         background: transparent;
       }
       .styled-scrollbar::-webkit-scrollbar-thumb {
-        background-color: rgba(0, 255, 255, 0.3);
+        background-color: rgba(var(--primary-color-rgb), 0.3);
         border-radius: 10px;
         border: 2px solid transparent;
         background-clip: content-box;
       }
       .styled-scrollbar::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(0, 255, 255, 0.5);
+        background-color: rgba(var(--primary-color-rgb), 0.5);
       }
       
       .hud-container {
@@ -75,11 +109,11 @@
       
       .hud-panel {
         position: absolute;
-        background: radial-gradient(circle at center, rgba(18, 26, 43, 0.7) 0%, rgba(18, 26, 43, 0.85) 100%);
+        background: radial-gradient(circle at center, rgba(var(--panel-color-rgb), 0.7) 0%, rgba(var(--panel-color-rgb), 0.85) 100%);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid var(--border-color, rgba(0, 255, 255, 0.2));
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1), inset 0 0 15px rgba(0, 255, 255, 0.05);
+        border: 1px solid rgba(var(--primary-color-rgb), 0.2);
+        box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.1), inset 0 0 15px rgba(var(--primary-color-rgb), 0.05);
         clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
         padding: 1.25rem;
         display: flex;
@@ -92,7 +126,7 @@
         width: 25px;
         height: 25px;
         pointer-events: none;
-        border-color: var(--corner-color, #00ffff);
+        border-color: var(--primary-color-hex);
         border-style: solid;
       }
       .hud-panel::before {
@@ -115,43 +149,19 @@
       }
       
       /* Positioning */
-      .hud-header {
-        position: absolute;
-        top: 1rem;
-        left: 1rem;
-        right: 1rem;
-        height: 60px;
-        z-index: 10;
-        background: 
-            linear-gradient(to right, rgba(0, 255, 255, 0.1), transparent 50%),
-            linear-gradient(to left, rgba(0, 255, 255, 0.1), transparent 50%);
-        background-repeat: no-repeat;
-        background-position: top left, top right;
-        background-size: 50% 1px;
-        overflow: hidden; /* Hide overflowing pseudo-elements */
-      }
-       .hud-header::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(to right, transparent, rgba(0, 255, 255, 0.2), transparent);
-      }
       .hud-left-panel {
         position: absolute;
-        top: calc(60px + 2rem);
+        top: 5rem;
         left: 1rem;
-        bottom: 1rem;
+        bottom: calc(80px + 2rem);
         width: 380px;
         animation: slide-in-left 0.5s ease-out forwards;
       }
       .hud-right-panel {
         position: absolute;
-        top: calc(60px + 2rem);
+        top: 5rem;
         right: 1rem;
-        bottom: 1rem;
+        bottom: calc(80px + 2rem);
         width: 320px;
         animation: slide-in-right 0.5s ease-out forwards;
       }
@@ -164,29 +174,13 @@
         animation: slide-in-bottom 0.5s ease-out forwards;
       }
 
-      /* Header Sci-Fi Styles */
-       .title-container {
-        padding: 0 1.5rem 0 2rem;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        background: rgba(12, 16, 29, 0.5);
-        position: relative;
-        clip-path: polygon(0 0, 100% 0, calc(100% - 30px) 100%, 0 100%);
-      }
-      .title-wing {
-        width: 30px;
-        height: 100%;
-        background-color: rgba(0, 255, 255, 0.1);
-        clip-path: polygon(0 0, 100% 0, 0 100%);
-      }
       .info-block {
         padding: 0 1.5rem;
         height: 100%;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        border-right: 1px solid var(--jarvis-border, rgba(0, 255, 255, 0.2));
+        border-right: 1px solid rgba(var(--primary-color-rgb), 0.2);
         position: relative;
       }
       .info-block::before, .info-block::after {
@@ -194,14 +188,14 @@
         position: absolute;
         height: 4px;
         width: 1px;
-        background: var(--jarvis-cyan, #00ffff);
+        background: var(--primary-color-hex);
         opacity: 0.5;
       }
       .info-block::before { top: 8px; left: 8px; }
       .info-block::after { bottom: 8px; right: 8px; }
       .info-label {
         font-size: 0.65rem;
-        color: var(--jarvis-cyan, #00ffff);
+        color: var(--primary-color-hex);
         opacity: 0.7;
         letter-spacing: 0.1em;
         margin-bottom: 2px;
@@ -213,11 +207,11 @@
       @keyframes slide-in-bottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
       @keyframes fade-in-fast {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
       }
       .animate-fade-in-fast {
-        animation: fade-in-fast 0.3s ease-out forwards;
+        animation: fade-in-fast 0.4s ease-out forwards;
       }
       
       @keyframes arc-rotate {
@@ -225,6 +219,211 @@
       }
       @keyframes arc-rotate-reverse {
         from { transform: rotate(360deg); } to { transform: rotate(0deg); }
+      }
+
+      /* Glitch animation for bootup */
+      .glitch {
+        position: relative;
+        text-shadow: 0.05em 0 0 rgba(var(--primary-color-rgb), 0.75), -0.025em -0.05em 0 rgba(255, 0, 0, 0.75), 0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+        animation: glitch 500ms infinite;
+      }
+      .glitch::before, .glitch::after {
+        content: attr(data-text);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--jarvis-dark);
+        overflow: hidden;
+      }
+      .glitch::before {
+        left: 2px;
+        text-shadow: -2px 0 #ff00ff;
+        animation: glitch-anim-1 2s infinite linear alternate-reverse;
+      }
+      .glitch::after {
+        left: -2px;
+        text-shadow: -2px 0 var(--primary-color-hex), 2px 2px #ff00ff;
+        animation: glitch-anim-2 2s infinite linear alternate-reverse;
+      }
+      @keyframes glitch { 0%, 100% { transform: translate(0); } 20% { transform: translate(-3px, 3px); } 40% { transform: translate(-3px, -3px); } 60% { transform: translate(3px, 3px); } 80% { transform: translate(3px, -3px); } }
+      @keyframes glitch-anim-1 { 0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); } 10% { clip-path: polygon(0 40%, 100% 40%, 100% 45%, 0 45%); } 20% { clip-path: polygon(0 20%, 100% 20%, 100% 22%, 0 22%); } 30% { clip-path: polygon(0 60%, 100% 60%, 100% 62%, 0 62%); } 40% { clip-path: polygon(0 85%, 100% 85%, 100% 88%, 0 88%); } 50% { clip-path: polygon(0 50%, 100% 50%, 100% 52%, 0 52%); } 60% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%); } 70% { clip-path: polygon(0 70%, 100% 70%, 100% 72%, 0 72%); } 80% { clip-path: polygon(0 95%, 100% 95%, 100% 99%, 0 99%); } 90% { clip-path: polygon(0 30%, 100% 30%, 100% 32%, 0 32%); } 100% { clip-path: polygon(0 75%, 100% 75%, 100% 78%, 0 78%); } }
+      @keyframes glitch-anim-2 { 0% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%); } 10% { clip-path: polygon(0 50%, 100% 50%, 100% 51%, 0 51%); } 20% { clip-path: polygon(0 80%, 100% 80%, 100% 81%, 0 81%); } 30% { clip-path: polygon(0 25%, 100% 25%, 100% 26%, 0 26%); } 40% { clip-path: polygon(0 1%, 100% 1%, 100% 2%, 0 2%); } 50% { clip-path: polygon(0 65%, 100% 65%, 100% 66%, 0 66%); } 60% { clip-path: polygon(0 90%, 100% 90%, 100% 91%, 0 91%); } 70% { clip-path: polygon(0 40%, 100% 40%, 100% 41%, 0 41%); } 80% { clip-path: polygon(0 15%, 100% 15%, 100% 16%, 0 16%); } 90% { clip-path: polygon(0 70%, 100% 70%, 100% 71%, 0 71%); } 100% { clip-path: polygon(0 35%, 100% 35%, 100% 36%, 0 36%); } }
+    
+      /* --- New Cinematic Bootup/Shutdown Animations --- */
+      .holographic-container {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        perspective: 1000px;
+        transform-style: preserve-3d;
+      }
+
+      .holographic-element {
+        position: absolute;
+        border-radius: 50%;
+        border-style: solid;
+        animation-duration: 3s;
+        animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+        animation-iteration-count: 1;
+        animation-fill-mode: forwards;
+        transform-style: preserve-3d;
+        filter: drop-shadow(0 0 10px var(--primary-color-hex));
+      }
+
+      /* Bootup Animations */
+      @keyframes holo-construct {
+        from { transform: var(--transform-from); opacity: 0; }
+        to { transform: var(--transform-to); opacity: 1; }
+      }
+      
+      .boot .h-ring-1 { --transform-from: rotateY(90deg) translateZ(-500px) scale(0.5); --transform-to: rotateY(0deg) translateZ(0px) scale(1); animation-name: holo-construct; }
+      .boot .h-ring-2 { --transform-from: rotateX(-90deg) translateZ(-500px) scale(0.5); --transform-to: rotateX(0deg) translateZ(0px) scale(1); animation-name: holo-construct; animation-delay: 0.2s; }
+      .boot .h-ring-3 { --transform-from: rotateY(-75deg) rotateX(20deg) translateZ(300px) scale(1.5); --transform-to: rotateY(0deg) rotateX(0deg) translateZ(0px) scale(1); animation-name: holo-construct; animation-delay: 0.4s; }
+      .boot .h-ring-4 { --transform-from: rotateZ(180deg) scale(0.2); --transform-to: rotateZ(0deg) scale(1); animation-name: holo-construct; animation-delay: 0.6s; }
+      .boot .h-core { --transform-from: scale(0); --transform-to: scale(1); animation-name: holo-construct; animation-duration: 1.5s; animation-delay: 1s; }
+
+      .h-ring-1 { width: 40vmin; height: 40vmin; border: 2px solid var(--primary-color-hex); }
+      .h-ring-2 { width: 38vmin; height: 38vmin; border: 1px dashed var(--primary-color-hex); opacity: 0.8; }
+      .h-ring-3 { width: 25vmin; height: 25vmin; border: 3px solid var(--primary-color-hex); background: radial-gradient(circle, rgba(var(--primary-color-rgb),0) 0%, rgba(var(--primary-color-rgb),0.1) 100%);}
+      .h-ring-4 { width: 42vmin; height: 42vmin; border: 1px solid var(--primary-color-hex); opacity: 0.5; border-style: dotted; }
+      .h-core { width: 5vmin; height: 5vmin; background: var(--primary-color-hex); border-radius: 50%; animation: core-pulse 2s infinite ease-in-out; }
+
+      @keyframes core-pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 20px 5px var(--primary-color-hex); }
+        50% { transform: scale(1.2); box-shadow: 0 0 35px 10px var(--primary-color-hex); }
+      }
+      
+      /* Shutdown Animations */
+      .shutdown .holographic-element {
+        --primary-color-hex: #ff4d4d;
+        --primary-color-rgb: 255, 77, 77;
+        animation-name: holo-deconstruct;
+        animation-duration: 1.5s;
+        animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
+      }
+
+      @keyframes holo-deconstruct {
+        from { transform: var(--transform-to); opacity: 1; }
+        to { transform: var(--transform-from); opacity: 0; }
+      }
+
+      .shutdown .h-ring-1 { animation-delay: 0.4s; }
+      .shutdown .h-ring-2 { animation-delay: 0.2s; }
+      .shutdown .h-ring-3 { animation-delay: 0.0s; }
+      .shutdown .h-ring-4 { animation-delay: 0.6s; }
+      .shutdown .h-core { animation-delay: 0s; animation-name: holo-deconstruct, core-implode; animation-duration: 1.5s, 1.5s; }
+      
+      @keyframes core-implode {
+        0% { transform: scale(1.2); box-shadow: 0 0 35px 10px var(--primary-color-hex); }
+        100% { transform: scale(0); box-shadow: 0 0 50px 20px var(--primary-color-hex); }
+      }
+
+      /* Scanline Overlay */
+      .scanline-overlay {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(12, 16, 29, 0) 0%, rgba(12, 16, 29, 0.5) 50%, rgba(12, 16, 29, 0) 100%);
+        background-size: 100% 8px;
+        animation: scanline-anim 10s linear infinite;
+        pointer-events: none;
+        opacity: 0.3;
+        z-index: 20;
+        display: none; /* Controlled by body class */
+      }
+      body.scanlines-active .scanline-overlay {
+        display: block;
+      }
+      @keyframes scanline-anim {
+        from { background-position: 0 0; }
+        to { background-position: 0 -200px; }
+      }
+      
+      /* Typing effect for boot text */
+      @keyframes typing {
+        from { width: 0; }
+        to { width: 100%; }
+      }
+      @keyframes blink-caret {
+        from, to { border-color: transparent; }
+        50% { border-color: var(--primary-color-hex); }
+      }
+      .typewriter p {
+        overflow: hidden;
+        border-right: .15em solid var(--primary-color-hex);
+        white-space: nowrap;
+        margin: 0.2rem 0;
+        letter-spacing: .1em;
+        animation: typing 1s steps(40, end), blink-caret .75s step-end infinite;
+        animation-fill-mode: forwards;
+      }
+
+      body.flicker-active .panel-title,
+      body.flicker-active .text-primary-shadow {
+        animation: text-flicker 150ms infinite;
+      }
+
+      /* --- Custom Theme Utility Classes --- */
+      .text-primary { color: var(--primary-color-hex); }
+      .text-primary-shadow { text-shadow: 0 0 10px var(--primary-color-hex); }
+      .text-secondary { color: #93c5fd; } /* This remains constant for panel titles */
+      .text-primary-accent { color: var(--primary-color-hex); opacity: 0.7; }
+
+      .bg-primary { background-color: var(--primary-color-hex); }
+      .bg-primary-t-80 { background-color: rgba(var(--primary-color-rgb), 0.8); }
+      .bg-primary-t-20 { background-color: rgba(var(--primary-color-rgb), 0.2); }
+      
+      .border-primary { border-color: var(--primary-color-hex); }
+      .border-b-primary { border-bottom-color: var(--primary-color-hex); }
+      .border-primary-t-20 { border-color: rgba(var(--primary-color-rgb), 0.2); }
+      .border-primary-t-50 { border-color: rgba(var(--primary-color-rgb), 0.5); }
+      .border-primary-t-70 { border-color: rgba(var(--primary-color-rgb), 0.7); }
+
+      .stroke-primary { stroke: var(--primary-color-hex); }
+      .stroke-primary-t-20 { stroke: rgba(var(--primary-color-rgb), 0.2); }
+
+      .shadow-primary { --tw-shadow-color: var(--primary-color-hex); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow); }
+      .shadow-primary\/20 { --tw-shadow-color: rgba(var(--primary-color-rgb), 0.2); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow); }
+
+
+      .accent-primary { accent-color: var(--primary-color-hex); }
+
+      .hover\:bg-primary-t-20:hover { background-color: rgba(var(--primary-color-rgb), 0.2); }
+      .hover\:border-primary-t-70:hover { border-color: rgba(var(--primary-color-rgb), 0.7); }
+      .hover\:border-primary-t-50:hover { border-color: rgba(var(--primary-color-rgb), 0.5); }
+      .hover\:bg-primary:hover { background-color: var(--primary-color-hex); }
+
+      .ring-primary:focus { --tw-ring-color: var(--primary-color-hex); }
+      
+      /* Toggle Switch */
+      .toggle-label {
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+        background-color: #334155;
+        border-radius: 9999px;
+        position: relative;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .toggle-dot {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background-color: white;
+        border-radius: 9999px;
+        transition: transform 0.2s;
+      }
+      .toggle-checkbox:checked + .toggle-label {
+        background-color: var(--primary-color-hex);
+      }
+      .toggle-checkbox:checked + .toggle-label .toggle-dot {
+        transform: translateX(20px);
       }
     </style>
   <script type="importmap">
@@ -239,6 +438,7 @@
 </script>
 </head>
   <body>
+    <div class="scanline-overlay"></div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

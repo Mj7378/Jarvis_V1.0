@@ -11,8 +11,8 @@ const SourceCitations: React.FC<SourceCitationsProps> = ({ sources }) => {
   }
 
   return (
-    <div className="mt-3 border-t border-cyan-400/30 pt-2">
-      <h4 className="font-orbitron text-sm text-cyan-400 mb-1">Sources:</h4>
+    <div className="mt-3 border-t border-primary-t-20 pt-2">
+      <h4 className="font-orbitron text-sm text-primary mb-1">Sources:</h4>
       <ol className="list-decimal list-inside space-y-1">
         {sources.map((source, index) => (
           <li key={index} className="text-xs truncate">
@@ -20,7 +20,7 @@ const SourceCitations: React.FC<SourceCitationsProps> = ({ sources }) => {
               href={source.uri}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-300 hover:underline"
+              className="text-primary opacity-80 hover:underline hover:opacity-100"
               title={source.title}
             >
               {source.title || source.uri}

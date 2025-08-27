@@ -29,12 +29,12 @@ const DiagnosticItem: React.FC<{ name: string; status: 'pending' | 'scanning' | 
     };
 
     return (
-        <div className="flex items-center space-x-4 p-3 bg-slate-900/50 border border-jarvis-border rounded-lg">
+        <div className="flex items-center space-x-4 p-3 bg-slate-900/50 border border-primary-t-20 rounded-lg">
             <div className="flex-1">
                 <p className="font-orbitron text-slate-300">{name}</p>
                 <div className="w-full bg-slate-700 rounded-full h-2 mt-1 overflow-hidden">
                     <div 
-                        className="bg-jarvis-cyan h-2 rounded-full"
+                        className="bg-primary h-2 rounded-full"
                         style={{ 
                             width: width,
                             transition: `width ${duration}ms linear`,
@@ -77,8 +77,8 @@ const DiagnosticsMode: React.FC<{ onComplete: (summary: string) => void }> = ({ 
 
   return (
     <div className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center backdrop-blur-sm animate-fade-in">
-      <div className="panel w-full max-w-2xl p-6 border-2 border-jarvis-cyan/50 shadow-2xl shadow-jarvis-cyan/20">
-        <h1 className="font-orbitron text-2xl text-jarvis-cyan text-center tracking-widest mb-6">
+      <div className="hud-panel w-full max-w-2xl p-6 border-2 border-primary-t-50 shadow-2xl shadow-primary/20">
+        <h1 className="font-orbitron text-2xl text-primary text-center tracking-widest mb-6">
           SYSTEM DIAGNOSTICS
         </h1>
         <div className="space-y-3">

@@ -65,7 +65,7 @@ const VisionMode: React.FC<VisionModeProps> = ({ onCapture, onClose }) => {
       <div className="absolute bottom-8 flex space-x-8">
         <button
           onClick={handleCapture}
-          className="w-20 h-20 rounded-full bg-cyan-500/80 border-4 border-white flex items-center justify-center text-white"
+          className="w-20 h-20 rounded-full bg-primary-t-80 border-4 border-white flex items-center justify-center text-white"
           aria-label="Capture and Analyze"
           disabled={!!error}
         >

@@ -1,0 +1,171 @@
+import React, { useState, useEffect } from 'react';
+import { getVideo } from '../utils/db';
+
+const BOOT_SEQUENCE = [
+  { text: 'J.A.R.V.I.S. BIOS v1.0 initializing...', delay: 100 },
+  { text: 'Checking system memory...', delay: 500 },
+  { text: '[OK] 64 ZB RAM', delay: 150 },
+  { text: 'Loading AI Core...', delay: 300 },
+  { text: 'Mounting neural network...', delay: 800 },
+  { text: '[OK] Gemini 2.5 Flash Model loaded.', delay: 150 },
+  { text: 'Initializing user interface...', delay: 600 },
+  { text: '[OK] HUD ready.', delay: 150 },
+  { text: 'Establishing secure connection to Stark Industries network...', delay: 1000 },
+  { text: '[OK] Connection verified.', delay: 150 },
+  { text: 'Loading HUD assets...', delay: 700 },
+  { text: '[COMPLETE] All systems nominal.', delay: 200 },
+];
+
+interface BootingUpProps {
+  onComplete: () => void;
+  useCustomVideo: boolean;
+}
+
+const DefaultBootAnimation: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+  const [visibleLines, setVisibleLines] = useState<number>(0);
+  const [progress, setProgress] = useState(0);
+  const [sequenceComplete, setSequenceComplete] = useState(false);
+
+  useEffect(() => {
+    const timers: number[] = [];
+    let currentDelay = 0;
+    
+    BOOT_SEQUENCE.forEach((line, index) => {
+      currentDelay += line.delay;
+      const timer = setTimeout(() => {
+        setVisibleLines(prev => prev + 1);
+        setProgress(((index + 1) / BOOT_SEQUENCE.length) * 100);
+      }, currentDelay);
+      timers.push(timer);
+    });
+
+    const sequenceCompleteTimer = setTimeout(() => {
+      setSequenceComplete(true);
+    }, currentDelay + 500);
+    timers.push(sequenceCompleteTimer);
+
+    const onCompleteTimer = setTimeout(() => {
+      onComplete();
+    }, currentDelay + 2500);
+    timers.push(onCompleteTimer);
+
+    // Cleanup function to clear all timers when the component unmounts
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <>
+      <div className={`holographic-container boot transition-opacity duration-1000 ease-out ${sequenceComplete ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="holographic-element h-ring-1"></div>
+          <div className="holographic-element h-ring-2"></div>
+          <div className="holographic-element h-ring-3"></div>
+          <div className="holographic-element h-ring-4"></div>
+          <div className="holographic-element h-core"></div>
+      </div>
+      
+      <div className={`absolute bottom-4 left-4 w-full max-w-md text-xs bg-black/30 p-2 border border-primary-t-20/50 rounded transition-opacity duration-1000 ease-out typewriter ${sequenceComplete ? 'opacity-0' : 'opacity-100'}`}>
+        {BOOT_SEQUENCE.slice(0, visibleLines).map((line, i) => (
+          <p key={i} style={{ animationDuration: `${Math.min(1, line.text.length / 40)}s` }}>
+            &gt; {line.text}
+          </p>
+        ))}
+      </div>
+      
+      <div className={`absolute bottom-4 right-4 w-full max-w-md transition-opacity duration-1000 ease-out ${sequenceComplete ? 'opacity-0' : 'opacity-100'}`}>
+          <p className="text-right mb-1 text-sm tracking-widest">SYSTEM BOOT: {Math.round(progress)}%</p>
+          <div className="w-full bg-primary-t-20 h-1 rounded-full overflow-hidden">
+            <div className="bg-primary h-full" style={{ width: `${progress}%`, transition: 'width 0.2s linear', boxShadow: '0 0 8px var(--primary-color-hex)' }}></div>
+          </div>
+       </div>
+
+      <div className={`absolute transition-opacity duration-1000 ${sequenceComplete ? 'opacity-100' : 'opacity-0'}`}>
+        <h1 
+          className="font-orbitron text-7xl md:text-8xl lg:text-9xl text-primary glitch"
+          data-text="J.A.R.V.I.S."
+          style={{ textShadow: '0 0 20px var(--primary-color-hex)' }}
+        >
+          J.A.R.V.I.S.
+        </h1>
+        <p className="text-center text-xl md:text-2xl mt-4 tracking-widest animate-pulse">WELCOME, SIR.</p>
+      </div>
+    </>
+  );
+};
+
+
+const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo }) => {
+  const [bootMode, setBootMode] = useState<'loading' | 'video' | 'holographic'>('loading');
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+
+    const loadVideo = async () => {
+      try {
+        const videoFile = await getVideo();
+        if (videoFile) {
+          objectUrl = URL.createObjectURL(videoFile);
+          setVideoUrl(objectUrl);
+          setBootMode('video');
+        } else {
+          console.warn("Custom boot video not found. Falling back to default animation.");
+          setBootMode('holographic');
+        }
+      } catch (error) {
+        console.error("Failed to load custom boot video:", error);
+        setBootMode('holographic');
+      }
+    };
+
+    if (useCustomVideo) {
+      // Set to loading first to unmount the default animation and its timers
+      // before awaiting the async video loading. This fixes the race condition.
+      setBootMode('loading');
+      loadVideo();
+    } else {
+      setBootMode('holographic');
+    }
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [useCustomVideo]);
+
+  const renderContent = () => {
+    switch (bootMode) {
+      case 'video':
+        return (
+          <video
+            src={videoUrl!}
+            autoPlay
+            muted
+            playsInline
+            onEnded={onComplete}
+            onError={(e) => {
+              console.error("Custom boot video failed to play.", e);
+              setBootMode('holographic');
+            }}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        );
+      case 'holographic':
+        return <DefaultBootAnimation onComplete={onComplete} />;
+      case 'loading':
+      default:
+        return <p className="font-orbitron animate-pulse">INITIALIZING BOOT SEQUENCE...</p>;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-jarvis-dark text-primary font-mono flex items-center justify-center p-8 overflow-hidden animate-fade-in-fast">
+      {renderContent()}
+    </div>
+  );
+};
+
+export default BootingUp;

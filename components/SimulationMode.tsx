@@ -83,9 +83,9 @@ const SimulationMode: React.FC<SimulationModeProps> = ({ prompt, onComplete, onC
 
   return (
     <div className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center backdrop-blur-sm animate-fade-in-fast">
-      <div className="panel w-full max-w-4xl h-[90vh] flex flex-col p-6 border-2 border-jarvis-cyan/50 shadow-2xl shadow-jarvis-cyan/20">
+      <div className="hud-panel w-full max-w-4xl h-[90vh] flex flex-col p-6 border-2 border-primary-t-50 shadow-2xl shadow-primary/20">
         <div className="flex justify-between items-center mb-4">
-            <h1 className="font-orbitron text-xl text-jarvis-cyan tracking-widest truncate pr-4 flex items-center gap-3">
+            <h1 className="font-orbitron text-xl text-primary tracking-widest truncate pr-4 flex items-center gap-3">
                 <GenerateVideoIcon className="w-6 h-6" />
                 SIMULATION MODE: {prompt}
             </h1>
@@ -93,16 +93,16 @@ const SimulationMode: React.FC<SimulationModeProps> = ({ prompt, onComplete, onC
                  <button onClick={onCancel} className="px-4 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 flex-shrink-0">
                     {isLoading ? 'Abort' : 'Close'}
                 </button>
-                <button onClick={handleLogToChat} disabled={!videoUrl} className="px-4 py-2 rounded-md bg-jarvis-cyan/80 text-jarvis-dark hover:bg-jarvis-cyan flex-shrink-0 disabled:opacity-50">
+                <button onClick={handleLogToChat} disabled={!videoUrl} className="px-4 py-2 rounded-md bg-primary-t-80 text-jarvis-dark hover:bg-primary flex-shrink-0 disabled:opacity-50">
                     Log to Chat
                 </button>
             </div>
         </div>
         
-        <div className="flex-1 bg-slate-900/50 border border-jarvis-border rounded-lg flex items-center justify-center overflow-hidden">
+        <div className="flex-1 bg-slate-900/50 border border-primary-t-20 rounded-lg flex items-center justify-center overflow-hidden">
             {isLoading && (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400 text-center">
-                   <svg className="w-12 h-12 animate-spin text-jarvis-cyan mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                   <svg className="w-12 h-12 animate-spin text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>

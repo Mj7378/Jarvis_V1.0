@@ -12,11 +12,12 @@ export interface ChatMessage {
 
 export enum AppState {
   IDLE = 'IDLE',
-  LISTENING = 'LISTENING',
   THINKING = 'THINKING',
-  SPEAKING = 'SPEAKING',
   VISION = 'VISION',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
+  // Fix: Added LISTENING and SPEAKING to AppState enum as they were used in UI components but not defined.
+  LISTENING = 'LISTENING',
+  SPEAKING = 'SPEAKING',
 }
 
 export interface DeviceControlCommand {
@@ -25,25 +26,10 @@ export interface DeviceControlCommand {
     app: string;
     params: any;
     spoken_response: string;
+    lang?: string;
 }
 
 export type AICommand = DeviceControlCommand;
-
-export interface KeyEntity {
-  name: string;
-  type: string; // e.g., PERSON, ORGANIZATION, LOCATION
-}
-
-export interface CyberAnalysisResult {
-  title: string;
-  summary: string;
-  sentiment: {
-    label: 'Positive' | 'Negative' | 'Neutral';
-    score: number;
-  };
-  reliabilityScore: number;
-  keyEntities: KeyEntity[];
-}
 
 export interface CodePrototype {
     language: string;
@@ -57,6 +43,23 @@ export interface TripPlanData {
   endDate: string;
   travelers: string;
   budget: string;
+}
+
+export interface AppError {
+  code: string;
+  title: string;
+  message: string;
+  details?: string;
+  action?: string;
+}
+
+export interface ThemeSettings {
+  primaryColor: string;
+  panelColor: string;
+  showGrid: boolean;
+  showScanlines: boolean;
+  showTextFlicker: boolean;
+  hasCustomBootVideo: boolean;
 }
 
 declare global {

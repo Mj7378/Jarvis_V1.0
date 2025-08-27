@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface IconProps {
@@ -41,147 +40,90 @@ export const GenerateImageIcon: React.FC<IconProps> = ({ className }) => (
     </svg>
 );
 
-export const GenerateVideoIcon: React.FC<IconProps> = ({ className }) => (
+export const SelfHealIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 3h20v18H2z" />
-        <path d="M7 8v8l6-4-6-4z" />
-        <path d="M15 8h2" />
-        <path d="M15 12h2" />
-        <path d="M15 16h2" />
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
     </svg>
 );
 
-export const SelfHealIcon: React.FC<IconProps> = ({ className }) => (
+export const GenerateVideoIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <path d="M12 10v4" />
-        <path d="M10 12h4" />
+        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+        <line x1="7" y1="2" x2="7" y2="22" />
+        <line x1="17" y1="2" x2="17" y2="22" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <line x1="2" y1="7" x2="7" y2="7" />
+        <line x1="2" y1="17" x2="7" y2="17" />
+        <line x1="17" y1="17" x2="22" y2="17" />
+        <line x1="17" y1="7" x2="22" y2="7" />
     </svg>
 );
 
 export const DeviceControlIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z" />
+        <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+        <path d="M12 2v2" />
+        <path d="M12 22v-2" />
+        <path d="m17 7 1.4-1.4" />
+        <path d="m6 18 1.4-1.4" />
+        <path d="M22 12h-2" />
+        <path d="M4 12H2" />
+        <path d="m17 17-1.4 1.4" />
+        <path d="m6 6-1.4 1.4" />
     </svg>
 );
 
-export const PcIcon: React.FC<IconProps> = ({ className }) => (
+export const PaletteIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-        <line x1="8" y1="21" x2="16" y2="21"></line>
-        <line x1="12" y1="17" x2="12" y2="21"></line>
+        <circle cx="13.5" cy="6.5" r=".5" />
+        <circle cx="17.5" cy="10.5" r=".5" />
+        <circle cx="8.5" cy="7.5" r=".5" />
+        <circle cx="6.5" cy="12.5" r=".5" />
+        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
     </svg>
 );
 
-export const MobileIcon: React.FC<IconProps> = ({ className }) => (
+export const PowerIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="7" y="2" width="10" height="20" rx="2" ry="2"></rect>
-        <line x1="12" y1="18" x2="12.01" y2="18"></line>
-    </svg>
-);
-
-export const WatchIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="7"></circle>
-        <polyline points="12 9 12 12 13.5 13.5"></polyline>
-        <path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path>
-    </svg>
-);
-
-export const TripPlannerIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 12h20" />
-        <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z" />
-        <path d="M12 2a10 10 0 0 0-4.95 18.28 10 10 0 0 0 9.9 0A10 10 0 0 0 12 2z" />
-    </svg>
-);
-
-export const NoteIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-        <polyline points="10 9 9 9 8 9"/>
-    </svg>
-);
-
-export const CreativeWritingIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.94 11.06a4.5 4.5 0 0 0-6.08-1.8L5 15.58A4.5 4.5 0 0 0 8.42 22a4.5 4.5 0 0 0 6.5-3.42l6.02-6.52Z" />
-        <path d="M15 5a3 3 0 0 0-3 3" />
-    </svg>
-);
-
-export const SystemDiagnosticsIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-        <path d="M2 12h5l2 4 3-8 3 6 2-3h5"></path>
-        <line x1="8" y1="21" x2="16" y2="21"></line>
-        <line x1="12" y1="17" x2="12" y2="21"></line>
-    </svg>
-);
-
-export const TimerIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="13" r="8" />
-        <path d="M12 9v4l2 1" />
-        <path d="M5 3 2 6" />
-        <path d="m22 6-3-3" />
-        <path d="M6.38 18.7 4 21" />
-        <path d="M17.64 18.67 20 21" />
-    </svg>
-);
-
-export const ShoppingListIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-        <path d="M3 6h18" />
-        <path d="M16 10a4 4 0 0 1-8 0" />
-    </svg>
-);
-
-export const StrategicBriefingIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 3h20v18H2z" />
-        <path d="M12 3v18" />
-        <path d="M16 7h-4" />
-        <path d="M16 11h-4" />
-        <path d="M16 15h-4" />
-        <path d="M8 7H4" />
-        <path d="M8 11H4" />
-        <path d="M8 15H4" />
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+        <line x1="12" y1="2" x2="12" y2="12" />
     </svg>
 );
 
 export const PrototypingIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+        <polyline points="16 18 22 12 16 6" />
+        <polyline points="8 6 2 12 8 18" />
+        <line x1="10" y1="20" x2="14" y2="4" />
+    </svg>
+);
+
+export const StrategicBriefingIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
         <polyline points="14 2 14 8 20 8" />
-        <path d="m10 14-2 2 2 2" />
-        <path d="m14 18 2-2-2-2" />
+        <circle cx="12" cy="14" r="3" />
+        <line x1="12" y1="11" x2="12" y2="17" />
+        <line x1="9" y1="14" x2="15" y2="14" />
     </svg>
 );
 
 export const UniversalTranslatorIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 6.9l-7.4 7.4" />
-        <path d="M14 17h6v-6" />
-        <path d="M12 12L4 4" />
-        <path d="M8 4H4v4" />
-        <path d="M10.1 4.1A6.6 6.6 0 0 0 8 4a6.6 6.6 0 0 0-4 1.9" />
-        <path d="M18 14a6.6 6.6 0 0 0-1.9 4" />
+        <path d="M3 5h4" />
+        <path d="M3 3v2" />
+        <path d="M4 11a8 8 0 0 1 0 10" />
+        <path d="M12 21a8 8 0 0 0 0-10" />
+        <path d="M2 12h20" />
+        <path d="M17 5h4" />
+        <path d="M17 3v2" />
+        <path d="M21 12a8 8 0 0 0-8-8" />
     </svg>
 );
 
-export const CyberAnalystIcon: React.FC<IconProps> = ({ className }) => (
+export const TripPlannerIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="2" x2="12" y2="6" />
-        <line x1="12" y1="18" x2="12" y2="22" />
-        <line x1="6" y1="12" x2="2" y2="12" />
-        <line x1="22" y1="12" x2="18" y2="12" />
-        <circle cx="12" cy="12" r="2" />
+        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-1-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
     </svg>
 );
