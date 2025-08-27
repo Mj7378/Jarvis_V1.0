@@ -187,7 +187,6 @@ export async function streamTranslateText(text: string): Promise<AsyncGenerator<
     }
 }
 
-// Fix: Added missing `transcribeAudio` function to handle audio-to-text transcription using the Gemini API.
 export async function transcribeAudio(base64Data: string, mimeType: string): Promise<string> {
     try {
         const audioPart = {

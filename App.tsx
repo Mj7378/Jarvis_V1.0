@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { getAiResponseStream } from './services/geminiService';
+import { getAiResponseStream, transcribeAudio } from './services/geminiService';
 import { useChatHistory } from './hooks/useChatHistory';
 import { ChatMessage, AppState, Source, AICommand, DeviceControlCommand, AppError, ThemeSettings } from './types';
 import { saveVideo, deleteVideo } from './utils/db';
@@ -56,6 +57,7 @@ const App: React.FC = () => {
   const [modeData, setModeData] = useState<any>(null);
   const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isTerminating, setIsTerminating] = useState(false);
 
   // Theme Settings State
   const [isLoadingTheme, setIsLoadingTheme] = useState(true);
@@ -188,8 +190,23 @@ const App: React.FC = () => {
         window.open(url, '_blank');
     }
   };
+  
+  const handleShutdown = useCallback(() => {
+    sounds.playError();
+    cancel();
+    setIsTerminating(true);
+    setTimeout(() => {
+        setAppStatus('shutting_down');
+    }, 2500);
+  }, [sounds, cancel]);
 
   const processUserMessage = useCallback(async (userMessageText: string, promptForApi?: string, imageUrl?: string) => {
+    const normalizedMessage = userMessageText.trim().toLowerCase().replace(/[.,!?]/g, '');
+    if (normalizedMessage === 'shutdown jarvis' || normalizedMessage === 'goodbye jarvis') {
+        handleShutdown();
+        return;
+    }
+
     if (!userMessageText || !userMessageText.trim() || isProcessingRef.current) return;
     isProcessingRef.current = true;
     isCancelledRef.current = false;
@@ -307,7 +324,7 @@ const App: React.FC = () => {
       }
       setAppState(AppState.ERROR);
     }
-  }, [addMessage, updateLastMessage, chatHistory, removeLastMessage, handleError, themeSettings.voiceOutputEnabled, themeSettings.aiModel, speak, cancel]);
+  }, [addMessage, updateLastMessage, chatHistory, removeLastMessage, handleError, themeSettings.voiceOutputEnabled, themeSettings.aiModel, speak, cancel, handleShutdown]);
 
   const handleVisionCapture = (imageDataUrl: string) => {
     sounds.playSuccess();
@@ -416,18 +433,20 @@ const App: React.FC = () => {
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => { 
       e.preventDefault();
       sounds.playClick();
+
+      const normalizedInput = inputValue.trim().toLowerCase().replace(/[.,!?]/g, '');
+      if (normalizedInput === 'shutdown jarvis' || normalizedInput === 'goodbye jarvis') {
+          setInputValue('');
+          handleShutdown();
+          return;
+      }
+      
       if (appState === AppState.THINKING) {
         isCancelledRef.current = true;
       } else if (appState === AppState.SPEAKING) {
         cancel();
       }
       processUserMessage(inputValue); 
-  };
-  
-  const handleShutdown = () => {
-    sounds.playDeactivate();
-    cancel();
-    setAppStatus('shutting_down');
   };
 
   const handleCloseModal = () => {
@@ -527,7 +546,7 @@ const App: React.FC = () => {
     }
   };
 
-  const isInputBusy = appState === AppState.THINKING || appState === AppState.SPEAKING || appState === AppState.LISTENING;
+  const isInputBusy = appState === AppState.THINKING || appState === AppState.LISTENING;
 
   const getPlaceholderText = () => {
     switch(appState) {
@@ -577,7 +596,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`hud-container transition-opacity duration-1000 ${appStatus === 'running' ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`hud-container transition-opacity duration-1000 ${appStatus === 'running' ? 'opacity-100' : 'opacity-0'} ${isTerminating ? 'system-terminating' : ''}`}>
         {isVisionMode && <VisionMode onCapture={handleVisionCapture} onClose={() => { sounds.playDeactivate(); setIsVisionMode(false); }} />}
         {activeMode === 'design' && <DesignMode prompt={modeData.prompt} onComplete={handleDesignComplete} onCancel={handleCancelMode} />}
         {activeMode === 'simulation' && <SimulationMode prompt={modeData.prompt} onComplete={handleSimulationComplete} onCancel={handleCancelMode} />}
@@ -707,11 +726,15 @@ const App: React.FC = () => {
                             <MicrophoneIcon className="w-7 h-7" />
                         </button>
                     )}
-                    <button 
-                        type="submit" 
-                        disabled={!inputValue || appState === AppState.LISTENING} 
-                        className="p-2 rounded-md text-primary hover:bg-primary-t-20 disabled:text-slate-600 disabled:hover:bg-transparent transition-colors"
-                        aria-label="Send command"
+                    <button
+                        type="submit"
+                        disabled={!inputValue || appState === AppState.LISTENING}
+                        className={`p-2 rounded-md transition-colors ${
+                            appState === AppState.SPEAKING && inputValue
+                                ? 'text-yellow-400 hover:bg-yellow-500/20'
+                                : 'text-primary hover:bg-primary-t-20'
+                        } disabled:text-slate-600 disabled:hover:bg-transparent`}
+                        aria-label={appState === AppState.SPEAKING && !!inputValue ? "Interrupt and send command" : "Send command"}
                     >
                         <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />

@@ -46,9 +46,14 @@ const Shutdown: React.FC = () => {
               </p>
             ))}
           </div>
-          <p className="text-center text-3xl mt-8 tracking-widest animate-text-flicker" style={{ color: '#ff4d4d', textShadow: '0 0 10px #ff0000' }}>
+          <h1 
+            className="font-orbitron text-5xl md:text-7xl text-red-500 glitch mt-8"
+            data-text="SYSTEM OFFLINE"
+            // Use an inline style to make the glitch background transparent, so it doesn't block the view
+            style={{'--jarvis-dark': 'transparent', textShadow: '0 0 20px #ff0000'} as React.CSSProperties}
+          >
               SYSTEM OFFLINE
-          </p>
+          </h1>
         </div>
       </div>
     </div>
