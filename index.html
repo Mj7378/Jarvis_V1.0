@@ -32,6 +32,7 @@
               'scan-line': 'scan-line 1.5s ease-in-out infinite',
               'pulse-dot': 'pulse-dot 1.2s infinite ease-in-out',
               'text-flicker': 'text-flicker 150ms infinite',
+              'pulse-glow': 'pulse-glow 2.5s infinite ease-in-out',
             },
             keyframes: {
               'pulse-strong': {
@@ -59,6 +60,10 @@
                 '0%': { opacity: 1, textShadow: '0 0 10px currentColor' },
                 '50%': { opacity: 0.5, textShadow: '0 0 2px currentColor' },
                 '100%': { opacity: 1, textShadow: '0 0 10px currentColor' },
+              },
+              'pulse-glow': {
+                '0%, 100%': { boxShadow: '0 0 15px var(--primary-color-hex)', transform: 'scale(1)' },
+                '50%': { boxShadow: '0 0 30px var(--primary-color-hex)', transform: 'scale(1.02)' },
               },
             }
           }
