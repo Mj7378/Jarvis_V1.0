@@ -19,13 +19,26 @@
               'sans': ['Roboto', 'sans-serif'],
             },
             colors: {
-              'jarvis-dark': '#0c101d',
-              'jarvis-panel': 'rgba(12, 16, 29, 0.7)',
+              'background': 'var(--color-background)',
+              'panel': 'rgba(var(--panel-rgb), 0.85)',
+              'text-primary': 'var(--color-text-primary)',
+              'text-secondary': 'var(--color-text-secondary)',
+              'text-muted': 'var(--color-text-muted)',
+              
+              'border-primary': 'rgba(var(--primary-color-rgb), 0.2)',
+              'border-secondary': 'var(--color-border-secondary)',
+              
+              'user-bubble': 'rgba(var(--user-bubble-rgb), 0.8)',
+              'model-bubble': 'rgba(var(--panel-rgb), 0.7)',
+
+              'disabled-bg': 'var(--color-disabled-bg)',
+              'disabled-text': 'var(--color-disabled-text)',
+
               'primary': 'var(--primary-color-hex)',
               'primary-t-20': 'rgba(var(--primary-color-rgb), 0.2)',
               'primary-t-50': 'rgba(var(--primary-color-rgb), 0.5)',
               'primary-t-80': 'rgba(var(--primary-color-rgb), 0.8)',
-              'secondary': '#93c5fd', // A light blue for secondary text
+              'secondary': 'var(--color-text-secondary)',
             },
             animation: {
               'spin-slow': 'spin 8s linear infinite',
@@ -80,15 +93,43 @@
     </script>
     <style type="text/css">
       :root {
-        --jarvis-dark: #0c101d;
         --primary-color-hex: #00ffff;
         --primary-color-rgb: 0, 255, 255;
-        --panel-color-rgb: 18, 26, 43;
+        --panel-color-rgb: 18, 26, 43; /* Deprecated, use --panel-rgb */
       }
+      
+      .theme-dark {
+        --color-background: #0c101d;
+        --color-text-primary: #e2e8f0;
+        --color-text-secondary: #93c5fd;
+        --color-text-muted: #64748b;
+        --panel-rgb: 18, 26, 43;
+        --color-border-secondary: rgba(var(--primary-color-rgb), 0.1);
+        --user-bubble-rgb: 79, 70, 229;
+        --user-bubble-border-rgb: 99, 102, 241;
+        --color-disabled-bg: rgba(51, 65, 85, 0.5);
+        --color-disabled-text: #64748b;
+        --glitch-bg: #0c101d;
+      }
+
+      .theme-light {
+        --color-background: #f1f5f9;
+        --color-text-primary: #1e293b;
+        --color-text-secondary: #0ea5e9;
+        --color-text-muted: #94a3b8;
+        --panel-rgb: 255, 255, 255;
+        --color-border-secondary: rgba(30, 41, 59, 0.1);
+        --user-bubble-rgb: 59, 130, 246;
+        --user-bubble-border-rgb: 96, 165, 250;
+        --color-disabled-bg: rgba(203, 213, 225, 0.5);
+        --color-disabled-text: #94a3b8;
+        --glitch-bg: #f1f5f9;
+      }
+
       body {
         font-family: 'Roboto', sans-serif;
-        background-color: var(--jarvis-dark);
-        color: #e2e8f0;
+        background-color: var(--color-background);
+        color: var(--color-text-primary);
         overflow: hidden;
       }
       body.grid-active {
@@ -114,16 +155,19 @@
       }
       
       .hud-panel {
-        background: radial-gradient(circle at center, rgba(var(--panel-color-rgb), 0.7) 0%, rgba(var(--panel-color-rgb), 0.85) 100%);
+        background: radial-gradient(circle at center, rgba(var(--panel-rgb), 0.7) 0%, rgba(var(--panel-rgb), 0.85) 100%);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(var(--primary-color-rgb), 0.2);
+        border: 1px solid var(--border-primary);
         box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.1), inset 0 0 15px rgba(var(--primary-color-rgb), 0.05);
         clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
         padding: 1.25rem;
         display: flex;
         flex-direction: column;
         position: relative;
+      }
+      .theme-light .hud-panel {
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       }
 
       .hud-panel::before, .hud-panel::after {
@@ -148,13 +192,13 @@
         gap: 0.5rem;
         font-family: 'Orbitron', sans-serif;
         font-size: 1rem;
-        color: #93c5fd;
+        color: var(--color-text-secondary);
         margin-bottom: 0.75rem;
         padding-bottom: 0.5rem;
-        border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+        border-bottom: 1px solid var(--border-primary);
       }
       
-      /* --- New Responsive Grid Layout --- */
+      /* --- ENHANCED Responsive Grid Layout --- */
       .hud-container {
         display: grid;
         width: 100vw;
@@ -163,12 +207,12 @@
         gap: 0.5rem;
         overflow: hidden;
         
-        /* Mobile First: Default to a stacked layout */
+        /* Mobile & Tablet Portrait (Default) */
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto; /* Header, Core, Input */
+        grid-template-rows: auto 1fr auto;
         grid-template-areas:
             "header"
-            "core"
+            "main"
             "input";
       }
 
@@ -180,18 +224,31 @@
         align-items: center; 
       }
       
-      /* On mobile, left and right panels are hidden by default */
-      .hud-left-panel, .hud-right-panel-placeholder { 
+      .hud-right-panel-placeholder { 
         display: none;
+        grid-area: right;
       }
 
+      /* In portrait, core and chat occupy the same 'main' area, stacking them */
       .hud-core-container { 
-        grid-area: core; 
+        grid-area: main; 
         position: relative; 
         display: flex; 
         align-items: center; 
         justify-content: center; 
-        min-height: 0; 
+        min-height: 0;
+        pointer-events: none; /* Let clicks pass through to chat */
+      }
+      .hud-core-container > * {
+          pointer-events: auto; /* Re-enable for the core itself */
+      }
+      
+      .hud-chat-panel {
+          grid-area: main;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+          z-index: -1; /* Place it behind the core */
       }
       
       .hud-bottom-panel { 
@@ -200,44 +257,65 @@
         animation: slide-in-bottom 0.5s ease-out forwards;
       }
       
-      /* The chat log wrapper which is absolutely positioned */
-      .chat-log-container {
-        position: absolute;
-        inset: 0.5rem;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      /* Tablet Layout (e.g., landscape phones, small tablets) */
+      /* Landscape & Medium Tablet Layout */
       @media (min-width: 768px) {
         .hud-container {
             padding: 1rem;
             gap: 1rem;
-            grid-template-columns: 1fr;
-            grid-template-rows: auto 1fr auto;
-            grid-template-areas:
-                "header"
-                "core"
-                "input";
         }
-        .hud-left-panel {
-           display: none;
-        }
-        .chat-log-container {
-            inset: 1rem;
+
+        /* When in landscape, switch to side-by-side */
+        @media (orientation: landscape) {
+            .hud-container {
+                grid-template-columns: 2fr 3fr;
+                grid-template-rows: auto 1fr auto;
+                grid-template-areas:
+                    "header header"
+                    "core   chat"
+                    "core   input";
+            }
+            
+            .hud-core-container {
+                grid-area: core;
+                pointer-events: auto;
+            }
+
+            .hud-chat-panel {
+                grid-area: chat;
+                z-index: 0;
+            }
+
+            .hud-bottom-panel {
+                grid-area: input;
+            }
         }
       }
 
       /* Desktop Layout */
       @media (min-width: 1200px) {
         .hud-container {
-            grid-template-columns: 1fr 320px;
-            grid-template-rows: 60px 1fr 80px;
+            grid-template-columns: 1fr 2fr 320px;
+            grid-template-rows: auto 1fr auto;
             grid-template-areas:
-                "header header"
-                "core   right"
-                "input  right";
+                "header header header"
+                "core   chat   right"
+                "core   input  right";
         }
+
+        .hud-core-container {
+            grid-area: core;
+            pointer-events: auto;
+        }
+        
+        .hud-chat-panel {
+            grid-area: chat;
+            z-index: 0;
+        }
+
+        .hud-bottom-panel {
+            grid-area: input;
+        }
+        
         .hud-right-panel-placeholder {
             display: flex; /* Show right panel */
             grid-area: right;
@@ -251,7 +329,7 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        border-right: 1px solid rgba(var(--primary-color-rgb), 0.2);
+        border-right: 1px solid var(--border-primary);
         position: relative;
       }
       .info-block::before, .info-block::after {
@@ -298,6 +376,10 @@
         position: relative;
         transition: background-color .2s;
       }
+      .theme-light .toggle-label {
+        background-color: #e2e8f0; /* slate-200 */
+        border-color: #cbd5e1; /* slate-300 */
+      }
       .toggle-label .toggle-dot {
         content: '';
         position: absolute;
@@ -310,13 +392,22 @@
         background: rgba(var(--primary-color-rgb), 0.5);
         box-shadow: 0 0 2px 0 rgba(10, 10, 10, 0.29);
       }
+      .theme-light .toggle-label .toggle-dot {
+        background-color: #f8fafc; /* slate-50 */
+      }
       .toggle-checkbox:checked + .toggle-label {
         background: rgba(var(--primary-color-rgb), 0.4);
+      }
+      .theme-light .toggle-checkbox:checked + .toggle-label {
+        background-color: var(--primary-color-hex);
       }
       .toggle-checkbox:checked + .toggle-label .toggle-dot {
         left: calc(100% - 2px);
         transform: translateX(-100%);
         background: var(--primary-color-hex);
+      }
+      .theme-light .toggle-checkbox:checked + .toggle-label .toggle-dot {
+        background-color: white;
       }
 
       /* Glitch animation for bootup */
@@ -332,7 +423,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: var(--jarvis-dark);
+        background: var(--glitch-bg);
         overflow: hidden;
       }
       .glitch::before {

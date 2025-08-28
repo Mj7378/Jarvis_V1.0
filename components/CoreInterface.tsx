@@ -56,7 +56,7 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
                     ${!isThinking && !isSpeaking ? 'group-hover:bg-primary-t-20' : ''}
                 `}
             >
-                <div className={`w-1/3 h-1/3 rounded-full bg-slate-900/50 flex items-center justify-center border border-primary-t-20 transition-all duration-300 group-hover:border-primary-t-70 relative overflow-hidden
+                <div className={`w-1/3 h-1/3 rounded-full bg-background/50 flex items-center justify-center border border-primary-t-20 transition-all duration-300 group-hover:border-primary-t-70 relative overflow-hidden
                     ${isThinking ? 'border-yellow-500' : ''}
                     ${isSpeaking ? 'border-purple-500' : ''}
                 `}>
@@ -68,7 +68,7 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
                              } as React.CSSProperties}
                         ></div>
                      )}
-                     <GeminiIcon className="w-1/2 h-1/2 text-slate-400 group-hover:text-primary transition-colors" />
+                     <GeminiIcon className="w-1/2 h-1/2 text-text-muted group-hover:text-primary transition-colors" />
                 </div>
             </div>
         </div>

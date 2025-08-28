@@ -38,10 +38,10 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
           return (
             <div key={index} className={`flex flex-col animate-fade-in-fast ${isModel ? 'items-start' : 'items-end'}`}>
               <div
-                className={`max-w-md p-3 text-slate-200 text-sm md:text-base border transition-all duration-300 ${
+                className={`max-w-md p-3 text-sm md:text-base border transition-all duration-300 ${
                   isModel
-                    ? 'bg-slate-800/60 border-primary-t-20'
-                    : 'bg-indigo-600/50 border-indigo-500/50'
+                    ? 'bg-model-bubble border-primary-t-20 text-text-primary'
+                    : 'bg-user-bubble border-transparent text-white'
                 } ${isThinking ? '!border-yellow-400/80 shadow-[0_0_15px] shadow-yellow-400/20' : ''}`}
                  style={{
                     clipPath: isModel 

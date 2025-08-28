@@ -42,6 +42,7 @@ const hexToRgb = (hex: string): string | null => {
 const DEFAULT_THEME: ThemeSettings = {
   primaryColor: '#00ffff', // J.A.R.V.I.S. Cyan
   panelColor: '#121a2b',
+  themeMode: 'dark',
   showGrid: true,
   showScanlines: true,
   showTextFlicker: false,
@@ -121,6 +122,14 @@ const App: React.FC = () => {
     }
     if (panelRgb) {
         root.style.setProperty('--panel-color-rgb', panelRgb);
+    }
+
+    if (themeSettings.themeMode === 'light') {
+        document.body.classList.remove('theme-dark');
+        document.body.classList.add('theme-light');
+    } else {
+        document.body.classList.remove('theme-light');
+        document.body.classList.add('theme-dark');
     }
 
     document.body.classList.toggle('grid-active', themeSettings.showGrid);
@@ -301,15 +310,16 @@ const App: React.FC = () => {
 
   // The main app view
   return (
-    <div id="jarvis-container" className={`w-screen h-screen bg-jarvis-dark text-slate-200 transition-opacity duration-500 ${systemState === 'ACTIVE' ? 'opacity-100' : 'opacity-0'}`}>
+    <div id="jarvis-container" className={`w-screen h-screen bg-background text-text-primary transition-opacity duration-500 ${systemState === 'ACTIVE' ? 'opacity-100' : 'opacity-0'}`}>
         <main className={`hud-container ${systemState === 'SNAP_DISINTEGRATION' ? 'system-terminating' : ''}`}>
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
             
             <div className="hud-core-container">
-                <div className="chat-log-container">
-                    <ChatLog history={chatHistory} appState={appState} />
-                </div>
                 <CoreInterface appState={appState} />
+            </div>
+
+            <div className="hud-chat-panel hud-panel">
+                <ChatLog history={chatHistory} appState={appState} />
             </div>
             
             <div className="hud-bottom-panel hud-panel items-center justify-center !p-2 md:!p-4">

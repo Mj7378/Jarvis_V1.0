@@ -41,6 +41,7 @@ export interface AppError {
 export interface ThemeSettings {
   primaryColor: string;
   panelColor: string;
+  themeMode: 'dark' | 'light';
   showGrid: boolean;
   showScanlines: boolean;
   showTextFlicker: boolean;

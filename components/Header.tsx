@@ -45,7 +45,7 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
             </div>
 
             {/* Right side: Clock & Controls */}
-            <div className="flex items-center h-full text-sm text-slate-300 font-mono ml-auto">
+            <div className="flex items-center h-full text-sm text-text-primary font-mono ml-auto">
                 {/* Upgraded System Clock */}
                 <div className="pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
                     <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
@@ -74,13 +74,13 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="font-mono text-xl md:text-2xl text-slate-100 tracking-wider flex items-baseline">
+                        <div className="font-mono text-xl md:text-2xl text-text-primary tracking-wider flex items-baseline">
                             <span>{hours.toString().padStart(2, '0')}</span>
                             <span className="animate-pulse mx-px">:</span>
                             <span>{minutes.toString().padStart(2, '0')}</span>
                             <span className="text-base ml-2">{ampm}</span>
                         </div>
-                        <div className="font-sans text-xs text-slate-400 tracking-widest mt-1 hidden sm:block">
+                        <div className="font-sans text-xs text-text-muted tracking-widest mt-1 hidden sm:block">
                             {dayOfWeek} | {formattedDate}
                         </div>
                     </div>

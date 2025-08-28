@@ -1,44 +1,63 @@
 # J.A.R.V.I.S. V1.0 - AI Assistant
 
-A sophisticated, text-based AI assistant inspired by Iron Man's J.A.R.V.I.S. This web application leverages the power of the Google Gemini API for intelligent conversation and features a futuristic, reactive Heads-Up Display (HUD).
+A sophisticated, voice and text-enabled AI assistant inspired by Iron Man's J.A.R.V.I.S. This web application leverages the full power of the Google Gemini API for intelligent, real-time conversation and features a deeply customizable, futuristic Heads-Up Display (HUD).
 
-This project is a demonstration of how to build a complex, feature-rich AI application using modern web technologies and the Google Gemini API.
+This project is a showcase of how to build a complex, feature-rich AI application using modern web technologies, advanced Gemini models, and a focus on immersive user experience.
 
 ## ✨ Features
 
-*   **💬 Text-Based Interaction:** Interact with J.A.R.V.I.S. through a clean, command-line-style input.
-*   **🧠 Gemini-Powered Intelligence:** At its core, J.A.R.V.I.S. uses the `gemini-2.5-flash` model for fast, witty, and context-aware conversational abilities.
-*   ** futuristic HUD:** A dynamic and visually stunning interface built with React and Tailwind CSS, providing a truly immersive experience.
-*   **🚀 Device & Web Control:** Issue commands to:
-    *   Open any website or web app (e.g., "Launch YouTube", "Open WhatsApp").
-    *   Perform Google or YouTube searches.
-    *   Find directions using Google Maps.
-    *   Play music on YouTube Music.
-*   **👁️ Vision Mode:** Activate the device camera to stream video. Capture an image and ask J.A.R.V.I.S. to analyze and describe what it sees.
-*   **💡 Advanced Function Modes:**
-    *   **Design Mode:** Describe a visual concept and have J.A.R.V.I.S. generate an image using the `imagen-4.0` model.
-    *   **Simulation Mode:** Describe a scenario and watch J.A.R.V.I.S. generate a short video clip using the `veo-2.0` model.
-*   **💬 Streaming Responses:** AI responses are streamed token-by-token, making the conversation feel more natural and immediate.
-*   **⚙️ System Status Display:** A live dashboard shows simulated CPU, memory, and network activity, enhancing the HUD aesthetic.
-*   **🔒 Robust Error Handling:** Gracefully handles API errors, permission issues, and unsupported commands with clear user feedback.
+### Conversational AI Core
+*   **Gemini-Powered Intelligence:** At its core, J.A.R.V.I.S. uses the `gemini-2.5-flash` model for fast, witty, and context-aware conversational abilities.
+*   **Rich Persona:** A detailed system prompt establishes the iconic J.A.R.V.I.S. personality: confident, efficient, and casually brilliant.
+*   **Streaming Responses:** AI responses are streamed token-by-token for natural, real-time conversation flow.
+*   **Google Search Grounding:** J.A.R.V.I.S. can answer questions about recent events and trending topics by leveraging Google Search, ensuring up-to-date information.
+
+### Voice & Audio Interaction
+*   **Voice Commands:** Full speech-to-text integration allows you to speak commands naturally.
+*   **Voice Output:** J.A.R.V.I.S. responds with a synthesized voice, enhancing the assistant experience.
+*   **Voice Calibration:** A unique calibration module analyzes your speaking pace and clarity to adjust the AI's response speed, creating a more synchronized conversation.
+*   **Immersive UI Sounds:** Procedurally generated sound effects provide satisfying auditory feedback for all interactions.
+
+### Advanced Generative Modes
+*   **👁️ Vision Mode:** Activate your camera to stream video. Capture an image and ask J.A.R.V.I.S. to analyze and describe what it sees.
+*   **🎨 Design Mode:** Describe a visual concept (e.g., "a futuristic arc reactor") and have J.A.R.V.I.S. generate a high-quality image using the `imagen-4.0-generate-001` model.
+*   **🎬 Simulation Mode:** Describe a scenario (e.g., "a high-speed chase through a neon city") and watch J.A.R.V.I.S. generate a short video clip using the `veo-2.0-generate-001` model.
+*   **🌐 Universal Translator:** An experimental real-time translation module that listens to foreign speech and provides a live English translation.
+
+### System & Device Control
+*   **Reliable Command Protocol:** J.A.R.V.I.S. uses a strict JSON-only protocol for device commands, ensuring high reliability.
+*   **Web App Integration:** Issue commands to open a wide range of websites and web apps, including YouTube, WhatsApp, Google Drive, Replit, and more.
+*   **Integrated Search:** Directly ask J.A.R.V.I.S. to search Google or YouTube for specific queries.
+*   **System Functions:** Run simulated diagnostics or issue a shutdown command for a complete system lifecycle experience.
+
+### Futuristic HUD & Deep Customization
+*   **Reactive Interface:** A dynamic and visually stunning HUD built with React and Tailwind CSS that reacts to the AI's state (Idle, Thinking, Speaking).
+*   **Theme Editor:** In-depth settings allow you to customize the entire look and feel:
+    *   **Colors:** Change the primary UI color and panel background colors with a color picker or choose from presets.
+    *   **Theme:** Switch between "Dark" and "Light" modes.
+    *   **Visual Effects:** Toggle a background grid, scanline overlay, and a text flicker effect for the perfect sci-fi aesthetic.
+*   **Custom Boot Sequence:** Choose between a holographic boot animation or upload your own video for a personalized system startup.
 
 ## 🛠️ Tech Stack
 
 *   **Frontend:** React, TypeScript
-*   **Styling:** Tailwind CSS with custom sci-fi theme
+*   **Styling:** Tailwind CSS with a highly customized, themeable design system.
 *   **AI Models:** Google Gemini API (`@google/genai`)
-    *   `gemini-2.5-flash` for text and chat
-    *   `imagen-4.0-generate-001` for image generation
-    *   `veo-2.0-generate-001` for video generation
+    *   **Chat & Vision:** `gemini-2.5-flash`
+    *   **Image Generation:** `imagen-4.0-generate-001`
+    *   **Video Generation:** `veo-2.0-generate-001`
+*   **Browser Storage:** IndexedDB for storing the custom boot video file.
 *   **Web APIs:**
-    *   `navigator.mediaDevices` (getUserMedia) for camera access
-*   **Modules:** Loaded directly in the browser via `esm.sh` (no build step needed).
+    *   **Web Speech API:** `SpeechRecognition` for voice input and `SpeechSynthesis` for voice output.
+    *   **Web Audio API:** For generating procedural UI sound effects.
+    *   **MediaDevices API:** `getUserMedia` for camera access in Vision Mode.
+*   **Modules:** Loaded directly in the browser via `aistudiocdn.com` (no build step needed).
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-1.  A modern web browser.
+1.  A modern web browser (Chrome recommended for best Web API compatibility).
 2.  A valid Google Gemini API key.
 
 ### Installation & Running
@@ -51,7 +70,7 @@ This project is designed to run directly in the browser without a build step.
 2.  **Serve the files:**
     Use any simple static file server to serve the project's root directory.
     ```bash
-    # If you have Node.js installed
+    # If you have Node.js installed, you can use the `serve` package
     npx serve
     ```
 
@@ -59,46 +78,27 @@ This project is designed to run directly in the browser without a build step.
     Navigate to the local server's address (e.g., `http://localhost:3000`).
 
 4.  **Grant Permissions:**
-    The application will request permission to use your camera for Vision Mode. You must grant this permission for full functionality.
+    Upon first use of certain features, the application will request permission to use your **camera** (for Vision Mode) and **microphone** (for voice commands). You must grant these permissions for full functionality.
 
 ## 🤖 How It Works
 
 ### The J.A.R.V.I.S. Protocol
 
-The core of the AI's functionality is defined by a detailed **system instruction** provided to the Gemini model (`services/geminiService.ts`). This prompt establishes the J.A.R.V.I.S. personality (witty, confident, efficient) and defines a strict communication protocol.
-
-There are two main interaction modes:
+The core of the AI's functionality is defined by a detailed **system instruction** provided to the Gemini model (`services/geminiService.ts`). This prompt establishes the J.A.R.V.I.S. personality and defines a strict communication protocol. There are two main interaction modes:
 
 1.  **Device Control Protocol:** When a user's command is interpreted as an action (like opening a URL or searching), the AI is instructed to respond **only with a JSON object**. This structured data is then parsed by the frontend to execute the command. This prevents conversational filler and ensures reliable command execution.
 
-    *Example JSON Response:*
-    ```json
-    {
-      "action": "device_control",
-      "command": "open_url",
-      "app": "Browser",
-      "params": { "url": "https://www.youtube.com" },
-      "spoken_response": "Bringing up YouTube."
-    }
-    ```
-    The `spoken_response` field contains the text confirmation that is displayed in the chat log.
-
 2.  **Conversational Interaction:** For any other query, the AI engages in a natural, text-based conversation, adopting the J.A.R.V.I.S. persona.
 
-### Application State
+### Application State & Components
 
-The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the visual feedback for the user:
-*   `IDLE`: Waiting for a command.
-*   `THINKING`: A request has been sent to the Gemini API, and the app is awaiting a response.
-*   `ERROR`: An error has occurred.
+The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the visual feedback for the user (e.g., `THINKING`, `LISTENING`, `SPEAKING`). The application is broken down into a series of modular components:
 
-### Component Structure
-
-*   `App.tsx`: The main component that manages state, handles user input, and orchestrates communication with the Gemini service.
-*   `services/geminiService.ts`: Contains all logic for interacting with the `@google/genai` SDK, including the main system prompt and functions for different AI modes.
-*   `components/`: A collection of React components for different parts of the UI.
+*   `App.tsx`: The root component that manages all state, user input, and orchestrates communication with services and modals.
+*   `services/geminiService.ts`: A dedicated module for all interactions with the `@google/genai` SDK, containing the system prompt and API call logic.
+*   `hooks/`: Reusable hooks for managing chat history, sound effects, speech synthesis, and speech recognition.
+*   `components/`: A comprehensive library of UI components, including:
     *   `CoreInterface.tsx`: The central animated orb that displays the AI's status.
-    *   `ChatLog.tsx`: Displays the conversation history.
-    *   `RightSidebar.tsx`: Contains buttons for quick actions and system controls.
-    *   `*Mode.tsx` (e.g., `DesignMode.tsx`, `SimulationMode.tsx`): Full-screen modal components for the advanced functions.
-*   `hooks/`: Reusable logic for managing chat history (`useChatHistory.ts`).
+    *   `ChatLog.tsx`: The scrollable chat history panel.
+    *   `SettingsModal.tsx`: The slide-out panel for all user-configurable settings.
+    *   **Mode Modals** (`VisionMode.tsx`, `DesignMode.tsx`, etc.): Full-screen overlays for the application's advanced generative features.

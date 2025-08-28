@@ -27,9 +27,9 @@ const UserInput: React.FC<UserInputProps> = ({ onSendMessage, onToggleListening,
         return 'bg-red-500/80 text-white animate-pulse';
     }
     if (isInputDisabled) {
-        return 'bg-slate-700/50 text-slate-500 cursor-not-allowed';
+        return 'bg-disabled-bg text-disabled-text cursor-not-allowed';
     }
-    return 'bg-primary-t-50 text-primary hover:bg-primary hover:text-jarvis-dark';
+    return 'bg-primary-t-50 text-primary hover:bg-primary hover:text-background';
   };
 
   return (
@@ -40,7 +40,7 @@ const UserInput: React.FC<UserInputProps> = ({ onSendMessage, onToggleListening,
         onChange={(e) => setInputValue(e.target.value)}
         placeholder={isListening ? "Listening..." : "Enter command or press mic..."}
         disabled={isInputDisabled || isListening}
-        className="flex-grow bg-transparent border-none focus:ring-0 p-2 text-base md:text-lg text-slate-200 placeholder:text-slate-500 disabled:opacity-60 transition-opacity"
+        className="flex-grow bg-transparent border-none focus:ring-0 p-2 text-base md:text-lg text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity"
         aria-label="User command input"
       />
       <button
