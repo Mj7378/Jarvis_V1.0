@@ -23,8 +23,9 @@ import PreBootScreen from './components/PreBootScreen';
 import { SettingsModal } from './components/SettingsModal';
 import Header from './components/Header';
 import Shutdown from './components/Shutdown';
-import UserInput from './components/UserInput';
+import CommandPanel from './components/CommandPanel';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
+import { MicrophoneIcon } from './components/Icons';
 
 
 // System Lifecycle States
@@ -129,6 +130,7 @@ const App: React.FC = () => {
   const { queueSpeech, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(activeProfile);
 
   // Modes & Modals
+  const [isCommandPanelOpen, setIsCommandPanelOpen] = useState(false);
   const [isVisionMode, setIsVisionMode] = useState(false);
   const [isDiagnosticsMode, setIsDiagnosticsMode] = useState(false);
   const [designModePrompt, setDesignModePrompt] = useState<string | null>(null);
@@ -502,20 +504,18 @@ const App: React.FC = () => {
             </div>
             
             <div className="hud-bottom-panel">
-                <UserInput 
-                    onSendMessage={handleSendMessage}
-                    onToggleListening={handleToggleListening}
-                    appState={appState}
-                    isListening={isListening}
-                    onCameraClick={() => setIsVisionMode(true)}
-                    onGalleryClick={handleGalleryUpload}
-                    onDocumentClick={handleDocumentUpload}
-                    onAudioClick={handleAudioUpload}
-                    onLocationClick={handleLocationClick}
-                    onDesignModeClick={handleOpenDesignMode}
-                    onSimulationModeClick={handleOpenSimulationMode}
-                />
+                {/* This area is now intentionally empty, the FAB is below */}
             </div>
+
+            <button
+                onClick={() => setIsCommandPanelOpen(true)}
+                className="mic-fab"
+                aria-label="Open Command Panel"
+                disabled={appState === AppState.THINKING}
+            >
+                <MicrophoneIcon className="w-8 h-8" />
+            </button>
+
         </main>
         
         <input
@@ -526,6 +526,22 @@ const App: React.FC = () => {
         />
 
         {/* Modals and Overlays */}
+        <CommandPanel
+            isOpen={isCommandPanelOpen}
+            onClose={() => setIsCommandPanelOpen(false)}
+            onSendMessage={handleSendMessage}
+            onToggleListening={handleToggleListening}
+            appState={appState}
+            isListening={isListening}
+            onCameraClick={() => setIsVisionMode(true)}
+            onGalleryClick={handleGalleryUpload}
+            onDocumentClick={handleDocumentUpload}
+            onAudioClick={handleAudioUpload}
+            onLocationClick={handleLocationClick}
+            onDesignModeClick={handleOpenDesignMode}
+            onSimulationModeClick={handleOpenSimulationMode}
+        />
+
         <SettingsModal
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
