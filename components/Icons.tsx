@@ -39,27 +39,17 @@ const IconBase: React.FC<{ children: React.ReactNode, className?: string, viewBo
 
 
 export const MicrophoneIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <g filter="url(#icon-3d-shadow)">
-            {/* Base */}
-            <path d="M32 56 C38 56 38 62 32 62 C26 62 26 56 32 56 Z" fill="#2D3748" />
-            <path d="M32 46 L32 58" stroke="#4A5568" strokeWidth="4" strokeLinecap="round" />
-            {/* Body */}
-            <rect x="22" y="10" width="20" height="36" rx="10" fill="#4A5568" />
-            <rect x="22" y="10" width="20" height="36" rx="10" fill="url(#metal-grad)" />
-            {/* Grille */}
-            <rect x="20" y="4" width="24" height="24" rx="12" fill="#718096" />
-            <rect x="20" y="4" width="24" height="24" rx="12" fill="url(#metal-grad)" />
-            <circle cx="32" cy="16" r="12" fill="url(#glass-highlight)" />
-        </g>
-    </IconBase>
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM18.5 12H17v.5a5 5 0 0 1-10 0V12H5.5a.5.5 0 0 0 0 1h.568a6.953 6.953 0 0 0 1.932 4.096A7.012 7.012 0 0 0 12 21a7.012 7.012 0 0 0 4-1.404A6.953 6.953 0 0 0 17.932 13H18.5a.5.5 0 0 0 0-1z"/>
+  </svg>
 );
+
 
 export const SettingsIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
         <g filter="url(#icon-3d-shadow)" transform="translate(4 4)">
-            <path d="M51.3,31.5l3.2-1.8c0.4-0.2,0.5-0.7,0.3-1.1l-3.2-5.5c-0.2-0.4-0.7-0.5-1.1-0.3l-3.2,1.8 c-0.8-0.6-1.7-1.2-2.6-1.6l-0.5-3.5c-0.1-0.4-0.5-0.8-0.9-0.8h-6.3c-0.4,0-0.8,0.3-0.9,0.8l-0.5,3.5c-0.9-0.4-1.8,1-2.6,1.6 l-3.2-1.8c-0.4-0.2-0.9-0.1-1.1,0.3l-3.2,5.5c-0.2,0.4-0.1,0.9,0.3,1.1l3.2,1.8c-0.2,0.9-0.2,1.8,0,2.7l-3.2,1.8 c-0.4,0.2-0.5,0.7-0.3,1.1l3.2,5.5c0.2,0.4,0.7,0.5,1.1,0.3l3.2-1.8c0.8,0.6,1.7,1.2,2.6,1.6l0.5,3.5c0.1,0.4,0.5,0.8,0.9,0.8 h6.3c0.4,0,0.8-0.3,0.9-0.8l0.5-3.5c0.9-0.4,1.8-1,2.6-1.6l3.2,1.8c0.4,0.2,0.9,0.1,1.1-0.3l3.2-5.5c0.2-0.4,0.1-0.9-0.3-1.1 l-3.2-1.8C51.5,33.3,51.5,32.4,51.3,31.5z M28.8,38.9c-4.9,0-8.8-4-8.8-8.8s4-8.8,8.8-8.8s8.8,4,8.8,8.8S33.7,38.9,28.8,38.9z" fill="#4A5568"/>
-            <path d="M51.3,31.5l3.2-1.8c0.4-0.2,0.5-0.7,0.3-1.1l-3.2-5.5c-0.2-0.4-0.7-0.5-1.1-0.3l-3.2,1.8 c-0.8-0.6-1.7-1.2-2.6-1.6l-0.5-3.5c-0.1-0.4-0.5-0.8-0.9-0.8h-6.3c-0.4,0-0.8,0.3-0.9,0.8l-0.5,3.5c-0.9-0.4-1.8,1-2.6,1.6 l-3.2-1.8c-0.4-0.2-0.9-0.1-1.1,0.3l-3.2,5.5c-0.2,0.4-0.1,0.9,0.3,1.1l3.2,1.8c-0.2,0.9-0.2,1.8,0,2.7l-3.2,1.8 c-0.4,0.2-0.5,0.7-0.3,1.1l3.2,5.5c0.2,0.4,0.7,0.5,1.1,0.3l3.2-1.8c0.8,0.6,1.7,1.2,2.6,1.6l0.5,3.5c0.1,0.4,0.5,0.8,0.9,0.8 h6.3c0.4,0,0.8-0.3,0.9-0.8l0.5-3.5c0.9-0.4,1.8-1,2.6-1.6l3.2,1.8c0.4,0.2,0.9,0.1,1.1-0.3l3.2-5.5c0.2-0.4,0.1-0.9-0.3-1.1 l-3.2-1.8C51.5,33.3,51.5,32.4,51.3,31.5z M28.8,38.9c-4.9,0-8.8-4-8.8-8.8s4-8.8,8.8-8.8s8.8,4,8.8,8.8S33.7,38.9,28.8,38.9z" fill="url(#metal-grad)"/>
+            <path d="M51.3,31.5l3.2-1.8c0.4-0.2,0.5-0.7,0.3-1.1l-3.2-5.5c-0.2-0.4-0.7-0.5-1.1-0.3l-3.2,1.8 c-0.8-0.6-1.7-1.2-2.6-1.6l-0.5-3.5c-0.1-0.4-0.5-0.8-0.9-0.8h-6.3c-0.4,0-0.8,0.3-0.9,0.8l-0.5,3.5c-0.9-0.4-1.8,1-2.6,1.6 l-3.2-1.8c-0.4-0.2-0.9-0.1-1.1,0.3l-3.2,5.5c-0.2,0.4-0.1,0.9,0.3,1.1l3.2,1.8c-0.2,0.9-0.2,1.8,0,2.7l-3.2,1.8 c-0.4,0.2-0.5,0.7-0.3,1.1l3.2,5.5c0.2,0.4,0.7,0.5,1.1,0.3l3.2-1.8c0.8,0.6,1.7,1.2,2.6,1.6l0.5,3.5c0.1,0.4,0.5,0.8,0.9,0.8 h6.3c0.4,0,0.8-0.3,0.9,0.8l0.5-3.5c0.9-0.4,1.8-1,2.6-1.6l3.2,1.8c0.4,0.2,0.9,0.1,1.1-0.3l3.2-5.5c0.2-0.4,0.1-0.9-0.3-1.1 l-3.2-1.8C51.5,33.3,51.5,32.4,51.3,31.5z M28.8,38.9c-4.9,0-8.8-4-8.8-8.8s4-8.8,8.8-8.8s8.8,4,8.8,8.8S33.7,38.9,28.8,38.9z" fill="#4A5568"/>
+            <path d="M51.3,31.5l3.2-1.8c0.4-0.2,0.5-0.7,0.3-1.1l-3.2-5.5c-0.2-0.4-0.7-0.5-1.1-0.3l-3.2,1.8 c-0.8-0.6-1.7-1.2-2.6-1.6l-0.5-3.5c-0.1-0.4-0.5-0.8-0.9-0.8h-6.3c-0.4,0-0.8,0.3-0.9,0.8l-0.5,3.5c-0.9-0.4-1.8,1-2.6,1.6 l-3.2-1.8c-0.4-0.2-0.9-0.1-1.1,0.3l-3.2,5.5c-0.2,0.4-0.1,0.9,0.3,1.1l3.2,1.8c-0.2,0.9-0.2,1.8,0,2.7l-3.2,1.8 c-0.4,0.2-0.5,0.7-0.3,1.1l3.2,5.5c0.2,0.4,0.7,0.5,1.1,0.3l3.2-1.8c0.8,0.6,1.7,1.2,2.6,1.6l0.5,3.5c0.1,0.4,0.5,0.8,0.9,0.8 h6.3c0.4,0,0.8-0.3,0.9,0.8l0.5-3.5c0.9-0.4,1.8-1,2.6-1.6l3.2,1.8c0.4,0.2,0.9,0.1,1.1-0.3l3.2-5.5c0.2-0.4,0.1-0.9-0.3-1.1 l-3.2-1.8C51.5,33.3,51.5,32.4,51.3,31.5z M28.8,38.9c-4.9,0-8.8-4-8.8-8.8s4-8.8,8.8-8.8s8.8,4,8.8,8.8S33.7,38.9,28.8,38.9z" fill="url(#metal-grad)"/>
             <circle cx="28.8" cy="30.1" r="12" fill="url(#glass-highlight)" />
         </g>
     </IconBase>
@@ -88,6 +78,13 @@ export const CloseIcon: React.FC<IconProps> = ({ className }) => (
         </g>
     </IconBase>
 );
+
+export const SendIcon: React.FC<IconProps> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+  </svg>
+);
+
 
 export const TrashIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
@@ -239,4 +236,96 @@ export const CameraIcon: React.FC<IconProps> = ({ className }) => (
             <circle cx="32" cy="34" r="12" fill="url(#glass-highlight)" />
         </g>
     </IconBase>
+);
+
+export const SmileyIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
+export const PaperclipIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+    </svg>
+);
+
+export const DoubleCheckIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+);
+
+export const ChevronIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+);
+
+
+// --- Emoji Category Icons ---
+const SimpleIcon: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+        {children}
+    </svg>
+);
+
+export const LeafIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M14.121 15.536A9.003 9.003 0 0112 15c-1.657 0-3.183.67-4.243 1.757m0 0a9.003 9.003 0 01-4.243-4.243m4.243 4.243L12 12m0 0l4.243 4.243m-4.243-4.243a9.003 9.003 0 014.243-4.243m-4.243 4.243L7.757 7.757m4.243 4.243a9.003 9.003 0 01-4.243-4.243" />
+    </SimpleIcon>
+);
+export const FoodIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21V3m0 0c-3.314 0-6 2.686-6 6v12M12 3c3.314 0 6 2.686 6 6v12" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12" />
+    </SimpleIcon>
+);
+export const ActivityIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </SimpleIcon>
+);
+export const TravelIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+         <path strokeLinecap="round" strokeLinejoin="round" d="M12 1.5A10.5 10.5 0 001.5 12h21A10.5 10.5 0 0012 1.5zM1.5 12a10.5 10.5 0 0010.5 10.5v-21A10.5 10.5 0 001.5 12zm10.5 10.5a10.5 10.5 0 0010.5-10.5h-21a10.5 10.5 0 0010.5 10.5z" />
+    </SimpleIcon>
+);
+export const ObjectIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </SimpleIcon>
+);
+export const SymbolIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </SimpleIcon>
+);
+export const FlagIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+    </SimpleIcon>
+);
+
+// --- Attachment Icons ---
+export const GalleryIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </SimpleIcon>
+);
+export const DocumentIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </SimpleIcon>
+);
+export const AudioIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l10-3v13m-10 1a2 2 0 11-4 0 2 2 0 014 0zm10-1a2 2 0 11-4 0 2 2 0 014 0z" />
+    </SimpleIcon>
+);
+export const LocationIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </SimpleIcon>
 );

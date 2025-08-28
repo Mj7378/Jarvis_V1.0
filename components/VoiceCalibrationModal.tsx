@@ -196,7 +196,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
                     <div className="text-center">
                         <p className="font-orbitron text-xl text-red-400 animate-pulse mb-6">RECORDING</p>
                         <p className="text-lg mb-8">"{CALIBRATION_PHRASE}"</p>
-                        <button onClick={handleStopRecording} className="px-8 py-3 rounded-md bg-red-600/80 text-white hover:bg-red-500/80 transition-colors font-bold uppercase tracking-wider">Stop</button>
+                        <button onClick={handleStopRecording} className="px-8 py-3 rounded-md bg-red-600/80 text-white hover:bg-red-500/80 transition-all duration-200 font-bold uppercase tracking-wider transform hover:scale-105 active:scale-100">Stop</button>
                     </div>
                 );
             case 'analyzing':
@@ -220,8 +220,8 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
                             <input id="profileName" type="text" value={profileName} onChange={e => setProfileName(e.target.value)} placeholder="e.g., My Fast Profile" className="w-full bg-panel/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none"/>
                         </div>
                         <div className="mt-6 flex justify-end gap-3">
-                            <button onClick={resetState} className="px-4 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80">Try Again</button>
-                            <button onClick={handleSaveProfile} disabled={!profileName.trim()} className="px-4 py-2 rounded-md bg-primary-t-80 text-background hover:bg-primary disabled:opacity-50">Save Profile</button>
+                            <button onClick={resetState} className="px-4 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 transform hover:scale-105 active:scale-100 transition-all duration-200">Try Again</button>
+                            <button onClick={handleSaveProfile} disabled={!profileName.trim()} className="px-4 py-2 rounded-md bg-primary-t-80 text-background hover:bg-primary disabled:opacity-50 transform hover:scale-105 active:scale-100 transition-all duration-200">Save Profile</button>
                         </div>
                     </div>
                 );
@@ -230,7 +230,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
                     <div className="text-center">
                         <p className="font-orbitron text-xl text-red-400 mb-4">Error</p>
                         <p className="mb-6">{error}</p>
-                        <button onClick={resetState} className="px-8 py-3 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80">Try Again</button>
+                        <button onClick={resetState} className="px-8 py-3 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 transform hover:scale-105 active:scale-100 transition-all duration-200">Try Again</button>
                     </div>
                 );
             case 'idle':
@@ -240,7 +240,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
                         <p className="text-sm text-text-muted mb-2">Read the following phrase aloud:</p>
                         <p className="text-xl mb-6 bg-panel/50 p-3 rounded-lg border border-primary-t-20">"{CALIBRATION_PHRASE}"</p>
                         <div className="flex flex-col items-center gap-4">
-                            <button onClick={handleStartRecording} className="w-48 px-4 py-3 flex items-center justify-center gap-3 rounded-md bg-primary-t-80 text-background hover:bg-primary transition-colors font-bold uppercase tracking-wider">
+                            <button onClick={handleStartRecording} className="w-48 px-4 py-3 flex items-center justify-center gap-3 rounded-md bg-primary-t-80 text-background hover:bg-primary transition-all duration-200 font-bold uppercase tracking-wider transform hover:scale-105 active:scale-100">
                                 <MicrophoneIcon className="w-6 h-6"/> Start Recording
                             </button>
                             <span className="text-text-muted">or</span>
@@ -257,7 +257,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
             <div className="holographic-panel w-full max-w-lg m-4" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center pb-3 border-b border-primary-t-20 mb-4">
                     <h2 className="font-orbitron text-xl text-primary">Voice Calibration</h2>
-                    <button onClick={handleClose} className="p-1 rounded-full text-text-muted hover:text-text-primary hover:bg-panel/50"><CloseIcon className="w-6 h-6"/></button>
+                    <button onClick={handleClose} className="p-1 rounded-full text-text-muted hover:text-text-primary hover:bg-panel/50 transform hover:scale-110 active:scale-100 transition-all duration-200"><CloseIcon className="w-6 h-6"/></button>
                 </div>
                 <div className="p-4">
                     {renderContent()}

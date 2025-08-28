@@ -36,14 +36,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     
     return (
         <div
-            className={`fixed inset-0 z-40 transition-colors duration-300 ${isOpen ? 'bg-black/50 backdrop-blur-sm' : 'bg-transparent pointer-events-none'}`}
+            className={`fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'bg-black/50 backdrop-blur-sm' : 'bg-transparent pointer-events-none opacity-0'}`}
             onClick={handleClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="settings-title"
         >
             <div
-                className={`absolute top-0 right-0 h-full w-full max-w-sm bg-background shadow-2xl shadow-primary/20 border-l-2 border-primary-t-20 transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                className={`absolute top-20 right-4 w-96 max-h-[calc(100dvh-6rem)] bg-background shadow-2xl shadow-primary/20 border-2 border-primary-t-20 rounded-xl flex flex-col origin-top-right ${isOpen ? 'animate-pop-in-top-right' : 'opacity-0 pointer-events-none'}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -52,13 +52,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         <SettingsIcon className="w-6 h-6 text-primary" />
                         <h2 id="settings-title" className="font-orbitron text-xl text-primary">System Settings</h2>
                     </div>
-                    <button onClick={handleClose} className="p-1 rounded-full hover:bg-primary/20 text-text-muted hover:text-primary transition-colors" aria-label="Close settings">
+                    <button onClick={handleClose} className="p-1 rounded-full hover:bg-primary/20 text-text-muted hover:text-primary transition-all duration-200 hover:scale-110 active:scale-100" aria-label="Close settings">
                         <CloseIcon className="w-7 h-7" />
                     </button>
                 </header>
                 
                 {/* Content - The RightSidebar */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 styled-scrollbar">
                     <RightSidebar {...props} />
                 </div>
 
@@ -66,7 +66,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 <footer className="p-4 border-t border-primary-t-20 flex-shrink-0 holographic-panel !py-3 !px-4">
                     <button
                         onClick={handleShutdown}
-                        className="w-full flex items-center justify-center gap-3 p-3 rounded-md text-red-400 border border-red-500/50 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300 group"
+                        className="w-full flex items-center justify-center gap-3 p-3 rounded-md text-red-400 border border-red-500/50 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300 group hover:scale-[1.02] active:scale-100"
                     >
                         <PowerIcon className="w-6 h-6 transition-transform group-hover:scale-110" />
                         <span className="font-orbitron tracking-wider">SHUTDOWN SYSTEM</span>

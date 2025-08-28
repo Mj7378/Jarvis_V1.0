@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // Services, Hooks, Utils
-import { getAiResponseStream } from './services/geminiService';
+import { getAiResponseStream, transcribeAudio } from './services/geminiService';
 import { useChatHistory } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
@@ -50,6 +50,31 @@ const hexToRgb = (hex: string): string | null => {
     ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
     : null;
 };
+
+// File Reader Utilities
+const readFileAsDataURL = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+
+const readFileAsText = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+  
+const readFileAsBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = error => reject(error);
+  });
 
 const DEFAULT_PROFILE: VoiceProfile = { id: 'default', name: 'J.A.R.V.I.S. Default', rate: 1.1, pitch: 1.1 };
 const DEFAULT_THEME: ThemeSettings = {
@@ -111,6 +136,10 @@ const App: React.FC = () => {
   const [actionModalProps, setActionModalProps] = useState<Omit<ActionModalProps, 'isOpen' | 'onClose'>>({ title: '', inputs: [], onSubmit: () => {} });
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
+  
+  // File Upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileHandlerRef = useRef<{ accept: string; handler: (file: File) => void } | null>(null);
 
   // Voice Recognition
   const handleSpeechResult = (transcript: string) => {
@@ -367,6 +396,88 @@ const App: React.FC = () => {
     });
     setIsCalibrationOpen(false);
   };
+  
+    // --- File Upload Handlers ---
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && fileHandlerRef.current) {
+      try {
+        await fileHandlerRef.current.handler(file);
+      } catch (err) {
+        setCurrentError({ code: 'FILE_READ_ERROR', title: 'File Error', message: 'Could not read the selected file.' });
+      } finally {
+        if(event.target) event.target.value = ''; // Reset file input
+        fileHandlerRef.current = null;
+      }
+    }
+  };
+
+  const triggerFileUpload = (accept: string, handler: (file: File) => void) => {
+    if (fileInputRef.current) {
+      fileHandlerRef.current = { accept, handler };
+      fileInputRef.current.accept = accept;
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleGalleryUpload = () => {
+    triggerFileUpload('image/*', async (file) => {
+      const imageDataUrl = await readFileAsDataURL(file);
+      addMessage({ role: 'user', content: `Analyzing image: ${file.name}`, imageUrl: imageDataUrl });
+      processAiResponse(`Analyze this image from my gallery named "${file.name}".`, {
+        mimeType: file.type,
+        data: imageDataUrl.split(',')[1],
+      });
+    });
+  };
+
+  const handleDocumentUpload = () => {
+    triggerFileUpload('.txt,.md,.json,.csv', async (file) => {
+      const textContent = await readFileAsText(file);
+      const prompt = `I've uploaded a document named "${file.name}". Please analyze its content. Here is the content:\n\n---\n\n${textContent}`;
+      handleSendMessage(prompt);
+    });
+  };
+
+  const handleAudioUpload = () => {
+    triggerFileUpload('audio/*', async (file) => {
+      addMessage({ role: 'user', content: `Transcribing audio file: ${file.name}` });
+      setAppState(AppState.THINKING);
+      try {
+        const base64Data = await readFileAsBase64(file);
+        const transcription = await transcribeAudio(base64Data, file.type);
+        addMessage({ role: 'model', content: `Transcription of "${file.name}":\n\n> ${transcription}` });
+      } catch (err: any) {
+        const appErr = err.appError || { code: 'TRANSCRIPTION_ERROR', title: 'Transcription Failed', message: err.message };
+        setCurrentError(appErr);
+        setAppState(AppState.ERROR);
+      } finally {
+        setAppState(AppState.IDLE);
+      }
+    });
+  };
+  
+  const handleLocationClick = () => {
+    if (!navigator.geolocation) {
+      setCurrentError({ code: 'GEOLOCATION_UNSUPPORTED', title: 'Geolocation Error', message: 'Geolocation is not supported by your browser.' });
+      return;
+    }
+
+    addMessage({ role: 'user', content: 'Fetching my current location...' });
+    setAppState(AppState.THINKING);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const prompt = `My current location is latitude ${latitude.toFixed(6)} and longitude ${longitude.toFixed(6)}. What can you tell me about this area?`;
+        handleSendMessage(prompt);
+      },
+      (error) => {
+        setCurrentError({ code: 'GEOLOCATION_ERROR', title: 'Geolocation Error', message: `Could not retrieve location: ${error.message}` });
+        setAppState(AppState.IDLE);
+      }
+    );
+  };
 
   // Lifecycle rendering
   if (systemState === 'PRE_BOOT') {
@@ -386,20 +497,34 @@ const App: React.FC = () => {
         <main className={`hud-container ${systemState === 'SNAP_DISINTEGRATION' ? 'system-terminating' : ''}`}>
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
 
-            <div className="hud-chat-panel holographic-panel">
+            <div className="hud-chat-panel">
                 <ChatLog history={chatHistory} appState={appState} />
             </div>
             
-            <div className="hud-bottom-panel holographic-panel items-center justify-center">
+            <div className="hud-bottom-panel">
                 <UserInput 
                     onSendMessage={handleSendMessage}
                     onToggleListening={handleToggleListening}
                     appState={appState}
                     isListening={isListening}
+                    onCameraClick={() => setIsVisionMode(true)}
+                    onGalleryClick={handleGalleryUpload}
+                    onDocumentClick={handleDocumentUpload}
+                    onAudioClick={handleAudioUpload}
+                    onLocationClick={handleLocationClick}
+                    onDesignModeClick={handleOpenDesignMode}
+                    onSimulationModeClick={handleOpenSimulationMode}
                 />
             </div>
         </main>
         
+        <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+        />
+
         {/* Modals and Overlays */}
         <SettingsModal
             isOpen={isSettingsOpen}

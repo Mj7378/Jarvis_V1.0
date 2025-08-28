@@ -2,49 +2,62 @@ import React, { useEffect, useRef } from 'react';
 import type { ChatMessage } from '../types';
 import { AppState } from '../types';
 import SourceCitations from './SourceCitations';
+import { DoubleCheckIcon } from './Icons';
 
 interface ChatLogProps {
   history: ChatMessage[];
   appState: AppState;
 }
 
-const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
+const FormattedMessage: React.FC<{ text: string }> = React.memo(({ text }) => {
+  const sanitize = (htmlString: string) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlString;
+    temp.querySelectorAll('script, style, link, meta').forEach(el => el.remove());
+    return temp.innerHTML;
+  };
+
   return (
     <>
-      {text.split('\n').map((line, index) => {
+      {text.split('\n').map((line, index, arr) => {
         if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-2xl font-orbitron text-primary font-bold mt-5 mb-2 pb-2 border-b border-primary-t-20">{line.substring(2)}</h1>;
+          return <h1 key={index} className="text-xl font-orbitron text-primary font-bold mt-3 mb-1 pb-1 border-b border-primary-t-20">{line.substring(2)}</h1>;
         }
         if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-xl font-orbitron text-primary mt-4 mb-2">{line.substring(3)}</h2>;
+          return <h2 key={index} className="text-lg font-orbitron text-primary mt-2 mb-1">{line.substring(3)}</h2>;
         }
         if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-lg font-orbitron text-text-secondary mt-3 mb-1">{line.substring(4)}</h3>;
+          return <h3 key={index} className="text-base font-orbitron text-text-secondary mt-2 mb-1">{line.substring(4)}</h3>;
         }
         if (line.startsWith('> ')) {
           return (
-            <blockquote key={index} className="border-l-4 border-primary-t-50 pl-4 py-2 my-2 bg-panel/50 italic text-text-muted">
+            <blockquote key={index} className="border-l-2 border-primary-t-50 pl-3 my-1 bg-black/10 italic text-text-muted">
               {line.substring(2)}
             </blockquote>
           );
         }
-        if (line.trim() !== '') {
-            return <p key={index}>{line}</p>;
+        // Don't add a break if it's the last line and it's empty
+        if (line.trim() === '' && index === arr.length - 1) {
+            return null;
         }
-        return null;
+        return <div key={index} dangerouslySetInnerHTML={{ __html: sanitize(line) || ' ' }} />;
       })}
     </>
   );
-};
+});
 
-const ThinkingBubble: React.FC = () => (
-    <div className="flex flex-col items-center justify-center h-full space-y-2 text-yellow-400">
-        <div className="w-full h-1 bg-yellow-400/20 rounded-full overflow-hidden relative">
-            <div className="absolute top-0 left-0 h-full w-1/3 bg-yellow-400 rounded-full animate-scan-line"></div>
+const TypingIndicator: React.FC = () => (
+    <div className="flex justify-start animate-fade-in-fast">
+        <div className="p-2 px-4 rounded-2xl rounded-bl-md bg-panel">
+            <div className="flex items-center gap-1 h-5">
+                <span className="w-2 h-2 bg-text-muted rounded-full animate-pulse-dot [animation-delay:0s]"></span>
+                <span className="w-2 h-2 bg-text-muted rounded-full animate-pulse-dot [animation-delay:0.2s]"></span>
+                <span className="w-2 h-2 bg-text-muted rounded-full animate-pulse-dot [animation-delay:0.4s]"></span>
+            </div>
         </div>
-        <p className="text-xs font-mono">ANALYZING...</p>
     </div>
 );
+
 
 const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -54,54 +67,48 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
   }, [history, appState]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 styled-scrollbar">
-      <div className="space-y-4">
+    <div className="flex-1 overflow-y-auto p-4 styled-scrollbar">
+      <div className="space-y-2">
         {history.map((message, index) => {
-          const isLastMessage = index === history.length - 1;
           const isModel = message.role === 'model';
-          const isLastModelMessage = isModel && isLastMessage;
-          
           return (
-            <div key={index} className={`flex flex-col animate-fade-in-fast ${isModel ? 'items-start' : 'items-end'}`}>
+            <div key={index} className={`flex ${isModel ? 'justify-start' : 'justify-end'}`}>
               <div
-                className={`max-w-md p-3 text-sm transition-all duration-300 ${
+                className={`max-w-md lg:max-w-2xl p-2 px-3 rounded-2xl animate-fade-in-fast ${
                   isModel
-                    ? 'bg-gradient-to-br from-panel/80 to-panel/50 border-primary-t-20 text-text-primary'
-                    : 'bg-gradient-to-br from-user-bubble/90 to-user-bubble/70 border-transparent text-white'
-                } ${isLastModelMessage && appState === AppState.THINKING ? '!border-yellow-400/80 shadow-[0_0_15px] shadow-yellow-400/20' : ''}`}
-                 style={{
-                    clipPath: isModel 
-                      ? 'polygon(0 var(--corner-clip-size), var(--corner-clip-size) 0, 100% 0, 100% 100%, 0 100%)' 
-                      : 'polygon(0 0, calc(100% - var(--corner-clip-size)) 0, 100% var(--corner-clip-size), 100% 100%, 0 100%)'
-                 }}
+                    ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-text-primary rounded-bl-md shadow-lg shadow-black/20 border border-slate-700'
+                    : 'bg-gradient-to-br from-blue-500 to-indigo-700 text-white rounded-br-md shadow-lg shadow-indigo-500/20'
+                }`}
               >
                 {message.imageUrl && (
                   <img 
                     src={message.imageUrl} 
-                    alt="User upload" 
-                    className="rounded-md mb-2 max-h-48"
+                    alt="User content" 
+                    className="rounded-lg mb-1 max-h-48"
                   />
                 )}
-                <div className="min-h-[1.5rem]">
-                   {isModel ? (
-                        <>
-                            <FormattedMessage text={message.content} />
-                            {isLastModelMessage && appState === AppState.THINKING && message.content && (
-                                <span className="inline-block w-2 h-5 bg-primary align-bottom ml-1 animate-pulse" style={{ animationDuration: '1s' }}></span>
-                            )}
-                            {appState === AppState.THINKING && isLastModelMessage && !message.content && <ThinkingBubble />}
-                        </>
-                    ) : (
-                       <p>{message.content}</p>
-                    )}
+                <div className="whitespace-pre-wrap break-words min-h-[1.25rem]">
+                  <FormattedMessage text={message.content} />
+                   {isModel && appState === AppState.THINKING && index === history.length - 1 && message.content && (
+                       <span className="inline-block w-2 h-4 bg-primary align-bottom ml-1 animate-pulse" style={{ animationDuration: '1s' }}></span>
+                   )}
                 </div>
-                {message.sources && message.sources.length > 0 && (
+                 {message.sources && message.sources.length > 0 && (
                   <SourceCitations sources={message.sources} />
                 )}
+                <div className={`text-right text-xs mt-1 flex justify-end items-center gap-1.5 ${
+                    isModel ? 'text-text-muted' : 'text-indigo-200'
+                }`}>
+                    <span>{message.timestamp}</span>
+                    {!isModel && (
+                        <DoubleCheckIcon className="w-4 h-4" />
+                    )}
+                </div>
               </div>
             </div>
           );
         })}
+        {appState === AppState.THINKING && (!history.length || history[history.length - 1].role === 'user' || (history[history.length - 1].role === 'model' && history[history.length-1].content)) && <TypingIndicator />}
         <div ref={endOfMessagesRef} />
       </div>
     </div>

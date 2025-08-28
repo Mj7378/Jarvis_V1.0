@@ -26,7 +26,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
         aria-describedby="error-modal-description"
     >
       <div 
-        className="hud-panel w-full max-w-lg m-4 text-left"
+        className="holographic-panel w-full max-w-lg m-4 text-left"
         style={{'--primary-color-hex': '#ff4d4d', '--primary-color-rgb': '255, 77, 77'} as React.CSSProperties}
       >
         <div className="p-6">
@@ -64,7 +64,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
             <div className="mt-6 flex justify-end">
                 <button
                     onClick={onClose}
-                    className="px-8 py-2 rounded-md bg-red-600/80 text-white hover:bg-red-500/80 transition-colors font-bold uppercase tracking-wider"
+                    className="px-8 py-2 rounded-md bg-red-600/80 text-white hover:bg-red-500/80 transition-all duration-200 font-bold uppercase tracking-wider transform hover:scale-105 active:scale-100"
                 >
                     Dismiss
                 </button>

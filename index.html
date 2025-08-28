@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
     
     <script>
       tailwind.config = {
@@ -16,7 +17,7 @@
           extend: {
             fontFamily: {
               'orbitron': ['Orbitron', 'sans-serif'],
-              'sans': ['Roboto', 'sans-serif'],
+              'sans': ['Roboto', 'Noto Color Emoji', 'sans-serif'],
             },
             colors: {
               'background': 'var(--color-background)',
@@ -55,6 +56,8 @@
               'ping-medium': 'ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite',
               'ping-fast': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
               'border-trace': 'border-trace 1s ease-out forwards',
+              'pop-in': 'pop-in 0.15s ease-out forwards',
+              'pop-in-top-right': 'pop-in-top-right 0.15s ease-out forwards',
             },
             keyframes: {
               'pulse-strong': {
@@ -90,6 +93,14 @@
               'border-trace': {
                   'from': { 'stroke-dashoffset': '100%' },
                   'to': { 'stroke-dashoffset': '0%' }
+              },
+              'pop-in': {
+                '0%': { opacity: '0', transform: 'translateY(10px) scale(0.95)' },
+                '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+              },
+              'pop-in-top-right': {
+                '0%': { opacity: '0', transform: 'translateY(-10px) scale(0.95)' },
+                '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
               },
             }
           }
@@ -132,14 +143,14 @@
       }
 
       body {
-        font-family: 'Roboto', sans-serif;
+        font-family: 'Roboto', 'Noto Color Emoji', sans-serif;
         background-color: var(--color-background);
         color: var(--color-text-primary);
         overflow: hidden;
         background-image:
-            radial-gradient(ellipse at center, rgba(var(--primary-color-rgb), 0.1) 0%, transparent 60%),
-            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><pattern id="hex" patternUnits="userSpaceOnUse" width="60" height="104" patternTransform="scale(1) rotate(30)"><path d="M42.5,15.5,30,7.75,17.5,15.5V31l12.5,7.75,L42.5,31Z" fill="rgba(0,255,255,0.02)" stroke="rgba(0,255,255,0.03)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23hex)"/></svg>');
-        font-size: clamp(14px, 1.5vw + 0.5rem, 18px);
+            radial-gradient(ellipse at center, rgba(var(--primary-color-rgb), 0.08) 0%, transparent 70%),
+            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4"><path fill="%2300ffff" fill-opacity="0.05" d="M1 3h1v1H1V3zm2-2h1v1H3V1z"></path></svg>');
+        font-size: clamp(14px, 1.5vw + 0.5rem, 16px);
       }
 
       @keyframes glimmer {
@@ -189,6 +200,13 @@
         padding: clamp(0.75rem, 3vw, 1.25rem);
         position: relative;
         transition: all 0.3s ease;
+      }
+
+      .holographic-panel:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 0 45px rgba(var(--primary-color-rgb), 0.1),
+            inset 0 0 15px rgba(var(--primary-color-rgb), 0.08);
       }
 
       .holographic-panel::before {
@@ -258,8 +276,6 @@
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
-        --clip-path: polygon(0 0, calc(100% - var(--corner-clip-size)) 0, 100% var(--corner-clip-size), 100% 100%, var(--corner-clip-size) 100%, 0 calc(100% - var(--corner-clip-size)));
-        clip-path: var(--clip-path);
       }
       
       .hud-chat-panel {
@@ -267,16 +283,12 @@
           display: flex;
           flex-direction: column;
           min-height: 0; /* Critical for flex + scroll */
-          --clip-path: polygon(var(--corner-clip-size) 0, 100% 0, 100% calc(100% - var(--corner-clip-size)), calc(100% - var(--corner-clip-size)) 100%, 0 100%, 0 var(--corner-clip-size));
-          clip-path: var(--clip-path);
       }
       
       .hud-bottom-panel { 
         grid-area: input; 
         position: relative;
         animation: slide-in-bottom 0.5s ease-out forwards;
-        --clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-        clip-path: var(--clip-path);
       }
       
       @keyframes slide-in-bottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -432,6 +444,14 @@
       .core-ring { animation: rotate-360 20s linear infinite; }
       .core-ring-fast { animation: rotate-360 10s linear infinite; }
       .core-ring-rev { animation: rotate-360-rev 15s linear infinite; }
+
+      [contenteditable="true"]:empty::before {
+        content: attr(data-placeholder);
+        pointer-events: none;
+        display: block; /* For a correct styling */
+        color: var(--color-text-muted);
+        opacity: 0.6;
+      }
     </style>
   <script type="importmap">
 {

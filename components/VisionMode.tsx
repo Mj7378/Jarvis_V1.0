@@ -53,7 +53,7 @@ const VisionMode: React.FC<VisionModeProps> = ({ onCapture, onClose }) => {
   };
 
   return (
-    <div className="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center">
+    <div className="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center animate-fade-in-fast">
       <video ref={videoRef} autoPlay playsInline className="w-full h-full object-contain" />
       <canvas ref={canvasRef} className="hidden" />
       
@@ -64,7 +64,7 @@ const VisionMode: React.FC<VisionModeProps> = ({ onCapture, onClose }) => {
       <div className="absolute bottom-8 flex space-x-8">
         <button
           onClick={handleCapture}
-          className="w-20 h-20 rounded-full bg-primary-t-80 border-4 border-white flex items-center justify-center text-white"
+          className="w-20 h-20 rounded-full bg-primary-t-80 border-4 border-white flex items-center justify-center text-white transform hover:scale-110 active:scale-105 transition-transform duration-200"
           aria-label="Capture and Analyze"
           disabled={!!error}
         >
@@ -75,7 +75,7 @@ const VisionMode: React.FC<VisionModeProps> = ({ onCapture, onClose }) => {
         </button>
         <button
           onClick={onClose}
-          className="w-20 h-20 rounded-full bg-red-500/80 border-4 border-white flex items-center justify-center text-white"
+          className="w-20 h-20 rounded-full bg-red-500/80 border-4 border-white flex items-center justify-center text-white transform hover:scale-110 active:scale-105 transition-transform duration-200"
           aria-label="Close Vision Mode"
         >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">

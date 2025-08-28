@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PowerIcon, SettingsIcon } from './Icons';
 
@@ -31,26 +30,9 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
     const circumference = 2 * Math.PI * 20; // r=20 for a 48x48 box
 
     return (
-        <header className="hud-header holographic-panel flex items-center !p-0">
-            {/* Left side: Title */}
-            <div className="flex items-center h-full group">
-                 <div 
-                    className="h-full bg-primary/80 text-background flex items-center transition-all duration-300 group-hover:bg-primary header-title-panel"
-                >
-                    <h1 
-                        className="font-orbitron tracking-widest transition-transform duration-300 group-hover:scale-105"
-                        style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)' }}
-                    >
-                        J.A.R.V.I.S.
-                    </h1>
-                </div>
-                <div 
-                    className="h-full bg-primary/80 transition-all duration-300 group-hover:bg-primary header-title-wedge"
-                ></div>
-            </div>
-
+        <header className="hud-header flex items-center justify-end">
             {/* Right side: Clock & Controls */}
-            <div className="flex items-center h-full text-sm text-text-primary font-mono ml-auto">
+            <div className="flex items-center h-full text-sm text-text-primary font-mono">
                 {/* Upgraded System Clock */}
                 <div className="pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
                     <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
@@ -93,7 +75,7 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
                 <div className="h-full flex items-center pr-4 md:pr-6 pl-4 md:pl-6 border-l-2 border-primary-t-20">
                     <button
                         onClick={onOpenSettings}
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50 transform hover:scale-110 active:scale-100"
                         aria-label="Open Settings"
                     >
                         <SettingsIcon className="w-6 h-6" />

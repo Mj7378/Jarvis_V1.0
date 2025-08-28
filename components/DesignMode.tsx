@@ -35,17 +35,17 @@ const DesignMode: React.FC<DesignModeProps> = ({ prompt, onComplete, onCancel })
 
   return (
     <div className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center backdrop-blur-sm animate-fade-in-fast">
-      <div className="hud-panel w-full max-w-4xl h-[90vh] flex flex-col p-6 border-2 border-primary-t-50 shadow-2xl shadow-primary/20">
+      <div className="holographic-panel w-full max-w-4xl h-[90vh] flex flex-col p-6 border-2 border-primary-t-50 shadow-2xl shadow-primary/20">
         <div className="flex justify-between items-center mb-4">
             <h1 className="font-orbitron text-xl text-primary tracking-widest truncate pr-4 flex items-center gap-3">
                 <GenerateImageIcon className="w-6 h-6" />
                 DESIGN MODE: {prompt}
             </h1>
             <div className="flex items-center gap-3">
-                 <button onClick={onCancel} className="px-4 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 flex-shrink-0">
+                 <button onClick={onCancel} className="px-4 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 flex-shrink-0 transition-all duration-200 transform hover:scale-105 active:scale-100">
                     Close
                 </button>
-                <button onClick={handleLogToChat} disabled={!imageDataUrl} className="px-4 py-2 rounded-md bg-primary-t-80 text-jarvis-dark hover:bg-primary flex-shrink-0 disabled:opacity-50">
+                <button onClick={handleLogToChat} disabled={!imageDataUrl} className="px-4 py-2 rounded-md bg-primary-t-80 text-background hover:bg-primary flex-shrink-0 disabled:opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-100">
                     Log to Chat
                 </button>
             </div>

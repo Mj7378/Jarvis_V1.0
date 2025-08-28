@@ -1,26 +1,32 @@
 import { useState, useCallback } from 'react';
 import type { ChatMessage } from '../types';
 
-const getGreeting = (): string => {
+const getGreeting = (): ChatMessage => {
   const currentHour = new Date().getHours();
+  let content: string;
   if (currentHour < 12) {
-    return "Good morning, sir. I am JARVIS. How may I assist you today?";
+    content = "Good morning, sir. I am JARVIS. How may I assist you today?";
   } else if (currentHour < 18) {
-    return "Good afternoon, sir. I am JARVIS. How may I assist you today?";
+    content = "Good afternoon, sir. I am JARVIS. How may I assist you today?";
   } else {
-    return "Good evening, sir. I am JARVIS. How may I assist you today?";
+    content = "Good evening, sir. I am JARVIS. How may I assist you today?";
   }
+  return {
+    role: 'model',
+    content,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).replace(' ', '')
+  };
 };
 
 export const useChatHistory = () => {
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
-    return [
-      { role: 'model', content: getGreeting() }
-    ];
-  });
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([getGreeting()]);
 
-  const addMessage = useCallback((message: ChatMessage) => {
-    setChatHistory(prevHistory => [...prevHistory, message]);
+  const addMessage = useCallback((message: Omit<ChatMessage, 'timestamp'>) => {
+    const newMessage: ChatMessage = {
+      ...message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).replace(' ', '')
+    };
+    setChatHistory(prevHistory => [...prevHistory, newMessage]);
   }, []);
 
   const appendToLastMessage = useCallback((contentChunk: string) => {
@@ -29,14 +35,14 @@ export const useChatHistory = () => {
             return prev;
         }
         const newHistory = [...prev];
-        const lastMessage = newHistory[newHistory.length - 1];
-        const updatedMessage = { ...lastMessage, content: lastMessage.content + contentChunk };
-        newHistory[newHistory.length - 1] = updatedMessage;
+        const lastMessage = { ...newHistory[newHistory.length - 1] };
+        lastMessage.content = lastMessage.content + contentChunk;
+        newHistory[newHistory.length - 1] = lastMessage;
         return newHistory;
     });
   }, []);
 
-  const updateLastMessage = useCallback((update: Partial<ChatMessage>) => {
+  const updateLastMessage = useCallback((update: Partial<Omit<ChatMessage, 'timestamp'>>) => {
     setChatHistory(prev => {
         if (prev.length === 0 || prev[prev.length - 1].role !== 'model') {
             return prev;

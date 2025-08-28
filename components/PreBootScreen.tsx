@@ -46,7 +46,7 @@ const PreBootScreen: React.FC<{ onInitiate: () => void; }> = ({ onInitiate }) =>
             <div className="mt-24 text-center">
                 <button 
                     onClick={handleInitiateSystem}
-                    className="font-orbitron text-4xl tracking-widest p-6 border-2 border-primary-t-50 rounded-lg text-primary-t-70 hover:bg-primary hover:text-jarvis-dark hover:shadow-[0_0_30px] hover:shadow-primary transition-all duration-300 animate-pulse-glow"
+                    className="font-orbitron text-4xl tracking-widest p-6 border-2 border-primary-t-50 rounded-lg text-primary-t-70 hover:bg-primary hover:text-jarvis-dark hover:shadow-[0_0_30px] hover:shadow-primary transition-all duration-300 animate-pulse-glow transform hover:scale-105 active:scale-100"
                     style={{ '--primary-color-hex': 'var(--primary-color-hex)' } as React.CSSProperties}
                     aria-label="Initiate System"
                 >

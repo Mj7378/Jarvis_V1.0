@@ -8,6 +8,7 @@ export interface ChatMessage {
   content: string;
   imageUrl?: string;
   sources?: Source[];
+  timestamp: string;
 }
 
 export enum AppState {

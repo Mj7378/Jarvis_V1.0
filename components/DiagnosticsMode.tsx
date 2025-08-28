@@ -77,7 +77,7 @@ const DiagnosticsMode: React.FC<{ onComplete: (summary: string) => void }> = ({ 
 
   return (
     <div className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center backdrop-blur-sm animate-fade-in">
-      <div className="hud-panel w-full max-w-2xl p-6 border-2 border-primary-t-50 shadow-2xl shadow-primary/20">
+      <div className="holographic-panel w-full max-w-2xl p-6 border-2 border-primary-t-50 shadow-2xl shadow-primary/20">
         <h1 className="font-orbitron text-2xl text-primary text-center tracking-widest mb-6">
           SYSTEM DIAGNOSTICS
         </h1>

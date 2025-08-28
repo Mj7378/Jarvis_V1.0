@@ -47,14 +47,14 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, title, input
 
   return (
     <div 
-        className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm"
+        className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in-fast"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
     >
       <div 
-        className="hud-panel w-full max-w-md m-4"
+        className="holographic-panel w-full max-w-md m-4"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
       >
         <form onSubmit={handleSubmit} className="p-4">
@@ -91,14 +91,14 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, title, input
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 transition-colors"
+              className="px-4 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className="px-4 py-2 rounded-md bg-primary-t-80 text-jarvis-dark hover:bg-primary disabled:opacity-50 transition-colors"
+              className="px-4 py-2 rounded-md bg-primary-t-80 text-background hover:bg-primary disabled:opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               {submitLabel}
             </button>
