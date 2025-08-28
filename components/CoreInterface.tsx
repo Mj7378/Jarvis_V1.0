@@ -27,50 +27,83 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
       default: return "text-primary";
     }
   };
-
-  const animationClass = isThinking || isSpeaking ? 'animate-spin-medium' : 'animate-spin-slow';
-  const reverseAnimationClass = isThinking || isSpeaking ? 'animate-spin-fast' : 'animate-spin-medium';
   
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full">
         <div 
-            className="relative w-48 h-48 sm:w-60 sm:h-60 lg:w-72 lg:h-72 cursor-default group" 
+            className="relative w-48 h-48 sm:w-60 sm:h-60 lg:w-72 lg:h-72 cursor-default group core-container" 
             role="img"
             aria-label="J.A.R.V.I.S. Core Interface"
         >
-            <svg className="absolute w-full h-full" viewBox="0 0 100 100" style={{transformOrigin: 'center'}}>
-                <circle cx="50" cy="50" r="48" className="stroke-primary-t-20" strokeWidth="0.5" fill="none" />
-                <circle cx="50" cy="50" r="42" className="stroke-primary-t-20" strokeWidth="0.5" fill="none" />
-            </svg>
-             <svg className={`absolute w-full h-full ${animationClass}`} viewBox="0 0 100 100" style={{transformOrigin: 'center', animationDirection: 'reverse'}}>
-                 <path d="M 50,50 m -45,0 a 45,45 0 1,1 90,0" className="stroke-primary" style={{strokeOpacity: 0.4}} strokeWidth="1" fill="none" strokeDasharray="141.3 141.3" />
-            </svg>
-             <svg className={`absolute w-[88%] h-[88%] left-[6%] top-[6%] ${reverseAnimationClass}`} viewBox="0 0 100 100" style={{transformOrigin: 'center', animationDirection: 'normal'}}>
-                 <path d="M 50,50 m -40,0 a 40,40 0 1,1 80,0" className="stroke-primary" style={{strokeOpacity: 0.6}} strokeWidth="0.75" fill="none" strokeDasharray="10 15" />
-            </svg>
+             <svg className="w-full h-full absolute inset-0" viewBox="0 0 200 200">
+                <defs>
+                    <filter id="core-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                    <radialGradient id="core-grad">
+                        <stop offset="0%" stopColor="var(--glow-color)" stopOpacity="1"/>
+                        <stop offset="70%" stopColor="var(--glow-color)" stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor="var(--glow-color)" stopOpacity="0"/>
+                    </radialGradient>
+                </defs>
+                
+                {/* Base Rings */}
+                <circle cx="100" cy="100" r="98" className="stroke-primary-t-20" strokeWidth="0.5" fill="none" />
+                <circle cx="100" cy="100" r="85" className="stroke-primary-t-20" strokeWidth="0.25" fill="none" />
+                
+                {/* Rotating Rings */}
+                <g className="core-ring" style={{ animationDuration: '22s' }}>
+                    <circle cx="100" cy="100" r="90" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1" fill="none" strokeDasharray="10 15" />
+                </g>
+                <g className="core-ring-rev" style={{ animationDuration: '18s' }}>
+                    <circle cx="100" cy="100" r="78" stroke="currentColor" strokeOpacity="0.4" strokeWidth="0.75" fill="none" strokeDasharray="2 8 10 8" />
+                </g>
+                 <g className="core-ring" style={{ animationDuration: '30s' }}>
+                    <circle cx="100" cy="100" r="65" stroke="currentColor" strokeOpacity="0.2" strokeWidth="0.5" fill="none" strokeDasharray="1 10" />
+                </g>
 
-            <div 
-                className={`absolute inset-0 flex items-center justify-center rounded-full transition-all duration-300
-                    ${isThinking ? 'bg-yellow-500/20 shadow-[0_0_30px] shadow-yellow-500' : ''}
-                    ${isSpeaking ? 'bg-purple-500/20 shadow-[0_0_45px] shadow-purple-500/80 animate-pulse-speak shadow-primary' : ''}
-                    ${!isThinking && !isSpeaking ? 'group-hover:bg-primary-t-20' : ''}
-                `}
-            >
-                <div className={`w-1/3 h-1/3 rounded-full bg-background/50 flex items-center justify-center border border-primary-t-20 transition-all duration-300 group-hover:border-primary-t-70 relative overflow-hidden
-                    ${isThinking ? 'border-yellow-500' : ''}
-                    ${isSpeaking ? 'border-purple-500' : ''}
-                `}>
-                     {(isThinking || isSpeaking) && (
-                        <div 
-                            className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-transparent animate-scan-line"
-                            style={{ 
-                                '--tw-gradient-via': isThinking ? 'rgba(250, 204, 21, 0.5)' : 'rgba(192, 132, 252, 0.5)',
-                             } as React.CSSProperties}
-                        ></div>
-                     )}
-                     <GeminiIcon className="w-1/2 h-1/2 text-text-muted group-hover:text-primary transition-colors" />
-                </div>
-            </div>
+                {/* State-dependent effects */}
+                {isThinking && (
+                    <g style={{ '--glow-color': '#fbbf24' } as React.CSSProperties}>
+                        <circle cx="100" cy="100" r="95" stroke="url(#core-grad)" strokeWidth="1.5" fill="none" className="animate-pulse-strong" />
+                         {/* Data stream effect */}
+                        <g>
+                           {[...Array(20)].map((_, i) => (
+                               <circle key={i} cx="100" cy="100" r={45 + (i % 4) * 12} 
+                                   stroke="var(--glow-color)" strokeWidth="1" fill="none" strokeDasharray="1 15" 
+                                   strokeDashoffset={i * 20}
+                                   className="core-ring-fast"
+                                   style={{ animationDuration: `${2 + (i%5)}s`, opacity: 0.1 + (i%3)*0.1 }}
+                                />
+                           ))}
+                        </g>
+                    </g>
+                )}
+                {isSpeaking && (
+                     <g style={{ '--glow-color': '#c084fc'} as React.CSSProperties}>
+                        <circle cx="100" cy="100" r="95" stroke="url(#core-grad)" strokeWidth="2" fill="none" className="animate-pulse-strong" style={{animationDuration: '1.5s'}}/>
+                    </g>
+                )}
+
+                 {/* Central Element */}
+                <g 
+                   className={(isThinking || isSpeaking) ? "animate-pulse-strong" : ""} 
+                   style={{ 
+                       '--glow-color': isThinking ? '#fbbf24' : isSpeaking ? '#c084fc' : 'var(--primary-color-hex)' 
+                   } as React.CSSProperties}
+                   filter="url(#core-glow)"
+                >
+                    <circle cx="100" cy="100" r="50" fill="url(#core-grad)" fillOpacity="0.5" />
+                    <circle cx="100" cy="100" r="50" stroke="currentColor" strokeOpacity="0.8" strokeWidth="0.75" fill="none" />
+                    <g transform="translate(75 75) scale(0.25)">
+                       <GeminiIcon className="w-full h-full text-primary opacity-75 group-hover:opacity-100 transition-opacity" />
+                    </g>
+                </g>
+            </svg>
         </div>
         <p className={`font-orbitron text-base md:text-lg mt-4 md:mt-8 uppercase tracking-widest transition-colors duration-300 ${getStatusColor()}`}>
             {getStatusText()}

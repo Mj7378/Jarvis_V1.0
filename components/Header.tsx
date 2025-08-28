@@ -28,20 +28,26 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
 
     const dayOfWeek = time.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
     
-    const circumference = 2 * Math.PI * 45; // r=45
+    const circumference = 2 * Math.PI * 20; // r=20 for a 48x48 box
 
     return (
-        <header className="hud-header hud-panel flex items-center !py-0 !px-0">
+        <header className="hud-header holographic-panel flex items-center !p-0">
             {/* Left side: Title */}
-            <div className="flex items-center h-full">
-                <div className="title-container">
+            <div className="flex items-center h-full group">
+                 <div 
+                    className="h-full bg-primary/80 text-background flex items-center px-6 transition-all duration-300 group-hover:bg-primary"
+                    style={{clipPath: 'polygon(0 0, calc(100% - 25px) 0, 100% 50%, calc(100% - 25px) 100%, 0 100%)'}}
+                >
                     <h1 
-                        className="font-orbitron text-2xl md:text-3xl text-primary text-primary-shadow tracking-widest"
+                        className="font-orbitron text-2xl md:text-3xl tracking-widest transition-transform duration-300 group-hover:scale-105"
                     >
                         J.A.R.V.I.S.
                     </h1>
                 </div>
-                <div className="title-wing"></div>
+                <div 
+                    className="h-full w-8 bg-primary/80 transition-all duration-300 group-hover:bg-primary"
+                     style={{clipPath: 'polygon(0 50%, 100% 0, 100% 100%)'}}
+                ></div>
             </div>
 
             {/* Right side: Clock & Controls */}
@@ -49,23 +55,22 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
                 {/* Upgraded System Clock */}
                 <div className="pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
                     <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
-                        <svg className="w-full h-full" viewBox="0 0 100 100">
-                            {/* Background track */}
-                            <circle cx="50" cy="50" r="45" className="stroke-primary-t-20" strokeWidth="4" fill="none" />
-                            {/* Seconds arc */}
+                        <svg className="w-full h-full" viewBox="0 0 48 48">
+                            <circle cx="24" cy="24" r="20" className="stroke-primary-t-20" strokeWidth="2" fill="none" />
                             <circle
-                                cx="50"
-                                cy="50"
-                                r="45"
+                                cx="24"
+                                cy="24"
+                                r="20"
                                 className="stroke-primary"
-                                strokeWidth="4"
+                                strokeWidth="2"
                                 fill="none"
                                 strokeLinecap="round"
-                                transform="rotate(-90 50 50)"
+                                transform="rotate(-90 24 24)"
                                 style={{
                                     strokeDasharray: circumference,
                                     strokeDashoffset: circumference - (seconds / 60) * circumference,
                                     transition: 'stroke-dashoffset 0.3s linear',
+                                    filter: 'drop-shadow(0 0 3px var(--primary-color-hex))',
                                 }}
                             />
                         </svg>
@@ -89,7 +94,7 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
                 <div className="h-full flex items-center pr-4 md:pr-6 pl-4 md:pl-6 border-l-2 border-primary-t-20">
                     <button
                         onClick={onOpenSettings}
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-colors"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50"
                         aria-label="Open Settings"
                     >
                         <SettingsIcon className="w-6 h-6" />

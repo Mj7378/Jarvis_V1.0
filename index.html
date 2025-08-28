@@ -54,6 +54,7 @@
               'ping-slow': 'ping 3s cubic-bezier(0, 0, 0.2, 1) infinite',
               'ping-medium': 'ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite',
               'ping-fast': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+              'border-trace': 'border-trace 1s ease-out forwards',
             },
             keyframes: {
               'pulse-strong': {
@@ -86,6 +87,10 @@
                 '0%, 100%': { boxShadow: '0 0 15px var(--primary-color-hex)', transform: 'scale(1)' },
                 '50%': { boxShadow: '0 0 30px var(--primary-color-hex)', transform: 'scale(1.02)' },
               },
+              'border-trace': {
+                  'from': { 'stroke-dashoffset': '100%' },
+                  'to': { 'stroke-dashoffset': '0%' }
+              },
             }
           }
         }
@@ -95,11 +100,10 @@
       :root {
         --primary-color-hex: #00ffff;
         --primary-color-rgb: 0, 255, 255;
-        --panel-color-rgb: 18, 26, 43; /* Deprecated, use --panel-rgb */
       }
       
       .theme-dark {
-        --color-background: #0c101d;
+        --color-background: #0A0F1A;
         --color-text-primary: #e2e8f0;
         --color-text-secondary: #93c5fd;
         --color-text-muted: #64748b;
@@ -109,7 +113,7 @@
         --user-bubble-border-rgb: 99, 102, 241;
         --color-disabled-bg: rgba(51, 65, 85, 0.5);
         --color-disabled-text: #64748b;
-        --glitch-bg: #0c101d;
+        --glitch-bg: #0A0F1A;
       }
 
       .theme-light {
@@ -131,13 +135,31 @@
         background-color: var(--color-background);
         color: var(--color-text-primary);
         overflow: hidden;
-      }
-      body.grid-active {
         background-image:
-            linear-gradient(rgba(var(--primary-color-rgb), 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.05) 1px, transparent 1px);
-        background-size: 2rem 2rem;
+            radial-gradient(ellipse at center, rgba(var(--primary-color-rgb), 0.1) 0%, transparent 60%),
+            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><pattern id="hex" patternUnits="userSpaceOnUse" width="60" height="104" patternTransform="scale(1) rotate(30)"><path d="M42.5,15.5,30,7.75,17.5,15.5V31l12.5,7.75L42.5,31Z" fill="rgba(0,255,255,0.02)" stroke="rgba(0,255,255,0.03)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23hex)"/></svg>');
       }
+
+      @keyframes glimmer {
+        0%, 100% { opacity: 0; transform: scale(0.5); }
+        50% { opacity: 1; }
+        75% { opacity: 0.5; transform: scale(1.2); }
+      }
+      .glimmer-layer {
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          pointer-events: none;
+          z-index: -1;
+      }
+      .glimmer-layer .dot {
+          position: absolute;
+          width: 3px; height: 3px;
+          background: var(--primary-color-hex);
+          border-radius: 50%;
+          filter: blur(1px);
+          animation: glimmer 10s infinite ease-in-out;
+      }
+
       .styled-scrollbar::-webkit-scrollbar {
         width: 8px;
       }
@@ -154,37 +176,47 @@
         background-color: rgba(var(--primary-color-rgb), 0.5);
       }
       
-      .hud-panel {
-        background: radial-gradient(circle at center, rgba(var(--panel-rgb), 0.7) 0%, rgba(var(--panel-rgb), 0.85) 100%);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid var(--border-primary);
-        box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.1), inset 0 0 15px rgba(var(--primary-color-rgb), 0.05);
-        clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+      .holographic-panel {
+        background: rgba(var(--panel-rgb), 0.1);
+        backdrop-filter: blur(12px) saturate(120%);
+        -webkit-backdrop-filter: blur(12px) saturate(120%);
+        border: 1px solid rgba(var(--primary-color-rgb), 0.15);
+        box-shadow: 
+            0 0 30px rgba(var(--primary-color-rgb), 0.05),
+            inset 0 0 10px rgba(var(--primary-color-rgb), 0.05);
         padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
         position: relative;
-      }
-      .theme-light .hud-panel {
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        transition: all 0.3s ease;
       }
 
-      .hud-panel::before, .hud-panel::after {
+      .holographic-panel::before {
         content: '';
         position: absolute;
-        width: 25px;
-        height: 25px;
+        inset: 0;
+        border: 1px solid rgba(var(--primary-color-rgb), 0.3);
         pointer-events: none;
-        border-color: var(--primary-color-hex);
-        border-style: solid;
+        clip-path: var(--clip-path);
+        opacity: 0;
+        transition: opacity 0.3s ease;
       }
-      .hud-panel::before {
-        top: -2px; left: -2px; border-width: 2px 0 0 2px;
+      .holographic-panel:hover::before {
+        opacity: 1;
       }
-      .hud-panel::after {
-        bottom: -2px; right: -2px; border-width: 0 2px 2px 0;
+
+      /* Animated border path */
+      .holographic-panel svg.border-path {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        stroke: var(--primary-color-hex);
+        stroke-width: 2;
+        fill: none;
+        stroke-dasharray: 100%;
+        stroke-dashoffset: 100%;
+        animation: border-trace 1s ease-out forwards 0.3s;
       }
+
       
       .panel-title {
         display: flex;
@@ -202,12 +234,11 @@
       .hud-container {
         display: grid;
         width: 100vw;
-        height: 100dvh; /* Use dvh for better mobile viewport handling */
+        height: 100dvh;
         padding: 0.5rem;
         gap: 0.5rem;
         overflow: hidden;
         
-        /* Mobile & Tablet Portrait (Default) */
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr auto;
         grid-template-areas:
@@ -222,6 +253,8 @@
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
+        --clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 30px, 100% 100%, 30px 100%, 0 calc(100% - 30px));
+        clip-path: var(--clip-path);
       }
       
       .hud-right-panel-placeholder { 
@@ -229,7 +262,6 @@
         grid-area: right;
       }
 
-      /* In portrait, core and chat occupy the same 'main' area, stacking them */
       .hud-core-container { 
         grid-area: main; 
         position: relative; 
@@ -237,10 +269,10 @@
         align-items: center; 
         justify-content: center; 
         min-height: 0;
-        pointer-events: none; /* Let clicks pass through to chat */
+        pointer-events: none;
       }
       .hud-core-container > * {
-          pointer-events: auto; /* Re-enable for the core itself */
+          pointer-events: auto;
       }
       
       .hud-chat-panel {
@@ -248,23 +280,24 @@
           display: flex;
           flex-direction: column;
           min-height: 0;
-          z-index: -1; /* Place it behind the core */
+          z-index: -1;
+          --clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+          clip-path: var(--clip-path);
       }
       
       .hud-bottom-panel { 
         grid-area: input; 
         position: relative;
         animation: slide-in-bottom 0.5s ease-out forwards;
+         --clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        clip-path: var(--clip-path);
       }
       
-      /* Landscape & Medium Tablet Layout */
       @media (min-width: 768px) {
         .hud-container {
             padding: 1rem;
             gap: 1rem;
         }
-
-        /* When in landscape, switch to side-by-side */
         @media (orientation: landscape) {
             .hud-container {
                 grid-template-columns: 2fr 3fr;
@@ -274,24 +307,22 @@
                     "core   chat"
                     "core   input";
             }
-            
             .hud-core-container {
                 grid-area: core;
                 pointer-events: auto;
             }
-
             .hud-chat-panel {
                 grid-area: chat;
                 z-index: 0;
             }
-
             .hud-bottom-panel {
                 grid-area: input;
+                 --clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 15px);
+                clip-path: var(--clip-path);
             }
         }
       }
 
-      /* Desktop Layout */
       @media (min-width: 1200px) {
         .hud-container {
             grid-template-columns: 1fr 2fr 320px;
@@ -301,56 +332,18 @@
                 "core   chat   right"
                 "core   input  right";
         }
-
-        .hud-core-container {
-            grid-area: core;
-            pointer-events: auto;
-        }
-        
-        .hud-chat-panel {
-            grid-area: chat;
-            z-index: 0;
-        }
-
-        .hud-bottom-panel {
-            grid-area: input;
-        }
-        
+        .hud-core-container { grid-area: core; pointer-events: auto; }
+        .hud-chat-panel { grid-area: chat; z-index: 0; }
+        .hud-bottom-panel { grid-area: input; }
         .hud-right-panel-placeholder {
-            display: flex; /* Show right panel */
+            display: flex;
             grid-area: right;
             animation: slide-in-right 0.5s ease-out forwards;
+            --clip-path: polygon(0 0, 100% 20px, 100% 100%, 0 100%);
+            clip-path: var(--clip-path);
         }
       }
 
-      .info-block {
-        padding: 0 1.5rem;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        border-right: 1px solid var(--border-primary);
-        position: relative;
-      }
-      .info-block::before, .info-block::after {
-        content: '';
-        position: absolute;
-        height: 4px;
-        width: 1px;
-        background: var(--primary-color-hex);
-        opacity: 0.5;
-      }
-      .info-block::before { top: 8px; left: 8px; }
-      .info-block::after { bottom: 8px; right: 8px; }
-      .info-label {
-        font-size: 0.65rem;
-        color: var(--primary-color-hex);
-        opacity: 0.7;
-        letter-spacing: 0.1em;
-        margin-bottom: 2px;
-      }
-      .info-value { font-weight: 700; }
-      
       @keyframes slide-in-right { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
       @keyframes slide-in-bottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
@@ -362,7 +355,6 @@
         animation: fade-in-fast 0.4s ease-out forwards;
       }
       
-      /* --- SETTINGS TOGGLE SWITCH --- */
       .toggle-label {
         display: flex;
         align-items: center;
@@ -377,23 +369,19 @@
         transition: background-color .2s;
       }
       .theme-light .toggle-label {
-        background-color: #e2e8f0; /* slate-200 */
-        border-color: #cbd5e1; /* slate-300 */
+        background-color: #e2e8f0; border-color: #cbd5e1;
       }
       .toggle-label .toggle-dot {
         content: '';
         position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 18px;
-        height: 18px;
+        top: 2px; left: 2px; width: 18px; height: 18px;
         border-radius: 45px;
         transition: 0.2s;
         background: rgba(var(--primary-color-rgb), 0.5);
         box-shadow: 0 0 2px 0 rgba(10, 10, 10, 0.29);
       }
       .theme-light .toggle-label .toggle-dot {
-        background-color: #f8fafc; /* slate-50 */
+        background-color: #f8fafc;
       }
       .toggle-checkbox:checked + .toggle-label {
         background: rgba(var(--primary-color-rgb), 0.4);
@@ -410,7 +398,6 @@
         background-color: white;
       }
 
-      /* Glitch animation for bootup */
       .glitch {
         position: relative;
         text-shadow: 0.05em 0 0 rgba(var(--primary-color-rgb), 0.75), -0.025em -0.05em 0 rgba(255, 0, 0, 0.75), 0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
@@ -419,10 +406,7 @@
       .glitch::before, .glitch::after {
         content: attr(data-text);
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: 0; left: 0; width: 100%; height: 100%;
         background: var(--glitch-bg);
         overflow: hidden;
       }
@@ -440,39 +424,53 @@
       @keyframes glitch-anim-1 { 0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); } 10% { clip-path: polygon(0 40%, 100% 40%, 100% 45%, 0 45%); } 20% { clip-path: polygon(0 20%, 100% 20%, 100% 22%, 0 22%); } 30% { clip-path: polygon(0 60%, 100% 60%, 100% 62%, 0 62%); } 40% { clip-path: polygon(0 85%, 100% 85%, 100% 88%, 0 88%); } 50% { clip-path: polygon(0 50%, 100% 50%, 100% 52%, 0 52%); } 60% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%); } 70% { clip-path: polygon(0 70%, 100% 70%, 100% 72%, 0 72%); } 80% { clip-path: polygon(0 95%, 100% 95%, 100% 99%, 0 99%); } 90% { clip-path: polygon(0 30%, 100% 30%, 100% 32%, 0 32%); } 100% { clip-path: polygon(0 55%, 100% 55%, 100% 58%, 0 58%); } }
       @keyframes glitch-anim-2 { 0% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%); } 15% { clip-path: polygon(0 30%, 100% 30%, 100% 33%, 0 33%); } 25% { clip-path: polygon(0 90%, 100% 90%, 100% 95%, 0 95%); } 40% { clip-path: polygon(0 50%, 100% 50%, 100% 52%, 0 52%); } 55% { clip-path: polygon(0 22%, 100% 22%, 100% 25%, 0 25%); } 68% { clip-path: polygon(0 75%, 100% 75%, 100% 78%, 0 78%); } 75% { clip-path: polygon(0 42%, 100% 42%, 100% 45%, 0 45%); } 88% { clip-path: polygon(0 65%, 100% 65%, 100% 69%, 0 69%); } 100% { clip-path: polygon(0 15%, 100% 15%, 100% 18%, 0 18%); } }
 
-      /* --- ENHANCED: Endgame Snap Shutdown Animation --- */
       @keyframes snap-disintegration {
-        0% {
-          opacity: 1;
-          transform: scale(1);
-          filter: blur(0px) saturate(1);
-        }
-        50% {
-          /* A brief moment of instability and glow before dissolving */
-          opacity: 0.9;
-          transform: scale(1.01) skew(-3deg, 2deg);
-          filter: blur(1px) saturate(2) brightness(1.5);
-        }
-        100% {
-          opacity: 0;
-          /* Move up and away as if turning to dust in the wind */
-          transform: scale(0.6) skew(5deg, -5deg) translate(100px, -150px);
-          filter: blur(20px) saturate(0);
-        }
+        0% { opacity: 1; transform: scale(1); filter: blur(0px) saturate(1); }
+        50% { opacity: 0.9; transform: scale(1.01) skew(-3deg, 2deg); filter: blur(1px) saturate(2) brightness(1.5); }
+        100% { opacity: 0; transform: scale(0.6) skew(5deg, -5deg) translate(100px, -150px); filter: blur(20px) saturate(0); }
       }
       .system-terminating > * {
         animation: snap-disintegration 2s forwards cubic-bezier(0.55, 0.085, 0.68, 0.53);
-        transform-origin: 50% 50%; /* Disintegrate from the center of each element */
+        transform-origin: 50% 50%;
         will-change: transform, opacity, filter;
-        pointer-events: none; /* Disable interaction during animation */
+        pointer-events: none;
       }
       
-      /* Stagger the animation for a more dramatic, chaotic disintegration effect */
       .system-terminating .hud-core-container { animation-delay: 0.1s; }
       .system-terminating .hud-right-panel-placeholder { animation-delay: 0.3s; }
       .system-terminating .hud-left-panel { animation-delay: 0.5s; }
       .system-terminating .hud-bottom-panel { animation-delay: 0.7s; }
       .system-terminating .hud-header { animation-delay: 0.9s; }
+
+      .scanline-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        background: linear-gradient(to bottom, rgba(var(--primary-color-rgb), 0.04) 1px, transparent 1px);
+        background-size: 100% 3px;
+        animation: scanline-flicker 20s linear infinite;
+        z-index: 100;
+        opacity: 0.4;
+      }
+      @keyframes scanline-flicker {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.3; }
+      }
+      
+      .core-container svg {
+          overflow: visible;
+          transform-origin: center;
+      }
+      @keyframes rotate-360 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      @keyframes rotate-360-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+      @keyframes pulse-glow-strong {
+        0%, 100% { filter: drop-shadow(0 0 5px var(--glow-color)); }
+        50% { filter: drop-shadow(0 0 25px var(--glow-color)); }
+      }
+      .core-ring { animation: rotate-360 20s linear infinite; }
+      .core-ring-fast { animation: rotate-360 10s linear infinite; }
+      .core-ring-rev { animation: rotate-360-rev 15s linear infinite; }
     </style>
   <script type="importmap">
 {
@@ -487,7 +485,24 @@
 </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div class="glimmer-layer"></div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+    <script>
+      // Glimmer effect script
+      const glimmerLayer = document.querySelector('.glimmer-layer');
+      const createGlimmer = () => {
+        if (!glimmerLayer) return;
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.style.left = `${Math.random() * 100}vw`;
+        dot.style.top = `${Math.random() * 100}vh`;
+        dot.style.animationDuration = `${Math.random() * 5 + 5}s`;
+        dot.style.animationDelay = `${Math.random() * 5}s`;
+        glimmerLayer.appendChild(dot);
+        setTimeout(() => dot.remove(), 10000);
+      };
+      setInterval(createGlimmer, 500);
+    </script>
   </body>
 </html>

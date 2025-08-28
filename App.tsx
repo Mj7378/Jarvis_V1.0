@@ -31,6 +31,19 @@ import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 // System Lifecycle States
 type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
 
+// Helper function to remove markdown for clean speech.
+// This ensures that characters like '#' or '*' are not read aloud by TTS.
+const stripMarkdown = (text: string): string => {
+    return text
+        // Removes title, subtitle, heading, and note prefixes.
+        .replace(/^(# |## |### |> )/gm, '')
+        // Removes **bold** and *italic*
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        // Removes list item markers like * or -
+        .replace(/^\s*[-*]\s+/gm, '');
+};
+
 // Helper function to convert hex to an RGB string "r, g, b"
 const hexToRgb = (hex: string): string | null => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -245,7 +258,7 @@ const App: React.FC = () => {
                     if (sentences) {
                         let processedText = "";
                         sentences.forEach(sentence => {
-                            queueSpeech(sentence);
+                            queueSpeech(stripMarkdown(sentence));
                             processedText += sentence;
                         });
                         // Update buffer with remaining partial sentence
@@ -267,7 +280,7 @@ const App: React.FC = () => {
             }
         } else {
              if (themeSettings.voiceOutputEnabled && speechBuffer.trim()) {
-                queueSpeech(speechBuffer.trim());
+                queueSpeech(stripMarkdown(speechBuffer.trim()));
             }
         }
 
@@ -369,6 +382,7 @@ const App: React.FC = () => {
   // The main app view
   return (
     <div id="jarvis-container" className={`w-screen h-screen bg-background text-text-primary transition-opacity duration-500 ${systemState === 'ACTIVE' ? 'opacity-100' : 'opacity-0'}`}>
+        {themeSettings.showScanlines && <div className="scanline-overlay"></div>}
         <main className={`hud-container ${systemState === 'SNAP_DISINTEGRATION' ? 'system-terminating' : ''}`}>
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
             
@@ -376,11 +390,11 @@ const App: React.FC = () => {
                 <CoreInterface appState={appState} />
             </div>
 
-            <div className="hud-chat-panel hud-panel">
-                <ChatLog history={chatHistory} appState={appState} speechRate={activeProfile.rate} />
+            <div className="hud-chat-panel holographic-panel">
+                <ChatLog history={chatHistory} appState={appState} />
             </div>
             
-            <div className="hud-bottom-panel hud-panel items-center justify-center !p-2 md:!p-4">
+            <div className="hud-bottom-panel holographic-panel items-center justify-center !p-2 md:!p-4">
                 <UserInput 
                     onSendMessage={handleSendMessage}
                     onToggleListening={handleToggleListening}
@@ -389,7 +403,7 @@ const App: React.FC = () => {
                 />
             </div>
             
-            <div className="hud-right-panel-placeholder hud-panel">
+            <div className="hud-right-panel-placeholder holographic-panel">
                 {/* This is a placeholder; the settings modal will overlay it when active */}
             </div>
         </main>

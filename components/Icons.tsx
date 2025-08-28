@@ -2,134 +2,226 @@ import React from 'react';
 
 interface IconProps {
     className?: string;
+    strokeWidth?: string;
 }
 
-export const GeminiIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z" />
+const sharedDefs = (
+    <defs>
+        <filter id="icon-3d-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="2" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.4"/>
+        </filter>
+        <linearGradient id="metal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.4)" />
+        </linearGradient>
+         <radialGradient id="glass-highlight" cx="30%" cy="30%" r="100%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </radialGradient>
+        <linearGradient id="glow-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.4" />
+        </linearGradient>
+    </defs>
+);
+
+const IconBase: React.FC<{ children: React.ReactNode, className?: string, viewBox?: string }> = ({ children, className, viewBox = "0 0 64 64" }) => (
+    <svg 
+        className={className} 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox={viewBox} 
+    >
+        {sharedDefs}
+        {children}
     </svg>
 );
 
-export const SystemControlsIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20.5v-7.5m0 0V3m0 10c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5zM12 13c2.5 0 4.5-2 4.5-4.5S14.5 4 12 4s-4.5 2-4.5 4.5S9.5 13 12 13z" />
-    </svg>
-);
 
-export const QuickActionsIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7 17l9.5-9.5-3-3L4 14.5V17h3z" />
-        <path d="M15 5l3 3" />
-        <path d="M20 10l-3 3" />
-    </svg>
-);
-
-export const WebSearchIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="2" y1="12" x2="22" y2="12"></line>
-        <path d="M12 2a15.3 15.3 0 0 1 4 18 15.3 15.3 0 0 1-8 0 15.3 15.3 0 0 1 4-18z"></path>
-    </svg>
-);
-
-export const GenerateImageIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <circle cx="8.5" cy="8.5" r="1.5" />
-        <polyline points="21 15 16 10 5 21" />
-    </svg>
-);
-
-export const SelfHealIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-    </svg>
-);
-
-export const GenerateVideoIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-        <line x1="7" y1="2" x2="7" y2="22" />
-        <line x1="17" y1="2" x2="17" y2="22" />
-        <line x1="2" y1="12" x2="22" y2="12" />
-        <line x1="2" y1="7" x2="7" y2="7" />
-        <line x1="2" y1="17" x2="7" y2="17" />
-        <line x1="17" y1="17" x2="22" y2="17" />
-        <line x1="17" y1="7" x2="22" y2="7" />
-    </svg>
-);
-
-export const DeviceControlIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z" />
-        <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
-        <path d="M12 2v2" />
-        <path d="M12 22v-2" />
-        <path d="m17 7 1.4-1.4" />
-        <path d="m6 18 1.4-1.4" />
-        <path d="M22 12h-2" />
-        <path d="M4 12H2" />
-        <path d="m17 17-1.4 1.4" />
-        <path d="m6 6-1.4 1.4" />
-    </svg>
-);
-
-export const PaletteIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="13.5" cy="6.5" r=".5" />
-        <circle cx="17.5" cy="10.5" r=".5" />
-        <circle cx="8.5" cy="7.5" r=".5" />
-        <circle cx="6.5" cy="12.5" r=".5" />
-        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
-    </svg>
-);
-
-export const PowerIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-        <line x1="12" y1="2" x2="12" y2="12" />
-    </svg>
+export const MicrophoneIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            {/* Base */}
+            <path d="M32 56 C38 56 38 62 32 62 C26 62 26 56 32 56 Z" fill="#2D3748" />
+            <path d="M32 46 L32 58" stroke="#4A5568" strokeWidth="4" strokeLinecap="round" />
+            {/* Body */}
+            <rect x="22" y="10" width="20" height="36" rx="10" fill="#4A5568" />
+            <rect x="22" y="10" width="20" height="36" rx="10" fill="url(#metal-grad)" />
+            {/* Grille */}
+            <rect x="20" y="4" width="24" height="24" rx="12" fill="#718096" />
+            <rect x="20" y="4" width="24" height="24" rx="12" fill="url(#metal-grad)" />
+            <circle cx="32" cy="16" r="12" fill="url(#glass-highlight)" />
+        </g>
+    </IconBase>
 );
 
 export const SettingsIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-        <circle cx="12" cy="12" r="3" />
-    </svg>
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)" transform="translate(4 4)">
+            <path d="M51.3,31.5l3.2-1.8c0.4-0.2,0.5-0.7,0.3-1.1l-3.2-5.5c-0.2-0.4-0.7-0.5-1.1-0.3l-3.2,1.8 c-0.8-0.6-1.7-1.2-2.6-1.6l-0.5-3.5c-0.1-0.4-0.5-0.8-0.9-0.8h-6.3c-0.4,0-0.8,0.3-0.9,0.8l-0.5,3.5c-0.9,0.4-1.8,1-2.6,1.6 l-3.2-1.8c-0.4-0.2-0.9-0.1-1.1,0.3l-3.2,5.5c-0.2,0.4-0.1,0.9,0.3,1.1l3.2,1.8c-0.2,0.9-0.2,1.8,0,2.7l-3.2,1.8 c-0.4,0.2-0.5,0.7-0.3,1.1l3.2,5.5c0.2,0.4,0.7,0.5,1.1,0.3l3.2-1.8c0.8,0.6,1.7,1.2,2.6,1.6l0.5,3.5c0.1,0.4,0.5,0.8,0.9,0.8 h6.3c0.4,0,0.8-0.3,0.9-0.8l0.5-3.5c0.9-0.4,1.8-1,2.6-1.6l3.2,1.8c0.4,0.2,0.9,0.1,1.1-0.3l3.2-5.5c0.2-0.4,0.1-0.9-0.3-1.1 l-3.2-1.8C51.5,33.3,51.5,32.4,51.3,31.5z M28.8,38.9c-4.9,0-8.8-4-8.8-8.8s4-8.8,8.8-8.8s8.8,4,8.8,8.8S33.7,38.9,28.8,38.9z" fill="#4A5568"/>
+            <path d="M51.3,31.5l3.2-1.8c0.4-0.2,0.5-0.7,0.3-1.1l-3.2-5.5c-0.2-0.4-0.7-0.5-1.1-0.3l-3.2,1.8 c-0.8-0.6-1.7-1.2-2.6-1.6l-0.5-3.5c-0.1-0.4-0.5-0.8-0.9-0.8h-6.3c-0.4,0-0.8,0.3-0.9,0.8l-0.5,3.5c-0.9,0.4-1.8,1-2.6,1.6 l-3.2-1.8c-0.4-0.2-0.9-0.1-1.1,0.3l-3.2,5.5c-0.2,0.4-0.1,0.9,0.3,1.1l3.2,1.8c-0.2,0.9-0.2,1.8,0,2.7l-3.2,1.8 c-0.4,0.2-0.5,0.7-0.3,1.1l3.2,5.5c0.2,0.4,0.7,0.5,1.1,0.3l3.2-1.8c0.8,0.6,1.7,1.2,2.6,1.6l0.5,3.5c0.1,0.4,0.5,0.8,0.9,0.8 h6.3c0.4,0,0.8-0.3,0.9-0.8l0.5-3.5c0.9-0.4,1.8-1,2.6-1.6l3.2,1.8c0.4,0.2,0.9,0.1,1.1-0.3l3.2-5.5c0.2-0.4,0.1-0.9-0.3-1.1 l-3.2-1.8C51.5,33.3,51.5,32.4,51.3,31.5z M28.8,38.9c-4.9,0-8.8-4-8.8-8.8s4-8.8,8.8-8.8s8.8,4,8.8,8.8S33.7,38.9,28.8,38.9z" fill="url(#metal-grad)"/>
+            <circle cx="28.8" cy="30.1" r="12" fill="url(#glass-highlight)" />
+        </g>
+    </IconBase>
+);
+
+export const PowerIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <path d="M32,12V28" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+            <path d="M46.7,19.3A16,16,0,1,1,17.3,19.3" stroke="currentColor" strokeWidth="6" fill="none" strokeLinecap="round" />
+        </g>
+         <path d="M32,12V28" stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.8"/>
+         <path d="M46.7,19.3A16,16,0,1,1,17.3,19.3" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8"/>
+    </IconBase>
 );
 
 export const CloseIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-);
-
-export const MicrophoneIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-        <line x1="12" y1="19" x2="12" y2="23"></line>
-        <line x1="8" y1="23" x2="16" y2="23"></line>
-    </svg>
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <line x1="16" y1="16" x2="48" y2="48" stroke="#4A5568" strokeWidth="10" strokeLinecap="round" />
+            <line x1="16" y1="48" x2="48" y2="16" stroke="#4A5568" strokeWidth="10" strokeLinecap="round" />
+            <line x1="16" y1="16" x2="48" y2="48" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+            <line x1="16" y1="48" x2="48" y2="16" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+            <line x1="16" y1="16" x2="48" y2="48" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+            <line x1="16" y1="48" x2="48" y2="16" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+        </g>
+    </IconBase>
 );
 
 export const TrashIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        <line x1="10" y1="11" x2="10" y2="17" />
-        <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <path d="M14 18 L50 18 L46 58 L18 58 Z" fill="#4A5568" />
+            <path d="M14 18 L50 18 L46 58 L18 58 Z" fill="url(#metal-grad)" />
+            <rect x="10" y="10" width="44" height="8" rx="4" fill="#718096" />
+            <rect x="24" y="6" width="16" height="4" rx="2" fill="#4A5568" />
+             <rect x="10" y="10" width="44" height="8" rx="4" fill="url(#metal-grad)" />
+             <path d="M14 18 L50 18 L46 58 L18 58 Z" fill="url(#glass-highlight)" opacity="0.7"/>
+        </g>
+    </IconBase>
 );
 
-// FIX: Add missing UniversalTranslatorIcon for the Universal Translator component.
+export const GeminiIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)" transform="translate(2 2)">
+            <path d="M30 2 L35.5 15.5 L50 17 L38 26.5 L41 40 L30 32 L19 40 L22 26.5 L10 17 L24.5 15.5 Z" fill="#4A5568"/>
+            <path d="M30 2 L35.5 15.5 L50 17 L38 26.5 L41 40 L30 32 Z" fill="url(#glow-grad)" />
+            <path d="M30 2 L24.5 15.5 L10 17 L22 26.5 L19 40 L30 32 Z" fill="currentColor" />
+            <path d="M30 32 L19 40 L22 26.5 L10 17 L24.5 15.5 L30 2 L35.5 15.5 L50 17 L38 26.5 L41 40 Z" fill="url(#glass-highlight)" />
+        </g>
+    </IconBase>
+);
+
+export const SystemControlsIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <rect x="10" y="10" width="44" height="44" rx="8" fill="#2D3748" opacity="0.8" />
+            <line x1="18" y1="20" x2="46" y2="20" stroke="#4A5568" strokeWidth="4" strokeLinecap="round" />
+            <line x1="18" y1="32" x2="46" y2="32" stroke="#4A5568" strokeWidth="4" strokeLinecap="round" />
+            <line x1="18" y1="44" x2="46" y2="44" stroke="#4A5568" strokeWidth="4" strokeLinecap="round" />
+            <circle cx="26" cy="20" r="5" fill="currentColor" />
+            <circle cx="40" cy="32" r="5" fill="currentColor" />
+            <circle cx="22" cy="44" r="5" fill="currentColor" />
+            <circle cx="26" cy="20" r="5" fill="url(#glass-highlight)" />
+            <circle cx="40" cy="32" r="5" fill="url(#glass-highlight)" />
+            <circle cx="22" cy="44" r="5" fill="url(#glass-highlight)" />
+        </g>
+    </IconBase>
+);
+
+export const QuickActionsIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <path d="M30,4 L14,30 L28,30 L26,52 L46,24 L32,24 Z" fill="#4A5568" />
+            <path d="M30,4 L14,30 L28,30 L26,52 L46,24 L32,24 Z" fill="url(#glow-grad)" />
+            <path d="M30,4 L14,30 L28,30 L26,52 L46,24 L32,24 Z" stroke="white" strokeWidth="1" fill="none" opacity="0.5"/>
+        </g>
+    </IconBase>
+);
+
 export const UniversalTranslatorIcon: React.FC<IconProps> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
-        <path d="M2.5 9h19" />
-        <path d="M2.5 15h19" />
-        <path d="M10.5 2c-3.2 6.6-3.2 13.4 0 20" />
-        <path d="M13.5 2c3.2 6.6 3.2 13.4 0 20" />
-    </svg>
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <circle cx="32" cy="32" r="26" fill="#4A5568" />
+            <circle cx="32" cy="32" r="26" fill="url(#glow-grad)" />
+            <path d="M32 6 A 32 32 0 0 1 32 58" fill="none" stroke="white" strokeWidth="1.5" strokeOpacity="0.5"/>
+            <path d="M32 6 A 32 32 0 0 0 32 58" fill="none" stroke="white" strokeWidth="1.5" strokeOpacity="0.5"/>
+            <circle cx="32" cy="32" r="26" fill="url(#glass-highlight)" />
+            <text x="22" y="38" fontFamily="Arial" fontSize="16" fill="white" fontWeight="bold">A</text>
+            <text x="38" y="28" fontFamily="sans-serif" fontSize="16" fill="white" fontWeight="bold">文</text>
+        </g>
+    </IconBase>
+);
+
+export const WebSearchIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <circle cx="32" cy="32" r="26" fill="#4A5568" />
+            <circle cx="32" cy="32" r="26" fill="url(#glow-grad)" />
+            <path d="M6 32 H 58" stroke="white" strokeOpacity="0.3" strokeWidth="1.5" />
+            <path d="M32 6 V 58" stroke="white" strokeOpacity="0.3" strokeWidth="1.5" />
+            <path d="M32 6 A 26 10 0 0 0 32 58" fill="none" stroke="white" strokeOpacity="0.5" strokeWidth="1.5"/>
+            <path d="M32 6 A 26 10 0 0 1 32 58" fill="none" stroke="white" strokeOpacity="0.5" strokeWidth="1.5"/>
+            <circle cx="32" cy="32" r="26" fill="url(#glass-highlight)" />
+        </g>
+    </IconBase>
+);
+
+export const GenerateImageIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <rect x="10" y="10" width="44" height="44" rx="8" fill="#2D3748"/>
+            <rect x="10" y="10" width="44" height="44" rx="8" fill="url(#glow-grad)" opacity="0.7"/>
+            <path d="M18 46 L32 30 L46 42 V 50 H 18 Z" fill="white" opacity="0.8"/>
+            <circle cx="26" cy="24" r="5" fill="white" opacity="0.9"/>
+            <rect x="10" y="10" width="44" height="44" rx="8" fill="url(#glass-highlight)"/>
+        </g>
+    </IconBase>
+);
+
+export const SelfHealIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <path d="M32 4 L 10 14 V 32 C 10 46 32 58 32 58 C 32 58 54 46 54 32 V 14 Z" fill="#4A5568" />
+            <path d="M32 4 L 10 14 V 32 C 10 46 32 58 32 58 C 32 58 54 46 54 32 V 14 Z" fill="url(#glow-grad)" />
+            <path d="M32 4 L 10 14 V 32 C 10 46 32 58 32 58 C 32 58 54 46 54 32 V 14 Z" fill="url(#glass-highlight)" />
+            <path d="M30 22 H 34 V 30 H 42 V 34 H 34 V 42 H 30 V 34 H 22 V 30 H 30 Z" fill="white"/>
+        </g>
+    </IconBase>
+);
+
+export const GenerateVideoIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <rect x="10" y="10" width="44" height="44" rx="8" fill="#2D3748"/>
+            <rect x="10" y="10" width="44" height="44" rx="8" fill="url(#glow-grad)" opacity="0.7"/>
+            <path d="M26 22 L 42 32 L 26 42 Z" fill="white"/>
+            <rect x="10" y="10" width="44" height="44" rx="8" fill="url(#glass-highlight)"/>
+        </g>
+    </IconBase>
+);
+
+export const DeviceControlIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <circle cx="32" cy="32" r="20" fill="#2D3748"/>
+            <path d="M32,6V10 M32,54V58 M6,32H10 M54,32H58 M15.5,15.5l2.8,2.8 M45.7,45.7l2.8,2.8 M15.5,48.5l2.8-2.8 M45.7,18.3l2.8-2.8" stroke="#4A5568" strokeWidth="4" strokeLinecap="round" />
+            <circle cx="32" cy="32" r="12" fill="currentColor"/>
+            <circle cx="32" cy="32" r="16" fill="url(#glass-highlight)"/>
+        </g>
+    </IconBase>
+);
+
+export const PaletteIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <path d="M32 4 C 16 4 8 16 8 28 C 8 38 16 52 32 60 C 48 52 56 38 56 28 C 56 16 48 4 32 4 Z" fill="#4A5568" />
+            <path d="M32 4 C 16 4 8 16 8 28 C 8 38 16 52 32 60 C 48 52 56 38 56 28 C 56 16 48 4 32 4 Z" fill="url(#metal-grad)" />
+            <circle cx="22" cy="24" r="6" fill="#ff4d4d"/>
+            <circle cx="42" cy="24" r="6" fill="#00aeff"/>
+            <circle cx="32" cy="38" r="7" fill="currentColor"/>
+             <path d="M32 4 C 16 4 8 16 8 28 C 8 38 16 52 32 60 C 48 52 56 38 56 28 C 56 16 48 4 32 4 Z" fill="url(#glass-highlight)" />
+        </g>
+    </IconBase>
 );
