@@ -52,6 +52,8 @@
               'pulse-dot': 'pulse-dot 1.2s infinite ease-in-out',
               'text-flicker': 'text-flicker 150ms infinite',
               'pulse-glow': 'pulse-glow 2.5s infinite ease-in-out',
+              'pulse-thinking': 'pulse-thinking 1.5s infinite ease-in-out',
+              'pulse-speaking': 'pulse-speaking 1.8s infinite ease-in-out',
               'ping-slow': 'ping 3s cubic-bezier(0, 0, 0.2, 1) infinite',
               'ping-medium': 'ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite',
               'ping-fast': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
@@ -90,6 +92,14 @@
               'pulse-glow': {
                 '0%, 100%': { boxShadow: '0 0 15px var(--primary-color-hex)', transform: 'scale(1)' },
                 '50%': { boxShadow: '0 0 30px var(--primary-color-hex)', transform: 'scale(1.02)' },
+              },
+              'pulse-thinking': {
+                '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.4)' },
+                '50%': { transform: 'scale(1.05)', boxShadow: '0 0 40px rgba(251, 191, 36, 0.8)' },
+              },
+              'pulse-speaking': {
+                  '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 20px rgba(192, 132, 252, 0.4)' },
+                  '50%': { transform: 'scale(1.03)', boxShadow: '0 0 35px rgba(192, 132, 252, 0.7)' },
               },
               'border-trace': {
                   'from': { 'stroke-dashoffset': '100%' },
@@ -339,7 +349,6 @@
         color: var(--primary-color-hex);
         box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.2);
         transition: all 0.3s ease;
-        animation: pulse-glow 3s infinite ease-in-out;
       }
       .mic-fab:hover {
         transform: scale(1.1);
@@ -348,6 +357,10 @@
       }
        .mic-fab:active {
         transform: scale(1.05);
+      }
+       .mic-fab:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
       }
 
 

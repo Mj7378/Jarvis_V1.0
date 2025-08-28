@@ -25,7 +25,7 @@ import Header from './components/Header';
 import Shutdown from './components/Shutdown';
 import CommandPanel from './components/CommandPanel';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
-import { MicrophoneIcon } from './components/Icons';
+import { GeminiIcon, MicrophoneIcon } from './components/Icons';
 
 
 // System Lifecycle States
@@ -481,6 +481,29 @@ const App: React.FC = () => {
     );
   };
 
+  // FAB animation and icon logic
+  const getFabAnimation = () => {
+      switch (appState) {
+          case AppState.THINKING:
+              return 'animate-pulse-thinking';
+          case AppState.SPEAKING:
+              return 'animate-pulse-speaking';
+          default:
+              return 'animate-pulse-glow';
+      }
+  };
+
+  const renderFabIcon = () => {
+      switch (appState) {
+          case AppState.THINKING:
+          case AppState.SPEAKING:
+              return <GeminiIcon className="w-8 h-8" />;
+          default:
+              return <MicrophoneIcon className="w-8 h-8" />;
+      }
+  };
+
+
   // Lifecycle rendering
   if (systemState === 'PRE_BOOT') {
     return <PreBootScreen onInitiate={() => setSystemState('BOOTING')} />;
@@ -509,11 +532,11 @@ const App: React.FC = () => {
 
             <button
                 onClick={() => setIsCommandPanelOpen(true)}
-                className="mic-fab"
+                className={`mic-fab ${getFabAnimation()}`}
                 aria-label="Open Command Panel"
-                disabled={appState === AppState.THINKING}
+                disabled={appState === AppState.THINKING || appState === AppState.SPEAKING}
             >
-                <MicrophoneIcon className="w-8 h-8" />
+                {renderFabIcon()}
             </button>
 
         </main>
