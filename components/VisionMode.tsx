@@ -9,15 +9,14 @@ const VisionMode: React.FC<VisionModeProps> = ({ onCapture, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string>('');
-  const [stream, setStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
+    let mediaStream: MediaStream | null = null;
     const startCamera = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
+        mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' },
         });
-        setStream(mediaStream);
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
         }
@@ -30,8 +29,8 @@ const VisionMode: React.FC<VisionModeProps> = ({ onCapture, onClose }) => {
     startCamera();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

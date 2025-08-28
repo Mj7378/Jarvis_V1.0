@@ -100,6 +100,7 @@
       :root {
         --primary-color-hex: #00ffff;
         --primary-color-rgb: 0, 255, 255;
+        --corner-clip-size: clamp(15px, 4vw, 30px);
       }
       
       .theme-dark {
@@ -137,7 +138,8 @@
         overflow: hidden;
         background-image:
             radial-gradient(ellipse at center, rgba(var(--primary-color-rgb), 0.1) 0%, transparent 60%),
-            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><pattern id="hex" patternUnits="userSpaceOnUse" width="60" height="104" patternTransform="scale(1) rotate(30)"><path d="M42.5,15.5,30,7.75,17.5,15.5V31l12.5,7.75L42.5,31Z" fill="rgba(0,255,255,0.02)" stroke="rgba(0,255,255,0.03)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23hex)"/></svg>');
+            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><pattern id="hex" patternUnits="userSpaceOnUse" width="60" height="104" patternTransform="scale(1) rotate(30)"><path d="M42.5,15.5,30,7.75,17.5,15.5V31l12.5,7.75,L42.5,31Z" fill="rgba(0,255,255,0.02)" stroke="rgba(0,255,255,0.03)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23hex)"/></svg>');
+        font-size: clamp(14px, 1.5vw + 0.5rem, 18px);
       }
 
       @keyframes glimmer {
@@ -184,7 +186,7 @@
         box-shadow: 
             0 0 30px rgba(var(--primary-color-rgb), 0.05),
             inset 0 0 10px rgba(var(--primary-color-rgb), 0.05);
-        padding: 1.25rem;
+        padding: clamp(0.75rem, 3vw, 1.25rem);
         position: relative;
         transition: all 0.3s ease;
       }
@@ -230,20 +232,23 @@
         border-bottom: 1px solid var(--border-primary);
       }
       
-      /* --- ENHANCED Responsive Grid Layout --- */
+      /* --- UNIVERSAL FLUID LAYOUT --- */
       .hud-container {
         display: grid;
-        width: 100vw;
+        width: 100%;
+        max-width: 1440px; /* Constrain width on large screens */
         height: 100dvh;
-        padding: 0.5rem;
-        gap: 0.5rem;
+        margin-left: auto; /* Center horizontally */
+        margin-right: auto; /* Center horizontally */
+        padding: clamp(0.25rem, 2vw, 1rem);
+        gap: clamp(0.25rem, 2vw, 1rem);
         overflow: hidden;
         
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: auto minmax(0, 1fr) auto; /* Allow chat to shrink and grow */
         grid-template-areas:
             "header"
-            "main"
+            "chat"
             "input";
       }
 
@@ -253,35 +258,16 @@
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
-        --clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 30px, 100% 100%, 30px 100%, 0 calc(100% - 30px));
+        --clip-path: polygon(0 0, calc(100% - var(--corner-clip-size)) 0, 100% var(--corner-clip-size), 100% 100%, var(--corner-clip-size) 100%, 0 calc(100% - var(--corner-clip-size)));
         clip-path: var(--clip-path);
       }
       
-      .hud-right-panel-placeholder { 
-        display: none;
-        grid-area: right;
-      }
-
-      .hud-core-container { 
-        grid-area: main; 
-        position: relative; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        min-height: 0;
-        pointer-events: none;
-      }
-      .hud-core-container > * {
-          pointer-events: auto;
-      }
-      
       .hud-chat-panel {
-          grid-area: main;
+          grid-area: chat;
           display: flex;
           flex-direction: column;
-          min-height: 0;
-          z-index: -1;
-          --clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+          min-height: 0; /* Critical for flex + scroll */
+          --clip-path: polygon(var(--corner-clip-size) 0, 100% 0, 100% calc(100% - var(--corner-clip-size)), calc(100% - var(--corner-clip-size)) 100%, 0 100%, 0 var(--corner-clip-size));
           clip-path: var(--clip-path);
       }
       
@@ -289,62 +275,10 @@
         grid-area: input; 
         position: relative;
         animation: slide-in-bottom 0.5s ease-out forwards;
-         --clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        --clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
         clip-path: var(--clip-path);
       }
       
-      @media (min-width: 768px) {
-        .hud-container {
-            padding: 1rem;
-            gap: 1rem;
-        }
-        @media (orientation: landscape) {
-            .hud-container {
-                grid-template-columns: 2fr 3fr;
-                grid-template-rows: auto 1fr auto;
-                grid-template-areas:
-                    "header header"
-                    "core   chat"
-                    "core   input";
-            }
-            .hud-core-container {
-                grid-area: core;
-                pointer-events: auto;
-            }
-            .hud-chat-panel {
-                grid-area: chat;
-                z-index: 0;
-            }
-            .hud-bottom-panel {
-                grid-area: input;
-                 --clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 15px);
-                clip-path: var(--clip-path);
-            }
-        }
-      }
-
-      @media (min-width: 1200px) {
-        .hud-container {
-            grid-template-columns: 1fr 2fr 320px;
-            grid-template-rows: auto 1fr auto;
-            grid-template-areas:
-                "header header header"
-                "core   chat   right"
-                "core   input  right";
-        }
-        .hud-core-container { grid-area: core; pointer-events: auto; }
-        .hud-chat-panel { grid-area: chat; z-index: 0; }
-        .hud-bottom-panel { grid-area: input; }
-        .hud-right-panel-placeholder {
-            display: flex;
-            grid-area: right;
-            animation: slide-in-right 0.5s ease-out forwards;
-            --clip-path: polygon(0 0, 100% 20px, 100% 100%, 0 100%);
-            clip-path: var(--clip-path);
-        }
-      }
-
-      @keyframes slide-in-right { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
       @keyframes slide-in-bottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
       @keyframes fade-in-fast {
@@ -355,6 +289,34 @@
         animation: fade-in-fast 0.4s ease-out forwards;
       }
       
+      /* --- Responsive Component Styles --- */
+      .header-title-panel {
+          --clip-size: clamp(15px, 4vw, 25px);
+          clip-path: polygon(0 0, calc(100% - var(--clip-size)) 0, 100% 50%, calc(100% - var(--clip-size)) 100%, 0 100%);
+          padding-left: clamp(0.75rem, 4vw, 1.5rem);
+          padding-right: clamp(0.75rem, 4vw, 1.5rem);
+      }
+      .header-title-wedge {
+          width: clamp(15px, 4vw, 25px);
+          clip-path: polygon(0 50%, 100% 0, 100% 100%);
+      }
+      .user-input-field {
+          font-size: clamp(0.9rem, 3vw, 1.1rem);
+      }
+      .user-input-mic-button {
+          width: clamp(2.75rem, 12vw, 3.5rem);
+          height: clamp(2.75rem, 12vw, 3.5rem);
+      }
+      .user-input-mic-button svg {
+          width: clamp(1.5rem, 6vw, 1.75rem);
+          height: clamp(1.5rem, 6vw, 1.75rem);
+      }
+      .settings-modal-container {
+          width: clamp(280px, 90vw, 380px);
+          margin: clamp(0.5rem, 2vw, 1rem);
+      }
+
+
       .toggle-label {
         display: flex;
         align-items: center;
@@ -437,7 +399,6 @@
       }
       
       .system-terminating .hud-core-container { animation-delay: 0.1s; }
-      .system-terminating .hud-right-panel-placeholder { animation-delay: 0.3s; }
       .system-terminating .hud-left-panel { animation-delay: 0.5s; }
       .system-terminating .hud-bottom-panel { animation-delay: 0.7s; }
       .system-terminating .hud-header { animation-delay: 0.9s; }

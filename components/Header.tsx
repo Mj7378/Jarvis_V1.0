@@ -35,18 +35,17 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
             {/* Left side: Title */}
             <div className="flex items-center h-full group">
                  <div 
-                    className="h-full bg-primary/80 text-background flex items-center px-6 transition-all duration-300 group-hover:bg-primary"
-                    style={{clipPath: 'polygon(0 0, calc(100% - 25px) 0, 100% 50%, calc(100% - 25px) 100%, 0 100%)'}}
+                    className="h-full bg-primary/80 text-background flex items-center transition-all duration-300 group-hover:bg-primary header-title-panel"
                 >
                     <h1 
-                        className="font-orbitron text-2xl md:text-3xl tracking-widest transition-transform duration-300 group-hover:scale-105"
+                        className="font-orbitron tracking-widest transition-transform duration-300 group-hover:scale-105"
+                        style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)' }}
                     >
                         J.A.R.V.I.S.
                     </h1>
                 </div>
                 <div 
-                    className="h-full w-8 bg-primary/80 transition-all duration-300 group-hover:bg-primary"
-                     style={{clipPath: 'polygon(0 50%, 100% 0, 100% 100%)'}}
+                    className="h-full bg-primary/80 transition-all duration-300 group-hover:bg-primary header-title-wedge"
                 ></div>
             </div>
 
@@ -79,7 +78,7 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="font-mono text-xl md:text-2xl text-text-primary tracking-wider flex items-baseline">
+                        <div className="font-mono text-lg sm:text-xl md:text-2xl text-text-primary tracking-wider flex items-baseline">
                             <span>{hours.toString().padStart(2, '0')}</span>
                             <span className="animate-pulse mx-px">:</span>
                             <span>{minutes.toString().padStart(2, '0')}</span>

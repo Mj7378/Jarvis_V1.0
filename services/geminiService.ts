@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig } from '@google/genai';
+import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig, Type } from '@google/genai';
 import type { ChatMessage, Source, AppError } from '../types';
 
 if (!process.env.API_KEY) {
@@ -215,6 +215,49 @@ export async function streamTranslateText(text: string): Promise<AsyncGenerator<
     return response;
   } catch (error) {
     throw handleGeminiError(error, "Stream Translation");
+  }
+}
+
+// FIX: Add missing analyzeFaceForAuth function for FaceAuthMode component.
+export async function analyzeFaceForAuth(image: { mimeType: string; data: string }): Promise<boolean> {
+  try {
+    const imagePart = {
+      inlineData: {
+        mimeType: image.mimeType,
+        data: image.data,
+      },
+    };
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    imagePart,
+                    { text: "Is the person in this image Mahesh? He is a man of Indian descent. Respond in JSON with a single boolean 'is_mahesh' field." },
+                ],
+            },
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              is_mahesh: { type: Type.BOOLEAN, description: "True if the person in the image is Mahesh." },
+            },
+          },
+          systemInstruction: "You are a highly accurate facial recognition system. Your only task is to identify if the person in an image is 'Mahesh'. Respond only in the requested JSON format.",
+        }
+    });
+    
+    const jsonStr = response.text.trim();
+    const result = JSON.parse(jsonStr);
+    return result.is_mahesh === true;
+  } catch (error) {
+    console.error("Face authentication failed:", error);
+    // In case of an API or parsing error, we should fail safely and deny access.
+    return false;
   }
 }
 

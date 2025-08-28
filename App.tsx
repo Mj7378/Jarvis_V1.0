@@ -14,7 +14,6 @@ import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, Theme
 import ChatLog from './components/ChatLog';
 import VisionMode from './components/VisionMode';
 import ActionModal, { ActionModalProps } from './components/ActionModal';
-import CoreInterface from './components/CoreInterface';
 import DesignMode from './components/DesignMode';
 import SimulationMode from './components/SimulationMode';
 import ErrorModal from './components/ErrorModal';
@@ -64,6 +63,7 @@ const DEFAULT_THEME: ThemeSettings = {
   bootupAnimation: 'holographic',
   voiceOutputEnabled: true,
   uiSoundsEnabled: true,
+  soundProfile: 'default',
   voiceProfiles: [DEFAULT_PROFILE],
   activeVoiceProfileId: DEFAULT_PROFILE.id,
   wakeWord: 'JARVIS',
@@ -88,7 +88,7 @@ const App: React.FC = () => {
             const parsed = JSON.parse(savedSettings);
             // Basic validation to ensure old settings don't break the app
             if (parsed.voiceProfiles && parsed.activeVoiceProfileId) {
-                return parsed;
+                return { ...DEFAULT_THEME, ...parsed };
             }
         }
     } catch (e) {
@@ -99,7 +99,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Sound & Speech
-  const sounds = useSoundEffects(themeSettings.uiSoundsEnabled);
+  const sounds = useSoundEffects(themeSettings.uiSoundsEnabled, themeSettings.soundProfile);
   const activeProfile = themeSettings.voiceProfiles.find(p => p.id === themeSettings.activeVoiceProfileId) || themeSettings.voiceProfiles[0] || DEFAULT_PROFILE;
   const { queueSpeech, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(activeProfile);
 
@@ -385,26 +385,18 @@ const App: React.FC = () => {
         {themeSettings.showScanlines && <div className="scanline-overlay"></div>}
         <main className={`hud-container ${systemState === 'SNAP_DISINTEGRATION' ? 'system-terminating' : ''}`}>
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
-            
-            <div className="hud-core-container">
-                <CoreInterface appState={appState} />
-            </div>
 
             <div className="hud-chat-panel holographic-panel">
                 <ChatLog history={chatHistory} appState={appState} />
             </div>
             
-            <div className="hud-bottom-panel holographic-panel items-center justify-center !p-2 md:!p-4">
+            <div className="hud-bottom-panel holographic-panel items-center justify-center">
                 <UserInput 
                     onSendMessage={handleSendMessage}
                     onToggleListening={handleToggleListening}
                     appState={appState}
                     isListening={isListening}
                 />
-            </div>
-            
-            <div className="hud-right-panel-placeholder holographic-panel">
-                {/* This is a placeholder; the settings modal will overlay it when active */}
             </div>
         </main>
         

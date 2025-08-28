@@ -31,22 +31,54 @@ const playWebAudioSound = (config: {
     }
 };
 
-export const useSoundEffects = (enabled: boolean = true) => {
-    const playSound = useCallback((config: any) => {
+const soundProfiles = {
+    default: {
+        playClick: () => playWebAudioSound({ frequency: 880, duration: 0.05, volume: 0.1 }),
+        playActivate: () => playWebAudioSound({ type: 'sawtooth', frequency: 523.25, duration: 0.2, volume: 0.2, rampTo: 0.1 }),
+        playDeactivate: () => playWebAudioSound({ type: 'sawtooth', frequency: 523.25, duration: 0.2, volume: 0.2, rampTo: 1.0 }),
+        playError: () => playWebAudioSound({ type: 'square', frequency: 110, duration: 0.4, volume: 0.2 }),
+        playSuccess: () => playWebAudioSound({ frequency: 659.25, duration: 0.2, volume: 0.2 }),
+        playOpen: () => playWebAudioSound({ type: 'triangle', frequency: 392.00, duration: 0.15, volume: 0.15 }),
+        playClose: () => playWebAudioSound({ type: 'triangle', frequency: 440.00, duration: 0.15, volume: 0.15 }),
+    },
+    futuristic: {
+        playClick: () => playWebAudioSound({ type: 'sine', frequency: 1200, duration: 0.08, volume: 0.08, rampTo: 0.01 }),
+        playActivate: () => playWebAudioSound({ type: 'sine', frequency: 600, duration: 0.4, volume: 0.15 }),
+        playDeactivate: () => playWebAudioSound({ type: 'sine', frequency: 600, duration: 0.4, volume: 0.15, rampTo: 1.0 }),
+        playError: () => playWebAudioSound({ type: 'sawtooth', frequency: 200, duration: 0.5, volume: 0.2, rampTo: 0.05 }),
+        playSuccess: () => playWebAudioSound({ type: 'triangle', frequency: 1000, duration: 0.3, volume: 0.15 }),
+        playOpen: () => playWebAudioSound({ type: 'sine', frequency: 700, duration: 0.2, volume: 0.1 }),
+        playClose: () => playWebAudioSound({ type: 'sine', frequency: 800, duration: 0.2, volume: 0.1 }),
+    },
+    retro: {
+        playClick: () => playWebAudioSound({ type: 'square', frequency: 1500, duration: 0.04, volume: 0.05 }),
+        playActivate: () => playWebAudioSound({ type: 'square', frequency: 440, duration: 0.1, volume: 0.1 }),
+        playDeactivate: () => playWebAudioSound({ type: 'square', frequency: 330, duration: 0.1, volume: 0.1 }),
+        playError: () => playWebAudioSound({ type: 'square', frequency: 150, duration: 0.6, volume: 0.15 }),
+        playSuccess: () => playWebAudioSound({ type: 'square', frequency: 880, duration: 0.2, volume: 0.1 }),
+        playOpen: () => playWebAudioSound({ type: 'square', frequency: 660, duration: 0.08, volume: 0.08 }),
+        playClose: () => playWebAudioSound({ type: 'square', frequency: 770, duration: 0.08, volume: 0.08 }),
+    }
+};
+
+export const useSoundEffects = (enabled: boolean = true, profile: 'default' | 'futuristic' | 'retro' = 'default') => {
+    const activeProfile = soundProfiles[profile] || soundProfiles.default;
+
+    const playSound = useCallback((soundFunction: () => void) => {
         if (enabled) {
-            playWebAudioSound(config);
+            soundFunction();
         }
     }, [enabled]);
 
     return useMemo(() => ({
-        playClick: () => playSound({ frequency: 880, duration: 0.05, volume: 0.1 }),
-        playActivate: () => playSound({ type: 'sawtooth', frequency: 523.25, duration: 0.2, volume: 0.2, rampTo: 0.1 }),
-        playDeactivate: () => playSound({ type: 'sawtooth', frequency: 523.25, duration: 0.2, volume: 0.2, rampTo: 1.0 }),
-        playError: () => playSound({ type: 'square', frequency: 110, duration: 0.4, volume: 0.2 }),
-        playSuccess: () => playSound({ frequency: 659.25, duration: 0.2, volume: 0.2 }),
-        playOpen: () => playSound({ type: 'triangle', frequency: 392.00, duration: 0.15, volume: 0.15 }),
-        playClose: () => playSound({ type: 'triangle', frequency: 440.00, duration: 0.15, volume: 0.15 }),
-    }), [playSound]);
+        playClick: () => playSound(activeProfile.playClick),
+        playActivate: () => playSound(activeProfile.playActivate),
+        playDeactivate: () => playSound(activeProfile.playDeactivate),
+        playError: () => playSound(activeProfile.playError),
+        playSuccess: () => playSound(activeProfile.playSuccess),
+        playOpen: () => playSound(activeProfile.playOpen),
+        playClose: () => playSound(activeProfile.playClose),
+    }), [playSound, activeProfile]);
 };
 
 

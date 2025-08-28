@@ -54,7 +54,7 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
   }, [history, appState]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-1 styled-scrollbar">
+    <div className="flex-1 overflow-y-auto p-3 styled-scrollbar">
       <div className="space-y-4">
         {history.map((message, index) => {
           const isLastMessage = index === history.length - 1;
@@ -64,15 +64,15 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
           return (
             <div key={index} className={`flex flex-col animate-fade-in-fast ${isModel ? 'items-start' : 'items-end'}`}>
               <div
-                className={`max-w-md p-3 text-sm md:text-base border transition-all duration-300 ${
+                className={`max-w-md p-3 text-sm transition-all duration-300 ${
                   isModel
                     ? 'bg-gradient-to-br from-panel/80 to-panel/50 border-primary-t-20 text-text-primary'
                     : 'bg-gradient-to-br from-user-bubble/90 to-user-bubble/70 border-transparent text-white'
                 } ${isLastModelMessage && appState === AppState.THINKING ? '!border-yellow-400/80 shadow-[0_0_15px] shadow-yellow-400/20' : ''}`}
                  style={{
                     clipPath: isModel 
-                      ? 'polygon(0 15px, 15px 0, 100% 0, 100% 100%, 0 100%)' 
-                      : 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%)'
+                      ? 'polygon(0 var(--corner-clip-size), var(--corner-clip-size) 0, 100% 0, 100% 100%, 0 100%)' 
+                      : 'polygon(0 0, calc(100% - var(--corner-clip-size)) 0, 100% var(--corner-clip-size), 100% 100%, 0 100%)'
                  }}
               >
                 {message.imageUrl && (

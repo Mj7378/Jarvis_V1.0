@@ -56,6 +56,7 @@ export interface ThemeSettings {
   bootupAnimation: 'holographic' | 'video';
   voiceOutputEnabled: boolean;
   uiSoundsEnabled: boolean;
+  soundProfile: 'default' | 'futuristic' | 'retro';
   voiceProfiles: VoiceProfile[];
   activeVoiceProfileId: string | null;
   wakeWord: string;

@@ -31,7 +31,7 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full">
         <div 
-            className="relative w-48 h-48 sm:w-60 sm:h-60 lg:w-72 lg:h-72 cursor-default group core-container" 
+            className="relative w-[40vmin] h-[40vmin] max-w-[18rem] max-h-[18rem] cursor-default group core-container"
             role="img"
             aria-label="J.A.R.V.I.S. Core Interface"
         >

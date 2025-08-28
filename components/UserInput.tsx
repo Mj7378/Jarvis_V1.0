@@ -40,17 +40,17 @@ const UserInput: React.FC<UserInputProps> = ({ onSendMessage, onToggleListening,
         onChange={(e) => setInputValue(e.target.value)}
         placeholder={isListening ? "Listening..." : "Enter command or press mic..."}
         disabled={isInputDisabled || isListening}
-        className="flex-grow bg-transparent border-none focus:ring-0 p-2 text-base md:text-lg text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity"
+        className="flex-grow bg-transparent border-none focus:ring-0 p-2 text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity user-input-field"
         aria-label="User command input"
       />
       <button
         type="button"
         onClick={onToggleListening}
         disabled={isInputDisabled}
-        className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-300 ${getMicButtonClass()}`}
+        className={`flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300 user-input-mic-button ${getMicButtonClass()}`}
         aria-label={isListening ? 'Stop listening' : 'Start listening'}
       >
-        <MicrophoneIcon className="w-6 h-6 md:w-7 md:h-7" />
+        <MicrophoneIcon />
       </button>
     </form>
   );

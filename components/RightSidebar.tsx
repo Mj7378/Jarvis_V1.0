@@ -141,6 +141,22 @@ const VoiceSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'on
                         </label>
                     </div>
                 </div>
+                 <div className="flex items-center justify-between">
+                    <label htmlFor="sound-profile-select" className={`text-sm transition-opacity ${!themeSettings.uiSoundsEnabled ? 'text-text-muted opacity-50' : 'text-slate-300'}`}>
+                        Sound Profile
+                    </label>
+                    <select
+                        id="sound-profile-select"
+                        value={themeSettings.soundProfile}
+                        onChange={(e) => handleSettingChange('soundProfile', e.target.value as ThemeSettings['soundProfile'])}
+                        disabled={!themeSettings.uiSoundsEnabled}
+                        className="w-36 bg-slate-800/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm disabled:bg-disabled-bg disabled:text-disabled-text disabled:cursor-not-allowed disabled:border-slate-700"
+                    >
+                        <option value="default">Default</option>
+                        <option value="futuristic">Futuristic</option>
+                        <option value="retro">Retro</option>
+                    </select>
+                </div>
                 <div className="flex items-center justify-between">
                     <label htmlFor="wakeword-input" className="text-sm text-slate-300">Wake Word</label>
                     <input
