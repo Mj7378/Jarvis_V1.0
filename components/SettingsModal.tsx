@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, SettingsIcon, CloseIcon, PowerIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, SettingsIcon, CloseIcon, PowerIcon, TrashIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -92,6 +92,25 @@ const VoiceSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'o
         onThemeChange(prev => ({ ...prev, [key]: value }));
     };
 
+    const handleDeleteProfile = () => {
+        sounds.playClick();
+        onThemeChange(prev => {
+            const profileIdToDelete = prev.activeVoiceProfileId;
+            if (prev.voiceProfiles.length <= 1 || !profileIdToDelete) return prev;
+
+            const updatedProfiles = prev.voiceProfiles.filter(p => p.id !== profileIdToDelete);
+            
+            const newActiveId = updatedProfiles[0]?.id || null;
+
+            return {
+                ...prev,
+                voiceProfiles: updatedProfiles,
+                activeVoiceProfileId: newActiveId,
+            };
+        });
+    };
+
+
     return (
         <div className="bg-background/20 p-4">
             <h2 className="panel-title text-secondary">
@@ -139,11 +158,39 @@ const VoiceSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'o
                         className="w-36 bg-panel/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-text-primary text-sm"
                     />
                 </div>
+                <div className="flex items-center justify-between">
+                    <label htmlFor="profile-select" className="text-sm text-text-primary">Active Profile</label>
+                    <div className="flex items-center gap-1">
+                        <select
+                            id="profile-select"
+                            value={themeSettings.activeVoiceProfileId || ''}
+                            onChange={(e) => {
+                                sounds.playClick();
+                                onThemeChange(prev => ({ ...prev, activeVoiceProfileId: e.target.value }));
+                            }}
+                            className="w-36 bg-panel/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-text-primary text-sm"
+                        >
+                            {themeSettings.voiceProfiles.map(profile => (
+                                <option key={profile.id} value={profile.id}>
+                                    {profile.name}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={handleDeleteProfile}
+                            disabled={themeSettings.voiceProfiles.length <= 1}
+                            className="p-1.5 text-red-400 hover:bg-red-500/20 rounded disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            aria-label="Delete selected profile"
+                        >
+                           <TrashIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
                  <button 
                     onClick={onCalibrateVoice}
                     className="w-full text-center py-2 mt-2 text-sm bg-panel/50 rounded-md border border-border-secondary hover:bg-panel/80 transition-colors"
                 >
-                    Calibrate Voice
+                    Create New Profile
                 </button>
             </div>
         </div>

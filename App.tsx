@@ -8,7 +8,7 @@ import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveVideo, deleteVideo } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
@@ -39,6 +39,7 @@ const hexToRgb = (hex: string): string | null => {
     : null;
 };
 
+const DEFAULT_PROFILE: VoiceProfile = { id: 'default', name: 'J.A.R.V.I.S. Default', rate: 1.1, pitch: 1.1 };
 const DEFAULT_THEME: ThemeSettings = {
   primaryColor: '#00ffff', // J.A.R.V.I.S. Cyan
   panelColor: '#121a2b',
@@ -50,7 +51,8 @@ const DEFAULT_THEME: ThemeSettings = {
   bootupAnimation: 'holographic',
   voiceOutputEnabled: true,
   uiSoundsEnabled: true,
-  voiceProfile: { rate: 1.1, pitch: 1.1 },
+  voiceProfiles: [DEFAULT_PROFILE],
+  activeVoiceProfileId: DEFAULT_PROFILE.id,
   wakeWord: 'JARVIS',
   aiModel: 'gemini-2.5-flash',
 };
@@ -66,12 +68,27 @@ const App: React.FC = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   
   // Theme & Settings
-  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(DEFAULT_THEME);
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
+    try {
+        const savedSettings = localStorage.getItem('jarvis_theme_settings');
+        if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            // Basic validation to ensure old settings don't break the app
+            if (parsed.voiceProfiles && parsed.activeVoiceProfileId) {
+                return parsed;
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load settings from local storage", e);
+    }
+    return DEFAULT_THEME;
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Sound & Speech
   const sounds = useSoundEffects(themeSettings.uiSoundsEnabled);
-  const { speak, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(themeSettings.voiceProfile);
+  const activeProfile = themeSettings.voiceProfiles.find(p => p.id === themeSettings.activeVoiceProfileId) || themeSettings.voiceProfiles[0] || DEFAULT_PROFILE;
+  const { speak, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(activeProfile);
 
   // Modes & Modals
   const [isVisionMode, setIsVisionMode] = useState(false);
@@ -134,6 +151,13 @@ const App: React.FC = () => {
 
     document.body.classList.toggle('grid-active', themeSettings.showGrid);
     document.body.classList.toggle('text-flicker-active', themeSettings.showTextFlicker);
+
+     // Save settings to local storage whenever they change
+    try {
+        localStorage.setItem('jarvis_theme_settings', JSON.stringify(themeSettings));
+    } catch (e) {
+        console.error("Failed to save settings to local storage", e);
+    }
   }, [themeSettings]);
 
 
@@ -292,8 +316,21 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCalibrationComplete = (profile: { rate: number; pitch: number }) => {
-    setThemeSettings(prev => ({ ...prev, voiceProfile: profile }));
+  const handleCalibrationComplete = (profileData: { name: string; rate: number; pitch: number }) => {
+    const newProfile: VoiceProfile = {
+        id: `vp_${Date.now()}`,
+        name: profileData.name,
+        rate: profileData.rate,
+        pitch: profileData.pitch,
+    };
+    setThemeSettings(prev => {
+        const updatedProfiles = [...prev.voiceProfiles, newProfile];
+        return {
+            ...prev,
+            voiceProfiles: updatedProfiles,
+            activeVoiceProfileId: newProfile.id, // Make the new profile active
+        };
+    });
     setIsCalibrationOpen(false);
   };
 

@@ -38,6 +38,13 @@ export interface AppError {
   action?: string;
 }
 
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  rate: number;
+  pitch: number;
+}
+
 export interface ThemeSettings {
   primaryColor: string;
   panelColor: string;
@@ -49,10 +56,8 @@ export interface ThemeSettings {
   bootupAnimation: 'holographic' | 'video';
   voiceOutputEnabled: boolean;
   uiSoundsEnabled: boolean;
-  voiceProfile: {
-    rate: number;
-    pitch: number;
-  };
+  voiceProfiles: VoiceProfile[];
+  activeVoiceProfileId: string | null;
   wakeWord: string;
   aiModel: 'gemini-2.5-flash';
 }

@@ -5,7 +5,7 @@ import { transcribeAudio } from '../services/geminiService';
 interface VoiceCalibrationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (profile: { rate: number; pitch: number }) => void;
+  onComplete: (profile: { name: string; rate: number; pitch: number }) => void;
 }
 
 type CalibrationState = 'idle' | 'recording' | 'analyzing' | 'feedback' | 'error';
@@ -76,6 +76,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
     paceFeedback: string;
     clarityFeedback: string;
   } | null>(null);
+  const [profileName, setProfileName] = useState('');
 
   const startTimeRef = useRef<number>(0);
 
@@ -143,6 +144,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
         paceFeedback,
         clarityFeedback,
     });
+    setProfileName(`Vocal Profile ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
     
     setTimeout(() => {
         setCalibrationState('feedback');
@@ -230,9 +232,9 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
     }
   };
 
-  const handleApplyProfile = () => {
-    if (analysisResult) {
-      onComplete({ rate: analysisResult.rate, pitch: analysisResult.pitch });
+  const handleSaveProfile = () => {
+    if (analysisResult && profileName.trim()) {
+      onComplete({ name: profileName.trim(), rate: analysisResult.rate, pitch: analysisResult.pitch });
     }
   };
 
@@ -375,12 +377,22 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
                             feedback={analysisResult.clarityFeedback}
                         />
                     </div>
+                    <div className="mt-4">
+                        <label htmlFor="profile-name" className="block text-sm font-medium text-slate-300 mb-1">Save Profile As:</label>
+                        <input
+                            id="profile-name"
+                            type="text"
+                            value={profileName}
+                            onChange={(e) => setProfileName(e.target.value)}
+                            className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200"
+                        />
+                    </div>
                      <div className="mt-6 flex justify-end space-x-3">
                         <button onClick={handleRecalibrate} className="px-6 py-2 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 transition-colors">
                             Recalibrate
                         </button>
-                        <button onClick={handleApplyProfile} className="px-6 py-2 rounded-md bg-primary-t-80 text-jarvis-dark hover:bg-primary transition-colors">
-                            Apply Profile
+                        <button onClick={handleSaveProfile} disabled={!profileName.trim()} className="px-6 py-2 rounded-md bg-primary-t-80 text-jarvis-dark hover:bg-primary transition-colors disabled:opacity-50">
+                            Save & Apply Profile
                         </button>
                     </div>
                 </>
