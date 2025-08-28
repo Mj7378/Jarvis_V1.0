@@ -52,12 +52,13 @@ export const useSoundEffects = (enabled: boolean = true) => {
 
 export const useSpeechSynthesis = (profile = { rate: 1.1, pitch: 1.1 }) => {
     const [isSpeaking, setIsSpeaking] = useState(false);
-    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const voices = useRef<SpeechSynthesisVoice[]>([]);
     const synthRef = useRef(window.speechSynthesis);
+    const speechQueueRef = useRef<string[]>([]);
+    const isBusyRef = useRef(false);
 
     const populateVoiceList = useCallback(() => {
-        const newVoices = synthRef.current.getVoices();
-        setVoices(newVoices);
+        voices.current = synthRef.current.getVoices();
     }, []);
 
     useEffect(() => {
@@ -67,37 +68,64 @@ export const useSpeechSynthesis = (profile = { rate: 1.1, pitch: 1.1 }) => {
         }
     }, [populateVoiceList]);
 
-    const speak = useCallback((text: string) => {
-        if (!text || isSpeaking || !synthRef.current) return;
+    const processQueue = useCallback(() => {
+        if (isBusyRef.current || speechQueueRef.current.length === 0 || !synthRef.current) {
+            return;
+        }
+        isBusyRef.current = true;
+        setIsSpeaking(true);
 
-        synthRef.current.cancel(); // Cancel any previous speech
-
+        const text = speechQueueRef.current.shift();
+        if (!text) {
+             isBusyRef.current = false;
+             setIsSpeaking(false);
+             return;
+        }
+        
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-
-        // Try to find a J.A.R.V.I.S.-like voice (e.g., UK English Male)
-        // Fix: The 'gender' property is non-standard. Cast to 'any' to prevent TypeScript errors.
-        const jarvisVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Google') && (v as any).gender === 'male') 
-            || voices.find(v => v.lang === 'en-US' && v.name.includes('Google') && (v as any).gender === 'male') 
-            || voices.find(v => v.lang.startsWith('en') && v.name.includes('David')) 
-            || voices.find(v => v.lang.startsWith('en-GB'));
         
-        utterance.voice = jarvisVoice || voices.find(v => v.lang.startsWith('en')) || null;
+        const jarvisVoice = voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Google') && (v as any).gender === 'male') 
+            || voices.current.find(v => v.lang === 'en-US' && v.name.includes('Google') && (v as any).gender === 'male') 
+            || voices.current.find(v => v.lang.startsWith('en') && v.name.includes('David')) 
+            || voices.current.find(v => v.lang.startsWith('en-GB'));
         
+        utterance.voice = jarvisVoice || voices.current.find(v => v.lang.startsWith('en')) || null;
         utterance.rate = profile.rate;
         utterance.pitch = profile.pitch;
 
+        utterance.onend = () => {
+            isBusyRef.current = false;
+            if (speechQueueRef.current.length === 0) {
+                setIsSpeaking(false);
+            }
+            processQueue();
+        };
+        utterance.onerror = (e) => {
+            console.error("Speech synthesis error:", e);
+            isBusyRef.current = false;
+            if (speechQueueRef.current.length === 0) {
+                setIsSpeaking(false);
+            }
+            processQueue();
+        };
+
         synthRef.current.speak(utterance);
-    }, [isSpeaking, voices, profile]);
+    }, [profile]);
+
+    const queueSpeech = useCallback((text: string) => {
+        if (!text.trim()) return;
+        speechQueueRef.current.push(text);
+        processQueue();
+    }, [processQueue]);
 
     const cancel = useCallback(() => {
+        speechQueueRef.current = [];
+        isBusyRef.current = false;
         if(synthRef.current) {
             synthRef.current.cancel();
         }
         setIsSpeaking(false);
     }, []);
 
-    return { speak, cancel, isSpeaking };
+    return { queueSpeech, cancel, isSpeaking };
 };

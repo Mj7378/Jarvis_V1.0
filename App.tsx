@@ -88,7 +88,7 @@ const App: React.FC = () => {
   // Sound & Speech
   const sounds = useSoundEffects(themeSettings.uiSoundsEnabled);
   const activeProfile = themeSettings.voiceProfiles.find(p => p.id === themeSettings.activeVoiceProfileId) || themeSettings.voiceProfiles[0] || DEFAULT_PROFILE;
-  const { speak, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(activeProfile);
+  const { queueSpeech, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(activeProfile);
 
   // Modes & Modals
   const [isVisionMode, setIsVisionMode] = useState(false);
@@ -175,7 +175,7 @@ const App: React.FC = () => {
 
   const handleDeviceCommand = useCallback((command: DeviceControlCommand) => {
     addMessage({ role: 'model', content: command.spoken_response });
-    if(themeSettings.voiceOutputEnabled) speak(command.spoken_response);
+    if(themeSettings.voiceOutputEnabled) queueSpeech(command.spoken_response);
 
     switch (command.command) {
       case 'open_url':
@@ -192,11 +192,12 @@ const App: React.FC = () => {
         break;
       // Other cases can be added here (navigate, play_music, etc.)
     }
-  }, [addMessage, speak, themeSettings.voiceOutputEnabled, handleShutdown]);
+  }, [addMessage, queueSpeech, themeSettings.voiceOutputEnabled, handleShutdown]);
 
 
   const processAiResponse = useCallback(async (prompt: string, image?: { mimeType: string; data: string; }) => {
     setAppState(AppState.THINKING);
+    cancelSpeech(); // Reset speech state for the new response
     if(abortControllerRef.current) {
         abortControllerRef.current.abort();
     }
@@ -207,11 +208,13 @@ const App: React.FC = () => {
         let fullResponse = "";
         let isFirstChunk = true;
         let isCommand = false;
+        let speechBuffer = "";
 
         for await (const chunk of stream) {
             if (abortControllerRef.current.signal.aborted) {
                 console.log("Stream aborted by user.");
                 if(isCommand) removeLastMessage();
+                cancelSpeech();
                 setAppState(AppState.IDLE);
                 return;
             }
@@ -225,13 +228,29 @@ const App: React.FC = () => {
                     isCommand = true;
                     addMessage({ role: 'model', content: "" }); // Placeholder for command
                 } else {
-                    addMessage({ role: 'model', content: chunkText });
+                    addMessage({ role: 'model', content: "" }); // Start with empty bubble for coder effect
                 }
-                fullResponse = chunkText;
+            }
+            
+            fullResponse += chunkText;
+
+            if (isCommand) {
+                // Command is buffered and processed at the end
             } else {
-                fullResponse += chunkText;
-                if(!isCommand) {
-                    appendToLastMessage(chunkText);
+                appendToLastMessage(chunkText);
+                 if (themeSettings.voiceOutputEnabled) {
+                    speechBuffer += chunkText;
+                    // Use a regex to find complete sentences
+                    const sentences = speechBuffer.match(/[^.!?]+[.!?]+/g);
+                    if (sentences) {
+                        let processedText = "";
+                        sentences.forEach(sentence => {
+                            queueSpeech(sentence);
+                            processedText += sentence;
+                        });
+                        // Update buffer with remaining partial sentence
+                        speechBuffer = speechBuffer.substring(processedText.length);
+                    }
                 }
             }
         }
@@ -247,7 +266,9 @@ const App: React.FC = () => {
                 addMessage({ role: 'model', content: "I seem to have encountered a syntax error in my own command protocols. My apologies." });
             }
         } else {
-            if(themeSettings.voiceOutputEnabled) speak(fullResponse);
+             if (themeSettings.voiceOutputEnabled && speechBuffer.trim()) {
+                queueSpeech(speechBuffer.trim());
+            }
         }
 
     } catch (error: any) {
@@ -257,7 +278,7 @@ const App: React.FC = () => {
     } finally {
         setAppState(AppState.IDLE);
     }
-  }, [chatHistory, themeSettings.aiModel, appendToLastMessage, addMessage, handleDeviceCommand, removeLastMessage, speak, themeSettings.voiceOutputEnabled]);
+  }, [chatHistory, themeSettings.aiModel, appendToLastMessage, addMessage, handleDeviceCommand, removeLastMessage, queueSpeech, themeSettings.voiceOutputEnabled, cancelSpeech]);
 
   const handleSendMessage = useCallback((prompt: string, imageUrl?: string) => {
     addMessage({ role: 'user', content: prompt, imageUrl });
@@ -356,7 +377,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="hud-chat-panel hud-panel">
-                <ChatLog history={chatHistory} appState={appState} />
+                <ChatLog history={chatHistory} appState={appState} speechRate={activeProfile.rate} />
             </div>
             
             <div className="hud-bottom-panel hud-panel items-center justify-center !p-2 md:!p-4">
