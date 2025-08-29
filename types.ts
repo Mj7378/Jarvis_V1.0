@@ -22,9 +22,12 @@ export enum AppState {
 
 export interface DeviceControlCommand {
     action: 'device_control';
-    command: 'open_url' | 'search' | 'navigate' | 'unsupported' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown';
+    command: 'open_url' | 'search' | 'navigate' | 'unsupported' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown' | 'app_control';
     app: string;
-    params: any;
+    params: any & {
+        action?: string;
+        value?: any;
+    };
     spoken_response: string;
     lang?: string;
 }

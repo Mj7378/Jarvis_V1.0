@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { RightSidebar } from './RightSidebar';
+import { RightSidebar, RightSidebarProps } from './RightSidebar';
 import { PowerIcon, SettingsIcon, CloseIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
@@ -23,9 +23,16 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
-    const { isOpen, onClose, onShutdown, sounds } = props;
+    const { 
+        isOpen, onClose, onShutdown, sounds,
+        onCameraClick, isBusy, onWeather, onSelfHeal,
+        onDesignMode, onSimulationMode, onCalibrateVoice,
+        themeSettings, onThemeChange,
+        onSetCustomBootVideo, onRemoveCustomBootVideo
+    } = props;
 
     const [isHovering, setIsHovering] = useState(false);
+    const [isSectionVisible, setIsSectionVisible] = useState(false);
     const closeTimeoutRef = useRef<number | null>(null);
 
     const handleClose = useCallback(() => {
@@ -37,7 +44,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
         }
-        if (isOpen && !isHovering) {
+        // If modal is open, user is not hovering, and no section is open, start timer to close modal.
+        if (isOpen && !isHovering && !isSectionVisible) {
             closeTimeoutRef.current = window.setTimeout(() => {
                 handleClose();
             }, 2000);
@@ -47,7 +55,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 clearTimeout(closeTimeoutRef.current);
             }
         };
-    }, [isOpen, isHovering, handleClose]);
+    }, [isOpen, isHovering, isSectionVisible, handleClose]);
 
     const handleShutdown = () => {
         onShutdown();
@@ -80,7 +88,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 
                 {/* Content - The RightSidebar */}
                 <div className="flex-1 overflow-y-auto p-4 styled-scrollbar">
-                    <RightSidebar {...props} />
+                    <RightSidebar
+                        onCameraClick={onCameraClick}
+                        isBusy={isBusy}
+                        onWeather={onWeather}
+                        onSelfHeal={onSelfHeal}
+                        onDesignMode={onDesignMode}
+                        onSimulationMode={onSimulationMode}
+                        onCalibrateVoice={onCalibrateVoice}
+                        sounds={sounds}
+                        themeSettings={themeSettings}
+                        onThemeChange={onThemeChange}
+                        onSetCustomBootVideo={onSetCustomBootVideo}
+                        onRemoveCustomBootVideo={onRemoveCustomBootVideo}
+                        onSectionVisibilityChange={setIsSectionVisible}
+                        isHovering={isHovering}
+                    />
                 </div>
 
                 {/* Footer */}

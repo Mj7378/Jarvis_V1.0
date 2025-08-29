@@ -3,7 +3,7 @@ import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, 
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
-interface RightSidebarProps {
+export interface RightSidebarProps {
     onCameraClick: () => void;
     isBusy: boolean;
     onWeather: () => void;
@@ -16,6 +16,8 @@ interface RightSidebarProps {
     onThemeChange: (settings: ThemeSettings | ((prev: ThemeSettings) => ThemeSettings)) => void;
     onSetCustomBootVideo: (file: File) => void;
     onRemoveCustomBootVideo: () => void;
+    onSectionVisibilityChange: (isVisible: boolean) => void;
+    isHovering: boolean;
 }
 
 const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
@@ -345,11 +347,15 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
         isBusy, 
         onCameraClick, onWeather, onSelfHeal,
         onDesignMode, onSimulationMode,
+        onSectionVisibilityChange, isHovering
     } = props;
 
     const [openSection, setOpenSection] = useState<string | null>(null);
-    const [isHovering, setIsHovering] = useState(false);
     const timeoutRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        onSectionVisibilityChange(openSection !== null);
+    }, [openSection, onSectionVisibilityChange]);
 
     useEffect(() => {
         if (timeoutRef.current) {
@@ -391,8 +397,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
     return (
         <aside 
             className="flex flex-col space-y-2"
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
         >
             <CollapsibleSection
                 title="Voice & Audio"

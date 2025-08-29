@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // Services, Hooks, Utils
@@ -23,9 +24,8 @@ import PreBootScreen from './components/PreBootScreen';
 import { SettingsModal } from './components/SettingsModal';
 import Header from './components/Header';
 import Shutdown from './components/Shutdown';
-import CommandPanel from './components/CommandPanel';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
-import { GeminiIcon, MicrophoneIcon } from './components/Icons';
+import UserInput from './components/UserInput';
 
 
 // System Lifecycle States
@@ -96,6 +96,15 @@ const DEFAULT_THEME: ThemeSettings = {
   aiModel: 'gemini-2.5-flash',
 };
 
+const FULL_THEMES = [
+    { name: 'J.A.R.V.I.S.', primaryColor: '#00ffff', panelColor: '#121a2b', themeMode: 'dark' as const },
+    { name: 'Code Red', primaryColor: '#ff2d2d', panelColor: '#1a0a0f', themeMode: 'dark' as const },
+    { name: 'Arc Reactor', primaryColor: '#00aeff', panelColor: '#0f172a', themeMode: 'dark' as const },
+    { name: 'Stealth', primaryColor: '#64748b', panelColor: '#020617', themeMode: 'dark' as const },
+    { name: 'Stark Light', primaryColor: '#0ea5e9', panelColor: '#ffffff', themeMode: 'light' as const },
+    { name: 'Cosmic', primaryColor: '#9d6eff', panelColor: '#1e1b4b', themeMode: 'dark' as const },
+];
+
 const App: React.FC = () => {
   // System Lifecycle
   const [systemState, setSystemState] = useState<SystemState>('PRE_BOOT');
@@ -130,7 +139,6 @@ const App: React.FC = () => {
   const { queueSpeech, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(activeProfile);
 
   // Modes & Modals
-  const [isCommandPanelOpen, setIsCommandPanelOpen] = useState(false);
   const [isVisionMode, setIsVisionMode] = useState(false);
   const [isDiagnosticsMode, setIsDiagnosticsMode] = useState(false);
   const [designModePrompt, setDesignModePrompt] = useState<string | null>(null);
@@ -142,41 +150,6 @@ const App: React.FC = () => {
   // File Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileHandlerRef = useRef<{ accept: string; handler: (file: File) => void } | null>(null);
-
-  // Voice Recognition
-  const handleSpeechResult = (transcript: string) => {
-    if (transcript.trim()) {
-      handleSendMessage(transcript);
-    }
-    setAppState(AppState.IDLE);
-  };
-  const { transcript, isListening, startListening, stopListening, error: speechError } = useSpeechRecognition({ onEnd: handleSpeechResult });
-
-  useEffect(() => {
-    if (speechError) {
-      setCurrentError({ code: 'SPEECH_ERROR', title: 'Speech Recognition Error', message: speechError });
-      setAppState(AppState.ERROR);
-    }
-  }, [speechError]);
-  
-  const handleToggleListening = useCallback(() => {
-    if (isListening) {
-      stopListening();
-      setAppState(AppState.IDLE);
-    } else {
-      // Interrupt any ongoing AI activity (both speech and stream generation)
-      // to allow the user to speak a new command immediately.
-      if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-      }
-      cancelSpeech();
-      
-      sounds.playClick();
-      startListening();
-      setAppState(AppState.LISTENING);
-    }
-  }, [isListening, stopListening, startListening, sounds, cancelSpeech]);
-
 
   // Apply theme settings to the document
   useEffect(() => {
@@ -211,7 +184,6 @@ const App: React.FC = () => {
     }
   }, [themeSettings]);
 
-
   // Shutdown logic
   const handleShutdown = useCallback(() => {
     sounds.playDeactivate();
@@ -223,6 +195,93 @@ const App: React.FC = () => {
       setIsSettingsOpen(false);
     }, 2000); // Reset after animation
   }, [sounds]);
+
+  // Core AI communication logic.
+  // This block is ordered to resolve dependencies and uses a ref to break a circular dependency
+  // where an app command might need to trigger a new message.
+  const handleSendMessageRef = useRef<(prompt: string, imageUrl?: string) => void>();
+  const processAiResponseRef = useRef<(prompt: string, image?: { mimeType: string; data: string; }) => void>();
+
+
+  const handleAppCommand = useCallback((params: { action?: string; value?: any }) => {
+    switch (params.action) {
+      case 'open_settings':
+        setIsSettingsOpen(true);
+        break;
+      case 'close_settings':
+        setIsSettingsOpen(false);
+        break;
+      case 'vision_mode':
+        setIsVisionMode(true);
+        break;
+      case 'design_mode':
+        if (typeof params.value === 'string') {
+          setDesignModePrompt(params.value);
+        }
+        break;
+      case 'simulation_mode':
+        if (typeof params.value === 'string') {
+          setSimulationModePrompt(params.value);
+        }
+        break;
+      case 'run_diagnostics':
+        setIsDiagnosticsMode(true);
+        break;
+      case 'calibrate_voice':
+        setIsCalibrationOpen(true);
+        break;
+      case 'get_weather':
+        // FIX: Directly call the AI processing function with an explicit prompt
+        // to use its search tool. This avoids adding a confusing extra user message
+        // to the chat log and prevents a potential infinite loop that caused React error #525.
+        // FIX: The function call was missing the required prompt argument.
+        // FIX: Added the missing prompt argument to the function call.
+        processAiResponseRef.current?.("Use your search tool to find the current weather forecast and tell me about it.");
+        break;
+      case 'change_theme':
+        if (typeof params.value === 'string') {
+          const themeName = params.value.toLowerCase();
+          const selectedTheme = FULL_THEMES.find(t => t.name.toLowerCase() === themeName);
+          if (selectedTheme) {
+            setThemeSettings(prev => ({
+              ...prev,
+              primaryColor: selectedTheme.primaryColor,
+              panelColor: selectedTheme.panelColor,
+              themeMode: selectedTheme.themeMode,
+            }));
+          } else {
+              addMessage({ role: 'model', content: `I couldn't find a theme named "${params.value}".` });
+          }
+        }
+        break;
+      case 'toggle_voice':
+        if(params.value === 'on' || params.value === 'off') {
+            setThemeSettings(prev => ({
+                ...prev,
+                voiceOutputEnabled: params.value === 'on',
+            }));
+        }
+        break;
+      case 'toggle_sounds':
+        if(params.value === 'on' || params.value === 'off') {
+            setThemeSettings(prev => ({
+                ...prev,
+                uiSoundsEnabled: params.value === 'on',
+            }));
+        }
+        break;
+      case 'set_primary_color':
+        if (typeof params.value === 'string' && /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i.test(params.value)) {
+            setThemeSettings(prev => ({ ...prev, primaryColor: params.value }));
+        } else {
+             addMessage({ role: 'model', content: `"${params.value}" doesn't seem to be a valid hex color code.` });
+        }
+        break;
+      default:
+        addMessage({ role: 'model', content: "I'm sorry, I don't recognize that internal command." });
+        break;
+    }
+  }, [addMessage]);
 
   const handleDeviceCommand = useCallback((command: DeviceControlCommand) => {
     addMessage({ role: 'model', content: command.spoken_response });
@@ -244,18 +303,20 @@ const App: React.FC = () => {
         }
         window.open(searchUrl, '_blank');
         break;
+      case 'app_control':
+        handleAppCommand(command.params);
+        break;
        case 'shutdown':
         setTimeout(handleShutdown, 1000); // Delay to allow speech to finish
         break;
       // Other cases can be added here (navigate, play_music, etc.)
     }
-  }, [addMessage, queueSpeech, themeSettings.voiceOutputEnabled, handleShutdown]);
-
+  }, [addMessage, queueSpeech, themeSettings.voiceOutputEnabled, handleShutdown, handleAppCommand]);
 
   const processAiResponse = useCallback(async (prompt: string, image?: { mimeType: string; data: string; }) => {
     setAppState(AppState.THINKING);
     cancelSpeech(); // Reset speech state for the new response
-    if(abortControllerRef.current) {
+    if (abortControllerRef.current) {
         abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
@@ -266,38 +327,39 @@ const App: React.FC = () => {
         let isFirstChunk = true;
         let isCommand = false;
         let speechBuffer = "";
+        let commandBuffered = false;
 
         for await (const chunk of stream) {
             if (abortControllerRef.current.signal.aborted) {
                 console.log("Stream aborted by user.");
-                if(isCommand) removeLastMessage();
                 cancelSpeech();
-                // Don't set state to IDLE here, as an interruption might lead to another state (e.g., LISTENING)
                 return;
             }
 
             const chunkText = chunk.text;
             if (!chunkText) continue;
 
-            if(isFirstChunk) {
-                isFirstChunk = false;
-                if(chunkText.trim().startsWith('{')) {
-                    isCommand = true;
-                    addMessage({ role: 'model', content: "" }); // Placeholder for command
-                } else {
-                    addMessage({ role: 'model', content: "" }); // Start with empty bubble for coder effect
-                }
-            }
-            
             fullResponse += chunkText;
 
-            if (isCommand) {
-                // Command is buffered and processed at the end
-            } else {
+            if (isFirstChunk) {
+                isFirstChunk = false;
+                const trimmedChunk = chunkText.trim();
+                // Check if the response is likely a JSON command, even if wrapped in markdown
+                if (trimmedChunk.startsWith('{') || trimmedChunk.startsWith('```json')) {
+                    isCommand = true;
+                    commandBuffered = true; // Buffer the full response without displaying
+                } else {
+                    // It's a regular message, add an empty bubble to start typing into.
+                    addMessage({ role: 'model', content: "" });
+                }
+            }
+
+            if (!commandBuffered) {
+                // This is a regular chat message, so append it to the chat log for the user to see.
                 appendToLastMessage(chunkText);
-                 if (themeSettings.voiceOutputEnabled) {
+                if (themeSettings.voiceOutputEnabled) {
                     speechBuffer += chunkText;
-                    // Use a regex to find complete sentences
+                    // Use a regex to find complete sentences to send to TTS
                     const sentences = speechBuffer.match(/[^.!?]+[.!?]+/g);
                     if (sentences) {
                         let processedText = "";
@@ -305,25 +367,36 @@ const App: React.FC = () => {
                             queueSpeech(stripMarkdown(sentence));
                             processedText += sentence;
                         });
-                        // Update buffer with remaining partial sentence
+                        // Update buffer with any remaining partial sentence
                         speechBuffer = speechBuffer.substring(processedText.length);
                     }
                 }
             }
+            // If it's a command, we do nothing here in the loop, just keep buffering in `fullResponse`.
         }
-        
-        // After stream ends
+
+        // After stream ends, process the complete response
         if (isCommand) {
-            removeLastMessage();
-            try {
-                const commandJson: AICommand = JSON.parse(fullResponse);
-                handleDeviceCommand(commandJson as DeviceControlCommand);
-            } catch (e) {
-                console.error("Failed to parse AI command:", e, "Response:", fullResponse);
-                addMessage({ role: 'model', content: "I seem to have encountered a syntax error in my own command protocols. My apologies." });
+            // Attempt to extract and parse the JSON from the buffered response.
+            // This regex handles JSON that is either raw or wrapped in a markdown code block.
+            const jsonMatch = fullResponse.match(/```json\s*([\s\S]*?)\s*```|({[\s\S]*})/);
+            const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[2]) : null;
+
+            if (jsonString) {
+                try {
+                    const commandJson: AICommand = JSON.parse(jsonString);
+                    handleDeviceCommand(commandJson as DeviceControlCommand);
+                } catch (e) {
+                    console.error("Failed to parse AI command:", e, "Response:", jsonString);
+                    addMessage({ role: 'model', content: "I encountered an error trying to execute that command. My apologies." });
+                }
+            } else {
+                console.error("Could not extract JSON from a response flagged as a command:", fullResponse);
+                addMessage({ role: 'model', content: "My command protocols seem to have malfunctioned. Please try again." });
             }
         } else {
-             if (themeSettings.voiceOutputEnabled && speechBuffer.trim()) {
+            // For regular messages, speak any remaining text in the buffer.
+            if (themeSettings.voiceOutputEnabled && speechBuffer.trim()) {
                 queueSpeech(stripMarkdown(speechBuffer.trim()));
             }
         }
@@ -341,9 +414,9 @@ const App: React.FC = () => {
         // This prevents overriding a new state (like LISTENING) set by a user interruption.
         setAppState(prevState => (prevState === AppState.THINKING ? AppState.IDLE : prevState));
     }
-  }, [chatHistory, themeSettings.aiModel, appendToLastMessage, addMessage, handleDeviceCommand, removeLastMessage, queueSpeech, themeSettings.voiceOutputEnabled, cancelSpeech]);
+  }, [chatHistory, themeSettings.aiModel, appendToLastMessage, addMessage, handleDeviceCommand, queueSpeech, themeSettings.voiceOutputEnabled, cancelSpeech]);
 
-  const handleSendMessage = useCallback((prompt: string, imageUrl?: string) => {
+    const handleSendMessage = useCallback((prompt: string, imageUrl?: string) => {
     addMessage({ role: 'user', content: prompt, imageUrl });
     if(imageUrl) {
         const base64Data = imageUrl.split(',')[1];
@@ -353,6 +426,45 @@ const App: React.FC = () => {
     }
   }, [addMessage, processAiResponse]);
 
+  useEffect(() => {
+    handleSendMessageRef.current = handleSendMessage;
+    processAiResponseRef.current = processAiResponse;
+  }, [handleSendMessage, processAiResponse]);
+  
+  // Voice Recognition
+  const handleSpeechResult = (transcript: string) => {
+    if (transcript.trim()) {
+      handleSendMessage(transcript);
+    }
+    setAppState(AppState.IDLE);
+  };
+  const { transcript, isListening, startListening, stopListening, error: speechError } = useSpeechRecognition({ onEnd: handleSpeechResult });
+
+  useEffect(() => {
+    if (speechError) {
+      setCurrentError({ code: 'SPEECH_ERROR', title: 'Speech Recognition Error', message: speechError });
+      setAppState(AppState.ERROR);
+    }
+  }, [speechError]);
+  
+  const handleToggleListening = useCallback(() => {
+    if (isListening) {
+      stopListening();
+      setAppState(AppState.IDLE);
+    } else {
+      // Interrupt any ongoing AI activity (both speech and stream generation)
+      // to allow the user to speak a new command immediately.
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+      }
+      cancelSpeech();
+      
+      sounds.playClick();
+      startListening();
+      setAppState(AppState.LISTENING);
+    }
+  }, [isListening, stopListening, startListening, sounds, cancelSpeech]);
+  
   const handleSelfHeal = () => {
     setIsDiagnosticsMode(true);
   };
@@ -500,29 +612,6 @@ const App: React.FC = () => {
     );
   };
 
-  // FAB animation and icon logic
-  const getFabAnimation = () => {
-      switch (appState) {
-          case AppState.THINKING:
-              return 'animate-pulse-thinking';
-          case AppState.SPEAKING:
-              return 'animate-pulse-speaking';
-          default:
-              return 'animate-pulse-glow';
-      }
-  };
-
-  const renderFabIcon = () => {
-      switch (appState) {
-          case AppState.THINKING:
-          case AppState.SPEAKING:
-              return <GeminiIcon className="w-8 h-8" />;
-          default:
-              return <MicrophoneIcon className="w-8 h-8" />;
-      }
-  };
-
-
   // Lifecycle rendering
   if (systemState === 'PRE_BOOT') {
     return <PreBootScreen onInitiate={() => setSystemState('BOOTING')} />;
@@ -546,17 +635,20 @@ const App: React.FC = () => {
             </div>
             
             <div className="hud-bottom-panel">
-                {/* This area is now intentionally empty, the FAB is below */}
+                 <UserInput
+                    onSendMessage={handleSendMessage}
+                    onToggleListening={handleToggleListening}
+                    appState={appState}
+                    isListening={isListening}
+                    onCameraClick={() => setIsVisionMode(true)}
+                    onGalleryClick={handleGalleryUpload}
+                    onDocumentClick={handleDocumentUpload}
+                    onAudioClick={handleAudioUpload}
+                    onLocationClick={handleLocationClick}
+                    onDesignModeClick={handleOpenDesignMode}
+                    onSimulationModeClick={handleOpenSimulationMode}
+                />
             </div>
-
-            <button
-                onClick={() => setIsCommandPanelOpen(true)}
-                className={`mic-fab ${getFabAnimation()}`}
-                aria-label="Open Command Panel"
-                disabled={appState === AppState.THINKING || appState === AppState.SPEAKING}
-            >
-                {renderFabIcon()}
-            </button>
 
         </main>
         
@@ -568,22 +660,6 @@ const App: React.FC = () => {
         />
 
         {/* Modals and Overlays */}
-        <CommandPanel
-            isOpen={isCommandPanelOpen}
-            onClose={() => setIsCommandPanelOpen(false)}
-            onSendMessage={handleSendMessage}
-            onToggleListening={handleToggleListening}
-            appState={appState}
-            isListening={isListening}
-            onCameraClick={() => setIsVisionMode(true)}
-            onGalleryClick={handleGalleryUpload}
-            onDocumentClick={handleDocumentUpload}
-            onAudioClick={handleAudioUpload}
-            onLocationClick={handleLocationClick}
-            onDesignModeClick={handleOpenDesignMode}
-            onSimulationModeClick={handleOpenSimulationMode}
-        />
-
         <SettingsModal
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}

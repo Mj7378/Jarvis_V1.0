@@ -12,20 +12,29 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
         };
     }, []);
     
-    const seconds = time.getSeconds();
-    const minutes = time.getMinutes();
-    let hours = time.getHours();
+    // Set the timezone to India Standard Time
+    const timeZone = 'Asia/Kolkata';
+
+    // Get formatted time parts from IST
+    const timeString = time.toLocaleTimeString('en-US', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+    });
     
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const [timePart, ampm] = timeString.split(' ');
+    const [hours, minutes, seconds] = timePart.split(':');
 
-    const day = String(time.getDate()).padStart(2, '0');
-    const month = String(time.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-    const year = time.getFullYear();
-    const formattedDate = `${day}/${month}/${year}`;
+    const formattedDate = time.toLocaleDateString('en-GB', {
+        timeZone,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
 
-    const dayOfWeek = time.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+    const dayOfWeek = time.toLocaleDateString('en-US', { timeZone, weekday: 'short' }).toUpperCase();
     
     const circumference = 2 * Math.PI * 20; // r=20 for a 48x48 box
 
@@ -49,21 +58,21 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
                                 transform="rotate(-90 24 24)"
                                 style={{
                                     strokeDasharray: circumference,
-                                    strokeDashoffset: circumference - (seconds / 60) * circumference,
+                                    strokeDashoffset: circumference - (parseInt(seconds, 10) / 60) * circumference,
                                     transition: 'stroke-dashoffset 0.3s linear',
                                     filter: 'drop-shadow(0 0 3px var(--primary-color-hex))',
                                 }}
                             />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center font-mono text-primary text-base md:text-lg font-bold">
-                            {seconds.toString().padStart(2, '0')}
+                            {seconds}
                         </div>
                     </div>
                     <div className="text-right">
                         <div className="font-mono text-lg sm:text-xl md:text-2xl text-text-primary tracking-wider flex items-baseline">
-                            <span>{hours.toString().padStart(2, '0')}</span>
+                            <span>{hours}</span>
                             <span className="animate-pulse mx-px">:</span>
-                            <span>{minutes.toString().padStart(2, '0')}</span>
+                            <span>{minutes}</span>
                             <span className="text-base ml-2">{ampm}</span>
                         </div>
                         <div className="font-sans text-xs text-text-muted tracking-widest mt-1 hidden sm:block">
