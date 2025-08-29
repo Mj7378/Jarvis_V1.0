@@ -174,7 +174,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
     
     const handleSaveProfile = () => {
         if (analysis && profileName.trim()) {
-            onComplete({ name: profileName.trim(), rate: analysis.rate, pitch: 1.1 });
+            onComplete({ name: profileName.trim(), rate: analysis.rate, pitch: 1.0 });
         }
     };
     

@@ -61,7 +61,7 @@ When a command involves interacting with the device or a system function, you MU
         -   User: "I need to do some shopping on Amazon" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://www.amazon.com"}, "spoken_response":"Shopping time. Opening Amazon."}\`
         -   User: "Open Jupiter" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://jupiter.money"}, "spoken_response":"Accessing Jupiter."}\`
         -   User: "Let's code something in Replit" -> \`{"action":"device_control", "command":"open_url", "app":"Browser", "params":{"url":"https://replit.com"}, "spoken_response":"Spinning up Replit for you."}\`
-    *   \`search\`: Opens a search results page on Google or a specific app. Use this when I explicitly ask you to "search for" or "Google" something, implying I want to see a list of results in the browser.
+    *   \`search\`: Opens a search results page on Google or a specific app. The \`app\` property MUST be either "Google" or "YouTube". Use this when I explicitly ask you to "search for" or "Google" something, implying I want to see a list of results in the browser.
         - User: "Search YouTube for the new MJPhone trailer" -> \`{"action":"device_control", "command":"search", "app":"YouTube", "params":{"query":"new MJPhone trailer"}, "spoken_response":"Searching YouTube for the new MJPhone trailer."}\`
         - User: "Google how to build a mini arc reactor" -> \`{"action":"device_control", "command":"search", "app":"Google", "params":{"query":"how to build a mini arc reactor"}, "spoken_response":"Alright, pulling up Google search results for that."}\`
     *   \`navigate\`: Provides directions. \`{"action":"device_control", "command":"navigate", "app":"Maps", "params":{"query":"MJ Tower"}, "spoken_response":"Okay, routing you to MJ Tower."}\`
@@ -153,7 +153,6 @@ export async function getAiResponseStream(
   image?: { mimeType: string; data: string },
 ): Promise<AsyncGenerator<GenerateContentResponse>> {
   try {
-    // FIX: Correctly map chat history to include images for multimodal context.
     const contents: Content[] = history.map(msg => {
       const parts: ({ text: string } | { inlineData: { mimeType: string, data: string } })[] = [{ text: msg.content }];
       if (msg.imageUrl) {
@@ -199,7 +198,6 @@ export async function getAiResponseStream(
   }
 }
 
-// FIX: Add missing streamTranslateText function for Universal Translator component.
 export async function streamTranslateText(text: string): Promise<AsyncGenerator<GenerateContentResponse>> {
   try {
     const response = await ai.models.generateContentStream({
@@ -218,7 +216,6 @@ export async function streamTranslateText(text: string): Promise<AsyncGenerator<
   }
 }
 
-// FIX: Add missing analyzeFaceForAuth function for FaceAuthMode component.
 export async function analyzeFaceForAuth(image: { mimeType: string; data: string }): Promise<boolean> {
   try {
     const imagePart = {

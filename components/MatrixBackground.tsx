@@ -3,9 +3,6 @@ import React, { useRef, useEffect, useCallback } from 'react';
 
 const MatrixBackground: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    // FIX: Initialize useRef with null to resolve TypeScript error.
-    // The `useRef` hook requires an initial value when a specific type is provided.
-    // `useRef<number>()` is invalid; it should be `useRef<number | null>(null)` to correctly type the ref and provide a default value.
     const animationFrameId = useRef<number | null>(null);
 
     const getThemeColors = useCallback(() => {

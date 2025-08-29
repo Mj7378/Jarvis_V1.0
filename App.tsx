@@ -77,7 +77,7 @@ const readFileAsBase64 = (file: File): Promise<string> =>
     reader.onerror = error => reject(error);
   });
 
-const DEFAULT_PROFILE: VoiceProfile = { id: 'default', name: 'J.A.R.V.I.S. Default', rate: 1.1, pitch: 1.1 };
+const DEFAULT_PROFILE: VoiceProfile = { id: 'default', name: 'J.A.R.V.I.S. Enhanced', rate: 1.2, pitch: 1.0 };
 const DEFAULT_THEME: ThemeSettings = {
   primaryColor: '#00ffff', // J.A.R.V.I.S. Cyan
   panelColor: '#121a2b',
@@ -164,11 +164,18 @@ const App: React.FC = () => {
       stopListening();
       setAppState(AppState.IDLE);
     } else {
+      // Interrupt any ongoing AI activity (both speech and stream generation)
+      // to allow the user to speak a new command immediately.
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+      }
+      cancelSpeech();
+      
       sounds.playClick();
       startListening();
       setAppState(AppState.LISTENING);
     }
-  }, [isListening, stopListening, startListening, sounds]);
+  }, [isListening, stopListening, startListening, sounds, cancelSpeech]);
 
 
   // Apply theme settings to the document
@@ -226,9 +233,15 @@ const App: React.FC = () => {
         window.open(command.params.url, '_blank');
         break;
       case 'search':
-        const searchUrl = command.app === 'YouTube' 
-          ? `https://www.youtube.com/results?search_query=${encodeURIComponent(command.params.query)}`
-          : `https://www.google.com/search?q=${encodeURIComponent(command.params.query)}`;
+        const query = encodeURIComponent(command.params.query);
+        let searchUrl: string;
+
+        // Explicitly handle YouTube, default to Google for 'Google' app or any other case
+        if (command.app?.toLowerCase() === 'youtube') {
+            searchUrl = `https://www.youtube.com/results?search_query=${query}`;
+        } else {
+            searchUrl = `https://www.google.com/search?q=${query}`;
+        }
         window.open(searchUrl, '_blank');
         break;
        case 'shutdown':
@@ -259,7 +272,7 @@ const App: React.FC = () => {
                 console.log("Stream aborted by user.");
                 if(isCommand) removeLastMessage();
                 cancelSpeech();
-                setAppState(AppState.IDLE);
+                // Don't set state to IDLE here, as an interruption might lead to another state (e.g., LISTENING)
                 return;
             }
 
@@ -316,11 +329,17 @@ const App: React.FC = () => {
         }
 
     } catch (error: any) {
+        if (error.name === 'AbortError') {
+            console.log("AI response stream successfully aborted.");
+            return;
+        }
         const appErr = error.appError || { code: 'UNKNOWN', title: 'Error', message: error.message };
         setCurrentError(appErr);
         setAppState(AppState.ERROR);
     } finally {
-        setAppState(AppState.IDLE);
+        // Only transition to IDLE if the state is still THINKING.
+        // This prevents overriding a new state (like LISTENING) set by a user interruption.
+        setAppState(prevState => (prevState === AppState.THINKING ? AppState.IDLE : prevState));
     }
   }, [chatHistory, themeSettings.aiModel, appendToLastMessage, addMessage, handleDeviceCommand, removeLastMessage, queueSpeech, themeSettings.voiceOutputEnabled, cancelSpeech]);
 
@@ -471,7 +490,7 @@ const App: React.FC = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        const prompt = `My current location is latitude ${latitude.toFixed(6)} and longitude ${longitude.toFixed(6)}. What can you tell me about this area?`;
+        const prompt = `My current location is latitude ${latitude.toFixed(6)} and longitude ${longitude.toFixed(6)}. What can you tell me about this area? Please suggest some interesting local spots.`;
         handleSendMessage(prompt);
       },
       (error) => {

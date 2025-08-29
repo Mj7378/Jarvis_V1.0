@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon, ChevronIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon, ChevronIcon, CheckIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -114,14 +114,6 @@ const ModelSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
     );
 };
 
-const PRESETS = [
-    { name: 'J.A.R.V.I.S. Cyan', color: '#00ffff' },
-    { name: 'Stark Red', color: '#ff4d4d' },
-    { name: 'Arc Reactor Blue', color: '#00aeff' },
-    { name: 'Emerald Green', color: '#00ff7f' },
-    { name: 'Cosmic Purple', color: '#9d6eff' },
-];
-
 const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
     const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
         sounds.playClick();
@@ -196,6 +188,14 @@ const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
     );
 };
 
+const FULL_THEMES = [
+    { name: 'J.A.R.V.I.S.', primaryColor: '#00ffff', panelColor: '#121a2b', themeMode: 'dark' as const },
+    { name: 'Code Red', primaryColor: '#ff2d2d', panelColor: '#1a0a0f', themeMode: 'dark' as const },
+    { name: 'Arc Reactor', primaryColor: '#00aeff', panelColor: '#0f172a', themeMode: 'dark' as const },
+    { name: 'Stealth', primaryColor: '#64748b', panelColor: '#020617', themeMode: 'dark' as const },
+    { name: 'Stark Light', primaryColor: '#0ea5e9', panelColor: '#ffffff', themeMode: 'light' as const },
+    { name: 'Cosmic', primaryColor: '#9d6eff', panelColor: '#1e1b4b', themeMode: 'dark' as const },
+];
 
 const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onSetCustomBootVideo' | 'onRemoveCustomBootVideo'>> = ({ themeSettings, onThemeChange, sounds, onSetCustomBootVideo, onRemoveCustomBootVideo }) => {
     
@@ -212,16 +212,52 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
             onSetCustomBootVideo(file);
         }
     };
+    
+    const handleThemeSelect = (theme: typeof FULL_THEMES[0]) => {
+        sounds.playClick();
+        onThemeChange(prev => ({
+            ...prev,
+            primaryColor: theme.primaryColor,
+            panelColor: theme.panelColor,
+            themeMode: theme.themeMode,
+        }));
+    };
+    
+    const isThemeActive = (theme: typeof FULL_THEMES[0]) => {
+        return theme.primaryColor === themeSettings.primaryColor &&
+               theme.panelColor === themeSettings.panelColor &&
+               theme.themeMode === themeSettings.themeMode;
+    };
 
     return (
-        <div className="space-y-4">
-            {/* Color Pickers */}
-             <div>
-                <p className="block text-xs text-slate-400 mb-2">Interface Colors</p>
-                <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-5">
+            {/* Theme Presets */}
+            <div>
+                <p className="block text-sm text-slate-300 mb-2 font-orbitron">Appearance Profiles</p>
+                <div className="grid grid-cols-3 gap-3">
+                    {FULL_THEMES.map(theme => (
+                        <button key={theme.name} onClick={() => handleThemeSelect(theme)} className="group focus:outline-none focus-visible:ring-2 ring-offset-2 ring-offset-background ring-primary rounded-lg">
+                             <div className={`relative w-full aspect-square rounded-lg border-2 transition-all duration-200 ${isThemeActive(theme) ? 'border-white scale-105' : 'border-transparent group-hover:border-primary-t-50'}`}>
+                                <div className="absolute inset-0 rounded-md" style={{ backgroundColor: theme.panelColor, border: `3px solid ${theme.primaryColor}` }}></div>
+                                {isThemeActive(theme) && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-md">
+                                        <CheckIcon className="w-6 h-6 text-white" />
+                                    </div>
+                                )}
+                            </div>
+                            <p className={`text-xs text-center mt-1.5 transition-colors ${isThemeActive(theme) ? 'text-text-primary' : 'text-text-muted group-hover:text-text-secondary'}`}>{theme.name}</p>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Customization */}
+            <div className="space-y-4 pt-4 border-t border-primary-t-20">
+                <p className="block text-sm text-slate-300 font-orbitron">Customize</p>
+                <div className="grid grid-cols-1 gap-4">
                     <div className="flex items-center justify-between">
-                        <label htmlFor="primary-color-picker" className="text-sm text-slate-300">Primary</label>
-                        <div className="relative w-10 h-10 rounded-md border border-primary-t-20 bg-slate-800/80">
+                        <label htmlFor="primary-color-picker" className="text-sm text-slate-300">Primary Color</label>
+                        <div className="relative w-24 h-8 rounded-md border border-primary-t-20 bg-slate-800/80 flex items-center px-2">
                             <input
                                 type="color"
                                 id="primary-color-picker"
@@ -231,14 +267,15 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                                 aria-label="Select custom primary color"
                             />
                             <div 
-                                className="w-full h-full rounded-md" 
+                                className="w-6 h-6 rounded-md" 
                                 style={{ backgroundColor: themeSettings.primaryColor }}
                             ></div>
+                            <span className="ml-2 text-xs font-mono">{themeSettings.primaryColor}</span>
                         </div>
                     </div>
                     <div className="flex items-center justify-between">
-                        <label htmlFor="panel-color-picker" className="text-sm text-slate-300">Panel BG</label>
-                        <div className="relative w-10 h-10 rounded-md border border-primary-t-20 bg-slate-800/80">
+                        <label htmlFor="panel-color-picker" className="text-sm text-slate-300">Panel BG Color</label>
+                         <div className="relative w-24 h-8 rounded-md border border-primary-t-20 bg-slate-800/80 flex items-center px-2">
                             <input
                                 type="color"
                                 id="panel-color-picker"
@@ -248,32 +285,19 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                                 aria-label="Select custom panel color"
                             />
                             <div 
-                                className="w-full h-full rounded-md" 
+                                className="w-6 h-6 rounded-md" 
                                 style={{ backgroundColor: themeSettings.panelColor }}
                             ></div>
+                             <span className="ml-2 text-xs font-mono">{themeSettings.panelColor}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Presets */}
-            <div>
-                <p className="block text-xs text-slate-400 mb-2">Color Presets</p>
-                <div className="grid grid-cols-3 gap-2">
-                    {PRESETS.map(preset => (
-                        <button
-                            key={preset.name}
-                            onClick={() => handleSettingChange('primaryColor', preset.color)}
-                            className={`h-8 rounded-md border-2 transition-all transform hover:scale-110 active:scale-105 ${themeSettings.primaryColor === preset.color ? 'border-white' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                            style={{ backgroundColor: preset.color }}
-                            aria-label={`Select ${preset.name} theme`}
-                        ></button>
-                    ))}
-                </div>
-            </div>
 
             {/* Toggles */}
-            <div className="space-y-3 pt-2 border-t border-primary-t-20">
+            <div className="space-y-3 pt-4 border-t border-primary-t-20">
+                <p className="block text-sm text-slate-300 font-orbitron">Visual Effects</p>
                 <div className="flex items-center justify-between">
                     <label htmlFor="grid-toggle" className="text-sm text-slate-300 cursor-pointer">Grid Background</label>
                     <div className="relative">
@@ -322,8 +346,8 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
             </div>
 
             {/* Boot Animation */}
-            <div className="space-y-3 pt-2 border-t border-primary-t-20">
-                <p className="text-sm text-slate-300">Boot Animation</p>
+            <div className="space-y-3 pt-4 border-t border-primary-t-20">
+                <p className="text-sm text-slate-300 font-orbitron">Boot Sequence</p>
                 <div className="flex gap-2">
                     <button
                         onClick={() => handleSettingChange('bootupAnimation', 'holographic')}
@@ -347,12 +371,6 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                         Video
                     </button>
                 </div>
-            </div>
-
-
-            {/* Boot Video */}
-            <div className="space-y-3 pt-2 border-t border-primary-t-20">
-                 <p className="text-sm text-slate-300">Custom Boot Video</p>
                  <input
                     type="file"
                     accept="video/*"
@@ -365,7 +383,7 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                         onClick={() => fileInputRef.current?.click()}
                         className="flex-1 text-center py-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-all duration-200 transform hover:scale-[1.03] active:scale-100"
                     >
-                        {themeSettings.hasCustomBootVideo ? 'Change Video' : 'Set Video'}
+                        {themeSettings.hasCustomBootVideo ? 'Change Boot Video' : 'Set Custom Video'}
                     </button>
                     {themeSettings.hasCustomBootVideo && (
                         <button

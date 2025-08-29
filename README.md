@@ -24,6 +24,13 @@ This project is a showcase of how to build a complex, feature-rich AI applicatio
 *   **🎬 Simulation Mode:** Describe a scenario (e.g., "a high-speed chase through a neon city") and watch J.A.R.V.I.S. generate a short video clip using the `veo-2.0-generate-001` model.
 *   **🌐 Universal Translator:** An experimental real-time translation module that listens to foreign speech and provides a live English translation.
 
+### Versatile Input Methods
+J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment menu to:
+*   **Upload Media:** Analyze images from your gallery.
+*   **Analyze Documents:** Upload text files for summarization or analysis.
+*   **Transcribe Audio:** Provide an audio file for J.A.R.V.I.S. to transcribe.
+*   **Use Your Location:** Share your current location to get information about your surroundings and discover local spots.
+
 ### System & Device Control
 *   **Reliable Command Protocol:** J.A.R.V.I.S. uses a strict JSON-only protocol for device commands, ensuring high reliability.
 *   **Web App Integration:** Issue commands to open a wide range of websites and web apps, including YouTube, WhatsApp, Google Drive, Replit, and more.

@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 
 const playWebAudioSound = (config: {
@@ -82,28 +83,60 @@ export const useSoundEffects = (enabled: boolean = true, profile: 'default' | 'f
 };
 
 
-export const useSpeechSynthesis = (profile = { rate: 1.1, pitch: 1.1 }) => {
+export const useSpeechSynthesis = (profile = { rate: 1.2, pitch: 1.0 }) => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const voices = useRef<SpeechSynthesisVoice[]>([]);
     const synthRef = useRef(window.speechSynthesis);
     const speechQueueRef = useRef<string[]>([]);
     const isBusyRef = useRef(false);
 
-    const populateVoiceList = useCallback(() => {
-        voices.current = synthRef.current.getVoices();
+    // Effect for setting up and tearing down the synthesis engine listeners
+    useEffect(() => {
+        const synth = synthRef.current;
+        if (!synth) return;
+
+        const loadVoices = () => {
+            voices.current = synth.getVoices();
+        };
+
+        // Load voices initially. If they are not ready, `onvoiceschanged` will fire.
+        loadVoices();
+        synth.onvoiceschanged = loadVoices;
+
+        // This keep-alive interval is a workaround for a bug in some browsers (like Chrome)
+        // where the speech synthesis engine can go silent after a period of inactivity.
+        const keepAliveInterval = setInterval(() => {
+            if (synth && !synth.speaking && !synth.pending) {
+                synth.resume();
+            }
+        }, 10000);
+
+        // Cleanup function
+        return () => {
+            synth.onvoiceschanged = null;
+            // Stop any speaking and clear queue on unmount
+            synth.cancel();
+            clearInterval(keepAliveInterval);
+        };
     }, []);
 
-    useEffect(() => {
-        populateVoiceList();
-        if (synthRef.current.onvoiceschanged !== undefined) {
-            synthRef.current.onvoiceschanged = populateVoiceList;
-        }
-    }, [populateVoiceList]);
-
     const processQueue = useCallback(() => {
-        if (isBusyRef.current || speechQueueRef.current.length === 0 || !synthRef.current) {
+        const synth = synthRef.current;
+        // Don't process if already speaking, queue is empty, or synth isn't available
+        if (isBusyRef.current || speechQueueRef.current.length === 0 || !synth) {
             return;
         }
+        
+        // A safeguard to ensure voices are loaded. Should rarely be needed with onvoiceschanged.
+        if (voices.current.length === 0) {
+            voices.current = synth.getVoices();
+            if (voices.current.length === 0) {
+                console.warn("Speech synthesis voices not ready, retrying...");
+                setTimeout(processQueue, 250);
+                return;
+            }
+        }
+        
         isBusyRef.current = true;
         setIsSpeaking(true);
 
@@ -116,32 +149,47 @@ export const useSpeechSynthesis = (profile = { rate: 1.1, pitch: 1.1 }) => {
         
         const utterance = new SpeechSynthesisUtterance(text);
         
-        const jarvisVoice = voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Google') && (v as any).gender === 'male') 
-            || voices.current.find(v => v.lang === 'en-US' && v.name.includes('Google') && (v as any).gender === 'male') 
-            || voices.current.find(v => v.lang.startsWith('en') && v.name.includes('David')) 
-            || voices.current.find(v => v.lang.startsWith('en-GB'));
+        const jarvisVoice = 
+            voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Google') && v.name.includes('Male')) ||
+            voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) ||
+            voices.current.find(v => v.name.includes('Microsoft David')) ||
+            voices.current.find(v => v.lang.startsWith('en-GB')) ||
+            voices.current.find(v => v.lang === 'en-US' && v.name.includes('Google') && v.name.includes('Male')) ||
+            voices.current.find(v => v.lang.startsWith('en') && v.name.includes('David')) ||
+            voices.current.find(v => v.lang.startsWith('en'));
         
-        utterance.voice = jarvisVoice || voices.current.find(v => v.lang.startsWith('en')) || null;
+        utterance.voice = jarvisVoice || null;
         utterance.rate = profile.rate;
         utterance.pitch = profile.pitch;
 
         utterance.onend = () => {
             isBusyRef.current = false;
+            // If the queue is now empty, update the speaking state
             if (speechQueueRef.current.length === 0) {
                 setIsSpeaking(false);
             }
+            // Process the next item
             processQueue();
         };
+
         utterance.onerror = (e) => {
-            console.error("Speech synthesis error:", e);
+            // 'interrupted' and 'canceled' are expected when the user speaks over J.A.R.V.I.S.
+            // This is not a true "error" state, so we log it gently and let the `cancel` function handle state.
+            if (e.error === 'interrupted' || e.error === 'canceled') {
+                console.log(`Speech utterance was interrupted as expected.`);
+                return; // The `cancel` function has already cleaned up state.
+            }
+
+            console.error(`An unexpected speech synthesis error occurred: ${e.error}`);
             isBusyRef.current = false;
+            // Attempt to recover by processing the next item in the queue.
             if (speechQueueRef.current.length === 0) {
                 setIsSpeaking(false);
             }
             processQueue();
         };
 
-        synthRef.current.speak(utterance);
+        synth.speak(utterance);
     }, [profile]);
 
     const queueSpeech = useCallback((text: string) => {
@@ -152,10 +200,11 @@ export const useSpeechSynthesis = (profile = { rate: 1.1, pitch: 1.1 }) => {
 
     const cancel = useCallback(() => {
         speechQueueRef.current = [];
-        isBusyRef.current = false;
-        if(synthRef.current) {
+        if (synthRef.current) {
+            // This will trigger the 'interrupted' error on the current utterance, which is handled above.
             synthRef.current.cancel();
         }
+        isBusyRef.current = false;
         setIsSpeaking(false);
     }, []);
 

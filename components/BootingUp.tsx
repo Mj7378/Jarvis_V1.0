@@ -37,7 +37,6 @@ const DefaultBootAnimation: React.FC<{ onComplete: () => void, sounds: ReturnTyp
     
     BOOT_SEQUENCE.forEach((line, index) => {
       currentDelay += line.delay;
-      // FIX: Use window.setTimeout to ensure it returns a number, resolving TypeScript conflicts with Node.js types.
       const timer = window.setTimeout(() => {
         setVisibleLines(prev => prev + 1);
         setProgress(((index + 1) / BOOT_SEQUENCE.length) * 100);
@@ -45,13 +44,11 @@ const DefaultBootAnimation: React.FC<{ onComplete: () => void, sounds: ReturnTyp
       timers.push(timer);
     });
 
-    // FIX: Argument of type 'Timeout' is not assignable to parameter of type 'number'.
     const sequenceCompleteTimer = window.setTimeout(() => {
       setSequenceComplete(true);
     }, currentDelay + 500);
     timers.push(sequenceCompleteTimer);
 
-    // FIX: Argument of type 'Timeout' is not assignable to parameter of type 'number'.
     const onCompleteTimer = window.setTimeout(() => {
       onComplete();
     }, currentDelay + 2500);
