@@ -1,5 +1,9 @@
 
+
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { GenerateContentResponse } from '@google/genai';
 
 // Services, Hooks, Utils
 import { getAiResponseStream, transcribeAudio } from './services/geminiService';
@@ -9,7 +13,7 @@ import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveVideo, deleteVideo } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
@@ -111,7 +115,7 @@ const App: React.FC = () => {
 
   // Core App State
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
-  const { chatHistory, addMessage, appendToLastMessage, removeLastMessage } = useChatHistory();
+  const { chatHistory, addMessage, appendToLastMessage, updateLastMessage } = useChatHistory();
   const [currentError, setCurrentError] = useState<AppError | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
@@ -194,7 +198,8 @@ const App: React.FC = () => {
       setAppState(AppState.IDLE);
       setIsSettingsOpen(false);
     }, 2000); // Reset after animation
-  }, [sounds]);
+  // FIX: Added missing dependencies to useCallback to prevent stale closures.
+  }, [sounds, setSystemState, setAppState, setIsSettingsOpen]);
 
   // Core AI communication logic.
   // This block is ordered to resolve dependencies and uses a ref to break a circular dependency
@@ -229,14 +234,6 @@ const App: React.FC = () => {
         break;
       case 'calibrate_voice':
         setIsCalibrationOpen(true);
-        break;
-      case 'get_weather':
-        // FIX: Directly call the AI processing function with an explicit prompt
-        // to use its search tool. This avoids adding a confusing extra user message
-        // to the chat log and prevents a potential infinite loop that caused React error #525.
-        // FIX: The function call was missing the required prompt argument.
-        // FIX: Added the missing prompt argument to the function call.
-        processAiResponseRef.current?.("Use your search tool to find the current weather forecast and tell me about it.");
         break;
       case 'change_theme':
         if (typeof params.value === 'string') {
@@ -281,7 +278,8 @@ const App: React.FC = () => {
         addMessage({ role: 'model', content: "I'm sorry, I don't recognize that internal command." });
         break;
     }
-  }, [addMessage]);
+  // FIX: Added missing dependencies to useCallback to prevent stale closures.
+  }, [addMessage, setIsSettingsOpen, setIsVisionMode, setDesignModePrompt, setSimulationModePrompt, setIsDiagnosticsMode, setIsCalibrationOpen, setThemeSettings]);
 
   const handleDeviceCommand = useCallback((command: DeviceControlCommand) => {
     addMessage({ role: 'model', content: command.spoken_response });
@@ -328,6 +326,7 @@ const App: React.FC = () => {
         let isCommand = false;
         let speechBuffer = "";
         let commandBuffered = false;
+        let finalChunk: GenerateContentResponse | null = null;
 
         for await (const chunk of stream) {
             if (abortControllerRef.current.signal.aborted) {
@@ -337,6 +336,7 @@ const App: React.FC = () => {
             }
 
             const chunkText = chunk.text;
+             finalChunk = chunk; // Keep track of the latest chunk
             if (!chunkText) continue;
 
             fullResponse += chunkText;
@@ -401,6 +401,24 @@ const App: React.FC = () => {
             }
         }
 
+        // After all processing, check for and add sources
+        if (finalChunk) {
+            // Note: The type for grounding chunks is not exported, so we use `any`.
+            const chunks = finalChunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+            if (chunks && Array.isArray(chunks)) {
+                const sources: Source[] = chunks
+                    .filter((chunk: any) => chunk.web && chunk.web.uri)
+                    .map((chunk: any) => ({
+                        uri: chunk.web.uri,
+                        title: chunk.web.title || chunk.web.uri,
+                    }));
+
+                if (sources.length > 0) {
+                    updateLastMessage({ sources });
+                }
+            }
+        }
+
     } catch (error: any) {
         if (error.name === 'AbortError') {
             console.log("AI response stream successfully aborted.");
@@ -414,7 +432,7 @@ const App: React.FC = () => {
         // This prevents overriding a new state (like LISTENING) set by a user interruption.
         setAppState(prevState => (prevState === AppState.THINKING ? AppState.IDLE : prevState));
     }
-  }, [chatHistory, themeSettings.aiModel, appendToLastMessage, addMessage, handleDeviceCommand, queueSpeech, themeSettings.voiceOutputEnabled, cancelSpeech]);
+  }, [chatHistory, themeSettings.aiModel, themeSettings.voiceOutputEnabled, appendToLastMessage, addMessage, handleDeviceCommand, queueSpeech, cancelSpeech, updateLastMessage]);
 
     const handleSendMessage = useCallback((prompt: string, imageUrl?: string) => {
     addMessage({ role: 'user', content: prompt, imageUrl });
