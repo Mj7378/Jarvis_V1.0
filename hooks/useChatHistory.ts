@@ -1,5 +1,7 @@
-import { useState, useCallback } from 'react';
-import type { ChatMessage } from '../types';
+import { useState, useCallback, useEffect } from 'react';
+import type { ChatMessage, Reminder } from '../types';
+import { parseTimeString } from '../utils/db';
+
 
 const getGreeting = (): ChatMessage => {
   const currentHour = new Date().getHours();
@@ -64,4 +66,80 @@ export const useChatHistory = () => {
 
 
   return { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage };
+};
+
+const REMINDERS_STORAGE_KEY = 'jarvis_reminders';
+
+export const useReminders = (onReminderDue: (reminder: Reminder) => void) => {
+  const [reminders, setReminders] = useState<Reminder[]>(() => {
+    try {
+      const saved = localStorage.getItem(REMINDERS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load reminders from local storage", e);
+      return [];
+    }
+  });
+
+  // Save reminders to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(reminders));
+    } catch (e) {
+      console.error("Failed to save reminders to local storage", e);
+    }
+  }, [reminders]);
+
+  // Check for due reminders every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      
+      setReminders(prev => {
+        const stillActive: Reminder[] = [];
+        prev.forEach(r => {
+          if (r.dueTime <= now) {
+            // Trigger both in-app and native notifications
+            onReminderDue(r); 
+            if (Notification.permission === 'granted') {
+              new Notification('J.A.R.V.I.S. Reminder', {
+                body: r.content,
+                // Assuming a favicon exists at the root
+                icon: '/favicon.ico'
+              });
+            }
+          } else {
+            stillActive.push(r);
+          }
+        });
+        return stillActive;
+      });
+
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [onReminderDue]);
+
+  const addReminder = useCallback(async (content: string, timeString: string): Promise<boolean> => {
+    const dueTime = parseTimeString(timeString);
+    if (!dueTime) {
+      console.error(`Could not parse time string: "${timeString}"`);
+      return false;
+    }
+
+    // Request notification permission if needed
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        await Notification.requestPermission();
+    }
+    
+    const newReminder: Reminder = {
+      id: `rem_${Date.now()}`,
+      content,
+      dueTime,
+    };
+    setReminders(prev => [...prev, newReminder]);
+    return true;
+  }, []);
+
+  return { addReminder };
 };

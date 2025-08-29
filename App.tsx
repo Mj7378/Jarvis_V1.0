@@ -1,24 +1,21 @@
 
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 
 // Services, Hooks, Utils
 import { getAiResponseStream, transcribeAudio } from './services/geminiService';
-import { useChatHistory } from './hooks/useChatHistory';
+import { useChatHistory, useReminders } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveVideo, deleteVideo } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
 import VisionMode from './components/VisionMode';
-import ActionModal, { ActionModalProps } from './components/ActionModal';
+import ActionModal, { ActionModalProps, NotificationToast } from './components/ActionModal';
 import DesignMode from './components/DesignMode';
 import SimulationMode from './components/SimulationMode';
 import ErrorModal from './components/ErrorModal';
@@ -109,6 +106,12 @@ const FULL_THEMES = [
     { name: 'Cosmic', primaryColor: '#9d6eff', panelColor: '#1e1b4b', themeMode: 'dark' as const },
 ];
 
+type ToastNotification = {
+  id: string;
+  title: string;
+  message: string;
+};
+
 const App: React.FC = () => {
   // System Lifecycle
   const [systemState, setSystemState] = useState<SystemState>('PRE_BOOT');
@@ -150,10 +153,23 @@ const App: React.FC = () => {
   const [actionModalProps, setActionModalProps] = useState<Omit<ActionModalProps, 'isOpen' | 'onClose'>>({ title: '', inputs: [], onSubmit: () => {} });
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
   
   // File Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileHandlerRef = useRef<{ accept: string; handler: (file: File) => void } | null>(null);
+
+  // Reminder System
+  const handleReminderDue = useCallback((reminder: Reminder) => {
+    sounds.playSuccess();
+    setToasts(prev => [...prev, {
+        id: reminder.id,
+        title: 'J.A.R.V.I.S. Reminder',
+        message: reminder.content,
+    }]);
+  }, [sounds]);
+
+  const { addReminder } = useReminders(handleReminderDue);
 
   // Apply theme settings to the document
   useEffect(() => {
@@ -198,8 +214,8 @@ const App: React.FC = () => {
       setAppState(AppState.IDLE);
       setIsSettingsOpen(false);
     }, 2000); // Reset after animation
-  // FIX: Added missing dependencies to useCallback to prevent stale closures.
-  }, [sounds, setSystemState, setAppState, setIsSettingsOpen]);
+  // FIX: State setters are stable and do not need to be dependencies of useCallback.
+  }, [sounds]);
 
   // Core AI communication logic.
   // This block is ordered to resolve dependencies and uses a ref to break a circular dependency
@@ -278,10 +294,10 @@ const App: React.FC = () => {
         addMessage({ role: 'model', content: "I'm sorry, I don't recognize that internal command." });
         break;
     }
-  // FIX: Added missing dependencies to useCallback to prevent stale closures.
-  }, [addMessage, setIsSettingsOpen, setIsVisionMode, setDesignModePrompt, setSimulationModePrompt, setIsDiagnosticsMode, setIsCalibrationOpen, setThemeSettings]);
+  // FIX: State setters and stable callbacks do not need to be dependencies.
+  }, [addMessage, setThemeSettings]);
 
-  const handleDeviceCommand = useCallback((command: DeviceControlCommand) => {
+  const handleDeviceCommand = useCallback(async (command: DeviceControlCommand) => {
     addMessage({ role: 'model', content: command.spoken_response });
     if(themeSettings.voiceOutputEnabled) queueSpeech(command.spoken_response);
 
@@ -307,9 +323,21 @@ const App: React.FC = () => {
        case 'shutdown':
         setTimeout(handleShutdown, 1000); // Delay to allow speech to finish
         break;
+      case 'set_reminder': {
+        const { content, time } = command.params;
+        if (content && time) {
+            const success = await addReminder(content, time);
+            if (!success) {
+                const failureMsg = { role: 'model' as const, content: "Sorry, I couldn't parse that time for the reminder. Try something like 'in 10 minutes' or 'at 8 PM'." };
+                addMessage(failureMsg);
+                if(themeSettings.voiceOutputEnabled) queueSpeech(failureMsg.content);
+            }
+        }
+        break;
+      }
       // Other cases can be added here (navigate, play_music, etc.)
     }
-  }, [addMessage, queueSpeech, themeSettings.voiceOutputEnabled, handleShutdown, handleAppCommand]);
+  }, [addMessage, queueSpeech, themeSettings.voiceOutputEnabled, handleShutdown, handleAppCommand, addReminder]);
 
   const processAiResponse = useCallback(async (prompt: string, image?: { mimeType: string; data: string; }) => {
     setAppState(AppState.THINKING);
@@ -385,7 +413,7 @@ const App: React.FC = () => {
             if (jsonString) {
                 try {
                     const commandJson: AICommand = JSON.parse(jsonString);
-                    handleDeviceCommand(commandJson as DeviceControlCommand);
+                    await handleDeviceCommand(commandJson as DeviceControlCommand);
                 } catch (e) {
                     console.error("Failed to parse AI command:", e, "Response:", jsonString);
                     addMessage({ role: 'model', content: "I encountered an error trying to execute that command. My apologies." });
@@ -670,6 +698,19 @@ const App: React.FC = () => {
 
         </main>
         
+        {/* Notification Toasts */}
+        <div aria-live="assertive" className="fixed top-4 right-4 z-[100] w-full max-w-sm space-y-3 pointer-events-none">
+            {toasts.map((toast) => (
+                <NotificationToast
+                    key={toast.id}
+                    id={toast.id}
+                    title={toast.title}
+                    message={toast.message}
+                    onClose={(id) => setToasts(prev => prev.filter(t => t.id !== id))}
+                />
+            ))}
+        </div>
+
         <input
             type="file"
             ref={fileInputRef}

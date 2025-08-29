@@ -1,3 +1,4 @@
+
 const DB_NAME = 'JarvisDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'assets';
@@ -66,4 +67,55 @@ export const deleteVideo = async (): Promise<void> => {
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(new Error("Failed to delete video."));
   });
+};
+
+export const parseTimeString = (timeString: string): number | null => {
+  const now = new Date();
+  const lowerCaseTimeString = timeString.toLowerCase();
+
+  // Case 1: "in X minutes/hours"
+  let match = lowerCaseTimeString.match(/in (\d+)\s+(minute|hour)s?/);
+  if (match) {
+    const amount = parseInt(match[1], 10);
+    const unit = match[2];
+    const newDate = new Date(now.getTime());
+    if (unit === 'minute') {
+      newDate.setMinutes(now.getMinutes() + amount);
+    } else if (unit === 'hour') {
+      newDate.setHours(now.getHours() + amount);
+    }
+    return newDate.getTime();
+  }
+
+  // Case 2: "at H:MM AM/PM" or "at H AM/PM" (today or tomorrow)
+  match = lowerCaseTimeString.match(/(tomorrow at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if (match) {
+    const isTomorrow = !!match[1];
+    let hours = parseInt(match[2], 10);
+    const minutes = parseInt(match[3] || '0', 10); // Default to 0 if minutes not provided
+    const ampm = match[4];
+
+    if (ampm === 'pm' && hours < 12) {
+      hours += 12;
+    }
+    if (ampm === 'am' && hours === 12) { // Midnight case
+      hours = 0;
+    }
+
+    const reminderDate = new Date();
+    if (isTomorrow) {
+      reminderDate.setDate(now.getDate() + 1);
+    }
+    
+    reminderDate.setHours(hours, minutes, 0, 0);
+
+    // If the time is in the past for today, assume it's for tomorrow (unless "tomorrow" was specified)
+    if (!isTomorrow && reminderDate.getTime() < now.getTime()) {
+      reminderDate.setDate(now.getDate() + 1);
+    }
+    
+    return reminderDate.getTime();
+  }
+
+  return null;
 };

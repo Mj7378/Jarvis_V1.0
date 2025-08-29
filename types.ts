@@ -67,6 +67,12 @@ export interface ThemeSettings {
   aiModel: 'gemini-2.5-flash';
 }
 
+export interface Reminder {
+  id: string;
+  content: string;
+  dueTime: number; // timestamp
+}
+
 declare global {
   interface Window {
     webkitAudioContext: typeof AudioContext;

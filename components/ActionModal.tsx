@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { CloseIcon } from './Icons';
 
 export interface InputConfig {
   id: string;
@@ -110,3 +112,39 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, title, input
 };
 
 export default ActionModal;
+
+interface NotificationToastProps {
+  id: string;
+  title: string;
+  message: string;
+  onClose: (id: string) => void;
+  duration?: number;
+}
+
+export const NotificationToast: React.FC<NotificationToastProps> = ({ id, title, message, onClose, duration = 10000 }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose(id);
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [id, onClose, duration]);
+
+  return (
+    <div className="holographic-panel w-full max-w-sm animate-pop-in-top-right !p-3 pointer-events-auto">
+        <div className="flex items-start gap-3">
+            <div className="mt-1 flex-shrink-0">
+                <svg className="w-6 h-6 text-primary animate-pulse-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            </div>
+            <div className="flex-1">
+                <p className="font-orbitron text-base text-text-secondary">{title}</p>
+                <p className="mt-1 text-sm text-text-primary">{message}</p>
+            </div>
+            <div className="flex-shrink-0">
+                <button onClick={() => onClose(id)} className="p-1 rounded-full hover:bg-primary/20 text-text-muted hover:text-primary transition-all duration-200">
+                    <CloseIcon className="w-5 h-5" />
+                </button>
+            </div>
+        </div>
+    </div>
+  );
+};
