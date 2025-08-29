@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RightSidebar } from './RightSidebar';
 import { PowerIcon, SettingsIcon, CloseIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -25,10 +25,29 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { isOpen, onClose, onShutdown, sounds } = props;
 
-    const handleClose = () => {
+    const [isHovering, setIsHovering] = useState(false);
+    const closeTimeoutRef = useRef<number | null>(null);
+
+    const handleClose = useCallback(() => {
         sounds.playClose();
         onClose();
-    };
+    }, [sounds, onClose]);
+
+    useEffect(() => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+        }
+        if (isOpen && !isHovering) {
+            closeTimeoutRef.current = window.setTimeout(() => {
+                handleClose();
+            }, 2000);
+        }
+        return () => {
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+            }
+        };
+    }, [isOpen, isHovering, handleClose]);
 
     const handleShutdown = () => {
         onShutdown();
@@ -45,6 +64,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             <div
                 className={`absolute top-20 right-4 w-96 max-h-[calc(100dvh-6rem)] bg-background shadow-2xl shadow-primary/20 border-2 border-primary-t-20 rounded-xl flex flex-col origin-top-right ${isOpen ? 'animate-pop-in-top-right' : 'opacity-0 pointer-events-none'}`}
                 onClick={(e) => e.stopPropagation()}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
             >
                 {/* Header */}
                 <header className="flex items-center justify-between p-4 border-b border-primary-t-20 flex-shrink-0 holographic-panel !py-3 !px-4">

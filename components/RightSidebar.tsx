@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, DeviceControlIcon, PaletteIcon, GeminiIcon, ChevronIcon, CheckIcon } from './Icons';
+import React, { useRef, useState, useEffect } from 'react';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -17,102 +17,6 @@ interface RightSidebarProps {
     onSetCustomBootVideo: (file: File) => void;
     onRemoveCustomBootVideo: () => void;
 }
-
-interface CollapsiblePanelProps {
-    title: string;
-    icon: React.ReactNode;
-    isOpen: boolean;
-    onToggle: () => void;
-    children: React.ReactNode;
-}
-
-const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({ title, icon, isOpen, onToggle, children }) => {
-    const contentRef = useRef<HTMLDivElement>(null);
-
-    return (
-        <div className={`bg-black/20 rounded-lg border ${isOpen ? 'border-primary-t-20' : 'border-transparent'} transition-colors duration-300`}>
-            <button
-                onClick={onToggle}
-                className={`panel-title text-secondary w-full flex justify-between items-center p-4 !mb-0 border-b transition-colors duration-300 ${isOpen ? 'border-primary-t-20' : 'border-transparent'}`}
-                aria-expanded={isOpen}
-            >
-                <div className="flex items-center gap-3">
-                    {icon}
-                    <span>{title}</span>
-                </div>
-                <ChevronIcon className={`w-5 h-5 text-text-muted transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} />
-            </button>
-            <div
-                ref={contentRef}
-                className="overflow-hidden transition-all duration-500 ease-in-out"
-                style={{
-                    maxHeight: isOpen ? contentRef.current?.scrollHeight : 0,
-                }}
-            >
-                <div className="px-4 pb-4">
-                    {children}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const SystemControlsContent: React.FC<Pick<RightSidebarProps, 'onCameraClick' | 'isBusy' | 'onWeather' | 'onSelfHeal'>> = (props) => {
-    const { onCameraClick, isBusy, onWeather, onSelfHeal } = props;
-    const controls = [
-        { name: 'Camera', icon: '📷', action: onCameraClick, disabled: isBusy },
-        { name: 'Weather', icon: '🌦️', action: onWeather, disabled: isBusy },
-        { name: 'Self Heal', icon: <SelfHealIcon className="w-6 h-6 inline-block" />, action: onSelfHeal, disabled: isBusy },
-    ];
-    return (
-        <div className="grid grid-cols-2 gap-2">
-            {controls.map(control => (
-                 <button key={control.name} onClick={control.action} disabled={control.disabled} className="text-center p-2 bg-slate-800/50 rounded-md border border-slate-700/50 hover:bg-slate-700/50 hover:border-primary-t-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex flex-col items-center justify-center h-20 transform hover:scale-105 active:scale-100">
-                    <span className="text-2xl">{control.icon}</span>
-                    <p className="text-xs mt-1 text-slate-300">{control.name}</p>
-                </button>
-            ))}
-        </div>
-    );
-};
-
-const QuickActionsContent: React.FC<Pick<RightSidebarProps, 'isBusy' | 'onDesignMode' | 'onSimulationMode'>> = (props) => {
-    const { isBusy, onDesignMode, onSimulationMode } = props;
-    const actions = [
-        { name: 'Design Mode', icon: <GenerateImageIcon className="w-4 h-4 inline-block" />, action: onDesignMode },
-        { name: 'Simulation Mode', icon: <GenerateVideoIcon className="w-4 h-4 inline-block" />, action: onSimulationMode },
-    ];
-    return (
-        <div className="space-y-1">
-            {actions.map(action => (
-                <button 
-                    key={action.name} 
-                    onClick={action.action}
-                    disabled={isBusy}
-                    className="w-full text-left flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700/50 text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-transform duration-200 transform hover:scale-[1.03] active:scale-100"
-                >
-                    <span className="text-lg w-5 text-center">{action.icon}</span>
-                    <span>{action.name}</span>
-                </button>
-            ))}
-        </div>
-    );
-};
-
-const ModelSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
-    return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <label className="text-sm text-slate-300">Active Model</label>
-                <div
-                    className="bg-slate-800/80 border border-primary-t-20 rounded-md p-2 px-4 text-slate-200 text-sm"
-                >
-                    Gemini 2.5 Flash
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
     const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
@@ -401,60 +305,165 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
     );
 };
 
-export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
-    const [openPanel, setOpenPanel] = useState<string | null>(null);
+const CollapsibleSection: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; isOpen: boolean; onToggle: () => void; }> = ({ title, icon, children, isOpen, onToggle }) => {
+    const id = `collapsible-${title.replace(/\s+/g, '-')}`;
 
-    const handleTogglePanel = (panelName: string) => {
+    return (
+        <div className="border border-primary-t-20 rounded-lg overflow-hidden transition-all duration-300 bg-panel/20">
+            <h3>
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="w-full flex items-center justify-between p-3 hover:bg-primary-t-20 transition-colors duration-200"
+                    aria-expanded={isOpen}
+                    aria-controls={id}
+                >
+                    <div className="flex items-center gap-3">
+                        {icon}
+                        <span className="font-orbitron text-text-secondary">{title}</span>
+                    </div>
+                    <ChevronIcon className={`w-5 h-5 transition-transform duration-300 text-text-muted ${isOpen ? 'rotate-90' : 'rotate-0'}`} />
+                </button>
+            </h3>
+            <div
+                id={id}
+                className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+            >
+                <div className="overflow-hidden">
+                    <div className="p-3 border-t border-primary-t-20">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
+    const { 
+        isBusy, 
+        onCameraClick, onWeather, onSelfHeal,
+        onDesignMode, onSimulationMode,
+    } = props;
+
+    const [openSection, setOpenSection] = useState<string | null>(null);
+    const [isHovering, setIsHovering] = useState(false);
+    const timeoutRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+
+        if (openSection !== null && !isHovering) {
+            timeoutRef.current = window.setTimeout(() => {
+                setOpenSection(null);
+            }, 2000);
+        }
+
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [openSection, isHovering]);
+
+
+    const handleToggleSection = (sectionTitle: string) => {
         props.sounds.playClick();
-        setOpenPanel(prev => prev === panelName ? null : panelName);
+        setOpenSection(prevOpenSection => 
+            prevOpenSection === sectionTitle ? null : sectionTitle
+        );
     };
     
+    const systemControls = [
+        { name: 'Camera', icon: '📷', action: onCameraClick, disabled: isBusy },
+        { name: 'Weather', icon: '🌦️', action: onWeather, disabled: isBusy },
+        { name: 'Self Heal', icon: <SelfHealIcon className="w-6 h-6 inline-block" />, action: onSelfHeal, disabled: isBusy },
+    ];
+    
+    const quickActions = [
+        { name: 'Design Mode', icon: <GenerateImageIcon className="w-4 h-4 inline-block" />, action: onDesignMode },
+        { name: 'Simulation Mode', icon: <GenerateVideoIcon className="w-4 h-4 inline-block" />, action: onSimulationMode },
+    ];
+    
     return (
-        <aside className="flex flex-col space-y-2">
-            <CollapsiblePanel
-                title="System Controls"
-                icon={<SystemControlsIcon className="w-5 h-5" />}
-                isOpen={openPanel === 'system'}
-                onToggle={() => handleTogglePanel('system')}
-            >
-                <SystemControlsContent {...props} />
-            </CollapsiblePanel>
-
-            <CollapsiblePanel
-                title="Quick Actions"
-                icon={<QuickActionsIcon className="w-5 h-5" />}
-                isOpen={openPanel === 'actions'}
-                onToggle={() => handleTogglePanel('actions')}
-            >
-                <QuickActionsContent {...props} />
-            </CollapsiblePanel>
-
-            <CollapsiblePanel
-                title="AI Model"
-                icon={<GeminiIcon className="w-5 h-5" />}
-                isOpen={openPanel === 'model'}
-                onToggle={() => handleTogglePanel('model')}
-            >
-                <ModelSettingsPanelContent {...props} />
-            </CollapsiblePanel>
-
-            <CollapsiblePanel
+        <aside 
+            className="flex flex-col space-y-2"
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+        >
+            <CollapsibleSection
                 title="Voice & Audio"
-                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>}
-                isOpen={openPanel === 'voice'}
-                onToggle={() => handleTogglePanel('voice')}
+                icon={<svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>}
+                isOpen={openSection === "Voice & Audio"}
+                onToggle={() => handleToggleSection("Voice & Audio")}
             >
                 <VoiceSettingsPanelContent {...props} />
-            </CollapsiblePanel>
-
-            <CollapsiblePanel
-                title="Theme & Appearance"
-                icon={<PaletteIcon className="w-5 h-5" />}
-                isOpen={openPanel === 'theme'}
-                onToggle={() => handleTogglePanel('theme')}
+            </CollapsibleSection>
+            
+            <CollapsibleSection
+                title="System Controls"
+                icon={<SystemControlsIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "System Controls"}
+                onToggle={() => handleToggleSection("System Controls")}
             >
-                <ThemeSettingsPanelContent {...props} />
-            </CollapsiblePanel>
+                <div className="grid grid-cols-2 gap-2">
+                    {systemControls.map(control => (
+                         <button key={control.name} onClick={control.action} disabled={control.disabled} className="text-center p-2 bg-slate-800/50 rounded-md border border-slate-700/50 hover:bg-slate-700/50 hover:border-primary-t-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex flex-col items-center justify-center h-20 transform hover:scale-105 active:scale-100">
+                            <span className="text-2xl">{control.icon}</span>
+                            <p className="text-xs mt-1 text-slate-300">{control.name}</p>
+                        </button>
+                    ))}
+                </div>
+            </CollapsibleSection>
+            
+            <CollapsibleSection
+                title="Quick Actions"
+                icon={<QuickActionsIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "Quick Actions"}
+                onToggle={() => handleToggleSection("Quick Actions")}
+            >
+                <div className="space-y-1">
+                    {quickActions.map(action => (
+                        <button 
+                            key={action.name} 
+                            onClick={action.action}
+                            disabled={isBusy}
+                            className="w-full text-left flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700/50 text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-transform duration-200 transform hover:scale-[1.03] active:scale-100"
+                        >
+                            <span className="text-lg w-5 text-center">{action.icon}</span>
+                            <span>{action.name}</span>
+                        </button>
+                    ))}
+                </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection
+                title="AI Model"
+                icon={<GeminiIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "AI Model"}
+                onToggle={() => handleToggleSection("AI Model")}
+            >
+                <div className="flex items-center justify-between">
+                    <label className="text-sm text-slate-300">Active Model</label>
+                    <div
+                        className="bg-slate-800/80 border border-primary-t-20 rounded-md p-2 px-4 text-slate-200 text-sm"
+                    >
+                        Gemini 2.5 Flash
+                    </div>
+                </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection
+                title="Theme & Appearance"
+                icon={<PaletteIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "Theme & Appearance"}
+                onToggle={() => handleToggleSection("Theme & Appearance")}
+            >
+                 <ThemeSettingsPanelContent {...props} />
+            </CollapsibleSection>
         </aside>
     );
 };
