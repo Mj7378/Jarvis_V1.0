@@ -32,7 +32,7 @@ import FaceEnrollment from './components/FaceEnrollment';
 
 
 // System Lifecycle States
-type SystemState = 'PRE_BOOT' | 'AUTHENTICATING' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
+type SystemState = 'PRE_BOOT' | 'ENROLLMENT_REQUIRED' | 'AUTHENTICATING' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
 
 // Helper function to remove markdown for clean speech.
 // This ensures that characters like '#' or '*' are not read aloud by TTS.
@@ -692,8 +692,8 @@ const App: React.FC = () => {
     if (hasFaceProfile) {
         setSystemState('AUTHENTICATING');
     } else {
-        // If no face profile is enrolled, bypass authentication and go straight to booting.
-        setSystemState('BOOTING');
+        // If no face profile is enrolled, prompt for enrollment.
+        setSystemState('ENROLLMENT_REQUIRED');
     }
   };
 
@@ -704,7 +704,7 @@ const App: React.FC = () => {
             setToasts(prev => [...prev, {
                 id: `enroll_${Date.now()}`,
                 title: 'J.A.R.V.I.S. Security',
-                message: 'Facial profile successfully enrolled.',
+                message: 'Facial profile successfully updated.',
             }]);
         }
     };
@@ -722,6 +722,23 @@ const App: React.FC = () => {
   // Lifecycle rendering
   if (systemState === 'PRE_BOOT') {
     return <PreBootScreen onInitiate={handleInitiateBoot} />;
+  }
+  if (systemState === 'ENROLLMENT_REQUIRED') {
+    return <FaceEnrollment 
+        onComplete={(success) => {
+            if (success) {
+                setHasFaceProfile(true);
+                 setToasts(prev => [...prev, {
+                    id: `enroll_boot_${Date.now()}`,
+                    title: 'J.A.R.V.I.S. Security',
+                    message: 'Facial profile successfully enrolled.',
+                }]);
+            }
+            setSystemState('BOOTING');
+        }} 
+        onClose={() => setSystemState('BOOTING')} 
+        isBootSequence={true} 
+    />;
   }
   if (systemState === 'AUTHENTICATING') {
     return <FaceAuthMode onComplete={handleAuthenticationComplete} onClose={() => setSystemState('PRE_BOOT')} />;

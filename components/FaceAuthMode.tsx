@@ -123,11 +123,11 @@ const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
     }
   }, [authState, onComplete]);
 
-  const getOverlayStateClasses = () => {
+  const getRingColor = () => {
     switch(authState) {
-      case 'analyzing': return 'border-yellow-400/80 animate-pulse';
-      case 'success': return 'border-green-500/90 bg-green-500/20';
-      case 'failure': return 'border-red-500/90 bg-red-500/20';
+      case 'analyzing': return 'border-yellow-400/80';
+      case 'success': return 'border-green-500/90';
+      case 'failure': return 'border-red-500/90';
       default: return 'border-primary/50';
     }
   };
@@ -143,7 +143,7 @@ const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
   };
 
   const getSubText = () => {
-     if (authState === 'success') return 'Welcome, Mahesh.';
+     if (authState === 'success') return 'Welcome, Sir.';
      if (authState === 'failure') return error || 'Subject not recognized.';
      if (authState === 'scanning') return 'Please position your face in the frame.';
      return null;
@@ -151,26 +151,35 @@ const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm animate-fade-in-fast">
-      <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover opacity-30" />
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Face Scanning Overlay */}
-      <div className="relative w-[300px] h-[400px] md:w-[400px] md:h-[500px]">
-        <div className={`absolute inset-0 border-4 ${getOverlayStateClasses()} transition-all duration-300`}>
-          {authState === 'scanning' || authState === 'analyzing' ? (
-              <div className="absolute top-0 left-0 w-full h-2 bg-primary animate-scan-line opacity-50"></div>
-          ) : null}
+      <div className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px] flex items-center justify-center">
+        {/* Animated rings */}
+        <div className={`absolute inset-0 rounded-full border-2 ${getRingColor()} transition-all duration-500 animate-spin-slow`}></div>
+        <div className={`absolute inset-[10%] rounded-full border-2 ${getRingColor()} transition-all duration-500 animate-spin-medium opacity-75`}></div>
+        <div className={`absolute inset-[20%] rounded-full border ${getRingColor()} transition-all duration-500 animate-spin-fast opacity-50`}></div>
+
+        {/* Video Feed */}
+        <div className="w-[80%] h-[80%] rounded-full overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] border-2 border-black/50">
+          <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-[1.5]" />
         </div>
-        {/* Corner Brackets */}
-        <div className="absolute -top-1 -left-1 w-12 h-12 border-t-4 border-l-4 border-white"></div>
-        <div className="absolute -top-1 -right-1 w-12 h-12 border-t-4 border-r-4 border-white"></div>
-        <div className="absolute -bottom-1 -left-1 w-12 h-12 border-b-4 border-l-4 border-white"></div>
-        <div className="absolute -bottom-1 -right-1 w-12 h-12 border-b-4 border-r-4 border-white"></div>
+        
+        {/* Scan Line */}
+        {authState === 'scanning' || authState === 'analyzing' ? (
+              <div className="absolute top-0 left-[10%] w-[80%] h-full overflow-hidden rounded-full">
+                  <div className="absolute top-0 left-0 w-full h-2 bg-primary animate-scan-line opacity-50 shadow-[0_0_15px_var(--primary-color-hex)]"></div>
+              </div>
+          ) : null}
+          
+        {/* Success/Failure Icon */}
+        {authState === 'success' && <div className="absolute inset-0 flex items-center justify-center bg-green-500/30 rounded-full animate-pop-in-center"><svg className="w-24 h-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>}
+        {authState === 'failure' && <div className="absolute inset-0 flex items-center justify-center bg-red-500/30 rounded-full animate-pop-in-center"><svg className="w-24 h-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>}
       </div>
       
       <div className="text-center mt-8 font-orbitron text-white">
         <p className="text-2xl tracking-widest">{getStatusText()}</p>
-        {getSubText() && <p className={`mt-2 text-lg ${authState === 'success' ? 'text-green-400' : 'text-red-400'}`}>{getSubText()}</p>}
+        {getSubText() && <p className={`mt-2 text-lg ${authState === 'success' ? 'text-green-400' : authState === 'failure' ? 'text-red-400' : 'text-slate-300'}`}>{getSubText()}</p>}
       </div>
 
       <div className="absolute bottom-8 flex space-x-8">

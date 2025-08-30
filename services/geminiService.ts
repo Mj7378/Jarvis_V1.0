@@ -264,6 +264,7 @@ export async function checkForFace(image: { mimeType: string; data: string }): P
             required: ["face_detected"],
           },
           systemInstruction: "You are a highly accurate biometric authentication system. Your only task is to determine if a clear human face is present in an image. Respond only in the requested JSON format.",
+          thinkingConfig: { thinkingBudget: 0 },
         }
     });
     
@@ -307,6 +308,7 @@ export async function verifyFaceMatch(
             required: ["is_match"],
           },
           systemInstruction: "You are a highly accurate biometric authentication system. Your task is to compare two images and determine if they are of the same person. You must be very strict. If there is any doubt (different lighting, angle, expression), you must err on the side of caution and return false. Respond only in the requested JSON format.",
+          thinkingConfig: { thinkingBudget: 0 },
         }
     });
     
