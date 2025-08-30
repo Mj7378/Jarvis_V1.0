@@ -30,6 +30,7 @@ export interface DeviceControlCommand {
     };
     spoken_response: string;
     lang?: string;
+    suggestions?: string[];
 }
 
 export type AICommand = DeviceControlCommand;

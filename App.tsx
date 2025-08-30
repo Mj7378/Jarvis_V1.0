@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 
@@ -27,6 +26,7 @@ import Header from './components/Header';
 import Shutdown from './components/Shutdown';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import UserInput from './components/UserInput';
+import Suggestions from './components/Suggestions';
 
 
 // System Lifecycle States
@@ -159,6 +159,9 @@ const App: React.FC = () => {
   // File Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileHandlerRef = useRef<{ accept: string; handler: (file: File) => void } | null>(null);
+  
+  // Suggestions
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Reminder System
   const handleReminderDue = useCallback((reminder: Reminder) => {
@@ -215,19 +218,12 @@ const App: React.FC = () => {
       setAppState(AppState.IDLE);
       setIsSettingsOpen(false);
     }, 2000); // Reset after animation
-  // FIX: State setters are stable and do not need to be dependencies of useCallback.
   }, [sounds]);
 
   // Core AI communication logic.
-  // This block is ordered to resolve dependencies and uses a ref to break a circular dependency
-  // where an app command might need to trigger a new message.
-  // FIX: Initialize useRef with null to satisfy the "Expected 1 arguments, but got 0" error.
   const handleSendMessageRef = useRef<((prompt: string, imageUrl?: string) => void) | null>(null);
-  // FIX: Initialize useRef with null to satisfy the "Expected 1 arguments, but got 0" error.
   const processAiResponseRef = useRef<((prompt: string, image?: { mimeType: string; data: string; }) => void) | null>(null);
 
-  // FIX: Moved handleOpenDesignMode and handleOpenSimulationMode before handleAppCommand to allow them to be called
-  // when an AI command is received without a specific prompt. Wrapped in useCallback for optimization.
   const handleOpenDesignMode = useCallback(() => {
     setActionModalProps({
         title: 'Enter Design Mode',
@@ -236,8 +232,7 @@ const App: React.FC = () => {
         submitLabel: 'Generate'
     });
     setIsActionModalOpen(true);
-  // FIX: Added missing dependencies to useCallback to satisfy exhaustive-deps rule.
-  }, [setActionModalProps, setDesignModePrompt, setIsActionModalOpen]);
+  }, []);
 
   const handleOpenSimulationMode = useCallback(() => {
     setActionModalProps({
@@ -247,8 +242,7 @@ const App: React.FC = () => {
         submitLabel: 'Simulate'
     });
     setIsActionModalOpen(true);
-  // FIX: Added missing dependencies to useCallback to satisfy exhaustive-deps rule.
-  }, [setActionModalProps, setSimulationModePrompt, setIsActionModalOpen]);
+  }, []);
 
   const handleAppCommand = useCallback((params: { action?: string; value?: any }) => {
     switch (params.action) {
@@ -261,8 +255,6 @@ const App: React.FC = () => {
       case 'vision_mode':
         setIsVisionMode(true);
         break;
-      // FIX: Handle cases where design or simulation mode are triggered without a prompt.
-      // Instead of failing or doing nothing, this now opens a modal to ask the user for input.
       case 'design_mode':
         if (typeof params.value === 'string' && params.value.trim()) {
           setDesignModePrompt(params.value);
@@ -326,12 +318,14 @@ const App: React.FC = () => {
         addMessage({ role: 'model', content: "I'm sorry, I don't recognize that internal command." });
         break;
     }
-  // FIX: State setters and stable callbacks do not need to be dependencies.
-  }, [addMessage, setThemeSettings, handleOpenDesignMode, handleOpenSimulationMode]);
+  }, [addMessage, handleOpenDesignMode, handleOpenSimulationMode]);
 
   const handleDeviceCommand = useCallback(async (command: DeviceControlCommand) => {
     addMessage({ role: 'model', content: command.spoken_response });
     if(themeSettings.voiceOutputEnabled) queueSpeech(command.spoken_response);
+    if (command.suggestions && Array.isArray(command.suggestions)) {
+        setSuggestions(command.suggestions);
+    }
 
     switch (command.command) {
       case 'open_url':
@@ -341,7 +335,6 @@ const App: React.FC = () => {
         const query = encodeURIComponent(command.params.query);
         let searchUrl: string;
 
-        // Explicitly handle YouTube, default to Google for 'Google' app or any other case
         if (command.app?.toLowerCase() === 'youtube') {
             searchUrl = `https://www.youtube.com/results?search_query=${query}`;
         } else {
@@ -349,31 +342,40 @@ const App: React.FC = () => {
         }
         window.open(searchUrl, '_blank');
         break;
+      case 'navigate':
+        const navQuery = encodeURIComponent(command.params.query);
+        window.open(`https://www.google.com/maps/search/?api=1&query=${navQuery}`, '_blank');
+        break;
+      case 'play_music':
+        const musicQuery = encodeURIComponent(command.params.query);
+        window.open(`https://music.youtube.com/search?q=${musicQuery}`, '_blank');
+        break;
       case 'app_control':
         handleAppCommand(command.params);
         break;
        case 'shutdown':
         setTimeout(handleShutdown, 1000); // Delay to allow speech to finish
         break;
-      case 'set_reminder': {
+      case 'set_reminder':
+      case 'set_alarm': {
         const { content, time } = command.params;
+        const type = command.command === 'set_alarm' ? 'alarm' : 'reminder';
         if (content && time) {
             const success = await addReminder(content, time);
             if (!success) {
-                const failureMsg = { role: 'model' as const, content: "Sorry, I couldn't parse that time for the reminder. Try something like 'in 10 minutes' or 'at 8 PM'." };
+                const failureMsg = { role: 'model' as const, content: `Sorry, I couldn't parse that time for the ${type}. Try something like 'in 10 minutes' or 'at 8 PM'.` };
                 addMessage(failureMsg);
                 if(themeSettings.voiceOutputEnabled) queueSpeech(failureMsg.content);
             }
         }
         break;
       }
-      // Other cases can be added here (navigate, play_music, etc.)
     }
   }, [addMessage, queueSpeech, themeSettings.voiceOutputEnabled, handleShutdown, handleAppCommand, addReminder]);
 
   const processAiResponse = useCallback(async (prompt: string, image?: { mimeType: string; data: string; }) => {
     setAppState(AppState.THINKING);
-    cancelSpeech(); // Reset speech state for the new response
+    cancelSpeech();
     if (abortControllerRef.current) {
         abortControllerRef.current.abort();
     }
@@ -396,7 +398,7 @@ const App: React.FC = () => {
             }
 
             const chunkText = chunk.text;
-             finalChunk = chunk; // Keep track of the latest chunk
+             finalChunk = chunk;
             if (!chunkText) continue;
 
             fullResponse += chunkText;
@@ -404,22 +406,18 @@ const App: React.FC = () => {
             if (isFirstChunk) {
                 isFirstChunk = false;
                 const trimmedChunk = chunkText.trim();
-                // Check if the response is likely a JSON command, even if wrapped in markdown
                 if (trimmedChunk.startsWith('{') || trimmedChunk.startsWith('```json')) {
                     isCommand = true;
-                    commandBuffered = true; // Buffer the full response without displaying
+                    commandBuffered = true;
                 } else {
-                    // It's a regular message, add an empty bubble to start typing into.
                     addMessage({ role: 'model', content: "" });
                 }
             }
 
             if (!commandBuffered) {
-                // This is a regular chat message, so append it to the chat log for the user to see.
                 appendToLastMessage(chunkText);
                 if (themeSettings.voiceOutputEnabled) {
                     speechBuffer += chunkText;
-                    // Use a regex to find complete sentences to send to TTS
                     const sentences = speechBuffer.match(/[^.!?]+[.!?]+/g);
                     if (sentences) {
                         let processedText = "";
@@ -427,18 +425,13 @@ const App: React.FC = () => {
                             queueSpeech(stripMarkdown(sentence));
                             processedText += sentence;
                         });
-                        // Update buffer with any remaining partial sentence
                         speechBuffer = speechBuffer.substring(processedText.length);
                     }
                 }
             }
-            // If it's a command, we do nothing here in the loop, just keep buffering in `fullResponse`.
         }
 
-        // After stream ends, process the complete response
         if (isCommand) {
-            // Attempt to extract and parse the JSON from the buffered response.
-            // This regex handles JSON that is either raw or wrapped in a markdown code block.
             const jsonMatch = fullResponse.match(/```json\s*([\s\S]*?)\s*```|({[\s\S]*})/);
             const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[2]) : null;
 
@@ -455,15 +448,12 @@ const App: React.FC = () => {
                 addMessage({ role: 'model', content: "My command protocols seem to have malfunctioned. Please try again." });
             }
         } else {
-            // For regular messages, speak any remaining text in the buffer.
             if (themeSettings.voiceOutputEnabled && speechBuffer.trim()) {
                 queueSpeech(stripMarkdown(speechBuffer.trim()));
             }
         }
 
-        // After all processing, check for and add sources
         if (finalChunk) {
-            // Note: The type for grounding chunks is not exported, so we use `any`.
             const chunks = finalChunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
             if (chunks && Array.isArray(chunks)) {
                 const sources: Source[] = chunks
@@ -478,6 +468,17 @@ const App: React.FC = () => {
                 }
             }
         }
+        
+        const suggestionMatch = fullResponse.match(/>\s*\*Suggestions:\*\s*(.*)/s);
+        if (suggestionMatch && suggestionMatch[1]) {
+            const suggestionsText = suggestionMatch[1].replace(/"/g, '');
+            const parsedSuggestions = suggestionsText.split(/\s*\|\s*/).filter(s => s.trim().length > 0);
+            if (parsedSuggestions.length > 0) {
+                setSuggestions(parsedSuggestions);
+                const cleanContent = fullResponse.replace(suggestionMatch[0], '').trim();
+                updateLastMessage({ content: cleanContent });
+            }
+        }
 
     } catch (error: any) {
         if (error.name === 'AbortError') {
@@ -488,13 +489,12 @@ const App: React.FC = () => {
         setCurrentError(appErr);
         setAppState(AppState.ERROR);
     } finally {
-        // Only transition to IDLE if the state is still THINKING.
-        // This prevents overriding a new state (like LISTENING) set by a user interruption.
         setAppState(prevState => (prevState === AppState.THINKING ? AppState.IDLE : prevState));
     }
   }, [chatHistory, themeSettings.aiModel, themeSettings.voiceOutputEnabled, appendToLastMessage, addMessage, handleDeviceCommand, queueSpeech, cancelSpeech, updateLastMessage]);
 
     const handleSendMessage = useCallback((prompt: string, imageUrl?: string) => {
+    setSuggestions([]);
     addMessage({ role: 'user', content: prompt, imageUrl });
     if(imageUrl) {
         const base64Data = imageUrl.split(',')[1];
@@ -516,7 +516,7 @@ const App: React.FC = () => {
     }
     setAppState(AppState.IDLE);
   };
-  const { transcript, isListening, startListening, stopListening, error: speechError } = useSpeechRecognition({ onEnd: handleSpeechResult });
+  const { isListening, startListening, stopListening, error: speechError } = useSpeechRecognition({ onEnd: handleSpeechResult });
 
   useEffect(() => {
     if (speechError) {
@@ -530,8 +530,6 @@ const App: React.FC = () => {
       stopListening();
       setAppState(AppState.IDLE);
     } else {
-      // Interrupt any ongoing AI activity (both speech and stream generation)
-      // to allow the user to speak a new command immediately.
       if (abortControllerRef.current) {
           abortControllerRef.current.abort();
       }
@@ -582,13 +580,12 @@ const App: React.FC = () => {
         return {
             ...prev,
             voiceProfiles: updatedProfiles,
-            activeVoiceProfileId: newProfile.id, // Make the new profile active
+            activeVoiceProfileId: newProfile.id,
         };
     });
     setIsCalibrationOpen(false);
   };
   
-    // --- File Upload Handlers ---
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && fileHandlerRef.current) {
@@ -597,7 +594,7 @@ const App: React.FC = () => {
       } catch (err) {
         setCurrentError({ code: 'FILE_READ_ERROR', title: 'File Error', message: 'Could not read the selected file.' });
       } finally {
-        if(event.target) event.target.value = ''; // Reset file input
+        if(event.target) event.target.value = '';
         fileHandlerRef.current = null;
       }
     }
@@ -698,6 +695,7 @@ const App: React.FC = () => {
             </div>
             
             <div className="hud-bottom-panel">
+                <Suggestions suggestions={suggestions} onSuggestionClick={handleSendMessage} />
                  <UserInput
                     onSendMessage={handleSendMessage}
                     onToggleListening={handleToggleListening}
