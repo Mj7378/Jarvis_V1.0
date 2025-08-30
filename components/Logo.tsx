@@ -48,7 +48,7 @@ const Logo: React.FC = () => {
           dy=".3em"
           fontFamily="Orbitron, sans-serif"
           fontSize="24"
-          fill="currentColor"
+          fill="var(--color-text-secondary)"
           textAnchor="middle"
           letterSpacing="2"
           filter="url(#neon-glow)"

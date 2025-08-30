@@ -84,7 +84,7 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
                     </g>
                 )}
                 {isSpeaking && (
-                     <g style={{ '--glow-color': '#c084fc'} as React.CSSProperties}>
+                     <g style={{ '--glow-color': '#ffffff'} as React.CSSProperties}>
                         <circle cx="100" cy="100" r="95" stroke="url(#core-grad)" strokeWidth="2" fill="none" className="animate-pulse-strong" style={{animationDuration: '1.5s'}}/>
                     </g>
                 )}
@@ -93,7 +93,7 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
                 <g 
                    className={(isThinking || isSpeaking) ? "animate-pulse-strong" : ""} 
                    style={{ 
-                       '--glow-color': isThinking ? '#fbbf24' : isSpeaking ? '#c084fc' : 'var(--primary-color-hex)' 
+                       '--glow-color': isThinking ? '#fbbf24' : isSpeaking ? '#ffffff' : 'var(--primary-color-hex)' 
                    } as React.CSSProperties}
                    filter="url(#core-glow)"
                 >

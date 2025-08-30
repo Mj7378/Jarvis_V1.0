@@ -108,7 +108,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
     <div className="px-2 pb-2 pt-1">
         <form 
             onSubmit={handleSubmit} 
-            className="w-full flex items-end gap-2 p-1.5 bg-panel border border-transparent rounded-full focus-within:border-primary-t-50 transition-all duration-300"
+            className="w-full flex items-end gap-2 p-1.5 bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-lg rounded-full shadow-[0_0_25px_rgba(var(--primary-color-rgb),0.15)] transition-all duration-300"
         >
           <div className="relative flex-shrink-0 flex items-center">
               {/* Emoji Button */}

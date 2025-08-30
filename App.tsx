@@ -77,8 +77,8 @@ const readFileAsBase64 = (file: File): Promise<string> =>
 
 const DEFAULT_PROFILE: VoiceProfile = { id: 'default', name: 'J.A.R.V.I.S. Enhanced', rate: 1.2, pitch: 1.0 };
 const DEFAULT_THEME: ThemeSettings = {
-  primaryColor: '#00ffff', // J.A.R.V.I.S. Cyan
-  panelColor: '#121a2b',
+  primaryColor: '#ff4b4b', // Iron Man Red
+  panelColor: '#1a0a0f',   // Dark reddish black
   themeMode: 'dark',
   showGrid: true,
   showScanlines: true,
@@ -95,8 +95,8 @@ const DEFAULT_THEME: ThemeSettings = {
 };
 
 const FULL_THEMES = [
+    { name: 'Iron Man', primaryColor: '#ff4b4b', panelColor: '#1a0a0f', themeMode: 'dark' as const },
     { name: 'J.A.R.V.I.S.', primaryColor: '#00ffff', panelColor: '#121a2b', themeMode: 'dark' as const },
-    { name: 'Code Red', primaryColor: '#ff2d2d', panelColor: '#1a0a0f', themeMode: 'dark' as const },
     { name: 'Arc Reactor', primaryColor: '#00aeff', panelColor: '#0f172a', themeMode: 'dark' as const },
     { name: 'Stealth', primaryColor: '#64748b', panelColor: '#020617', themeMode: 'dark' as const },
     { name: 'Stark Light', primaryColor: '#0ea5e9', panelColor: '#ffffff', themeMode: 'light' as const },

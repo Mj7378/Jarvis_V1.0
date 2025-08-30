@@ -17,7 +17,7 @@ const Suggestions: React.FC<SuggestionsProps> = ({ suggestions, onSuggestionClic
           <button
             key={index}
             onClick={() => onSuggestionClick(suggestion)}
-            className="flex-shrink-0 px-4 py-2 text-sm text-text-secondary bg-panel border border-primary-t-20 rounded-full hover:bg-primary-t-20 hover:text-text-primary transition-all duration-200 animate-pop-in"
+            className="flex-shrink-0 px-4 py-2 text-sm text-text-secondary bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-md border border-primary-t-20 rounded-full hover:bg-primary-t-20 hover:text-text-primary transition-all duration-200 animate-pop-in"
             style={{ animationDelay: `${index * 75}ms` }}
           >
             {suggestion}

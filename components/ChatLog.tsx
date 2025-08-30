@@ -187,7 +187,7 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
                 className={`max-w-md lg:max-w-2xl p-2 px-3 rounded-2xl animate-fade-in-fast ${
                   isModel
                     ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-text-primary rounded-bl-md shadow-lg shadow-black/20 border border-slate-700'
-                    : 'bg-gradient-to-br from-blue-500 to-indigo-700 text-white rounded-br-md shadow-lg shadow-indigo-500/20'
+                    : 'bg-gradient-to-br from-amber-500 to-yellow-600 text-black rounded-br-md shadow-lg shadow-yellow-500/20'
                 }`}
               >
                 {message.imageUrl && (
@@ -207,7 +207,7 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
                   <SourceCitations sources={message.sources} />
                 )}
                 <div className={`text-right text-xs mt-1 flex justify-end items-center gap-1.5 ${
-                    isModel ? 'text-text-muted' : 'text-indigo-200'
+                    isModel ? 'text-text-muted' : 'text-yellow-900/80'
                 }`}>
                     <span>{message.timestamp}</span>
                     {!isModel && (

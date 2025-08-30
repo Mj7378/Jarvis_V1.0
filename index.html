@@ -155,23 +155,23 @@
     </script>
     <style type="text/css">
       :root {
-        --primary-color-hex: #00ffff;
-        --primary-color-rgb: 0, 255, 255;
+        --primary-color-hex: #ff4b4b;
+        --primary-color-rgb: 255, 75, 75;
         --corner-clip-size: clamp(15px, 4vw, 30px);
       }
       
       .theme-dark {
-        --color-background: #0A0F1A;
-        --color-text-primary: #e2e8f0;
-        --color-text-secondary: #93c5fd;
-        --color-text-muted: #64748b;
-        --panel-rgb: 18, 26, 43;
+        --color-background: #1a0a0f;
+        --color-text-primary: #f0e6e6;
+        --color-text-secondary: #ffd700;
+        --color-text-muted: #a09078;
+        --panel-rgb: 30, 15, 20;
         --color-border-secondary: rgba(var(--primary-color-rgb), 0.1);
-        --user-bubble-rgb: 79, 70, 229;
-        --user-bubble-border-rgb: 99, 102, 241;
+        --user-bubble-rgb: 255, 215, 0;
+        --user-bubble-border-rgb: 255, 225, 50;
         --color-disabled-bg: rgba(51, 65, 85, 0.5);
         --color-disabled-text: #64748b;
-        --glitch-bg: #0A0F1A;
+        --glitch-bg: #1a0a0f;
       }
 
       .theme-light {
@@ -194,8 +194,11 @@
         color: var(--color-text-primary);
         overflow: hidden;
         background-image:
-            radial-gradient(ellipse at center, rgba(var(--primary-color-rgb), 0.08) 0%, transparent 70%),
-            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4"><path fill="%2300ffff" fill-opacity="0.05" d="M1 3h1v1H1V3zm2-2h1v1H3V1z"></path></svg>');
+            radial-gradient(ellipse at center, rgba(var(--primary-color-rgb), 0.1) 0%, transparent 60%), 
+            linear-gradient(30deg, transparent 49.5%, rgba(var(--primary-color-rgb), 0.1) 50%, transparent 50.5%), 
+            linear-gradient(-30deg, transparent 49.5%, rgba(var(--primary-color-rgb), 0.1) 50%, transparent 50.5%), 
+            linear-gradient(90deg, transparent 49.5%, rgba(var(--primary-color-rgb), 0.1) 50%, transparent 50.5%);
+        background-size: 40px 69px;
         font-size: clamp(14px, 1.5vw + 0.5rem, 16px);
       }
 
@@ -236,53 +239,16 @@
       }
       
       .holographic-panel {
-        background: rgba(var(--panel-rgb), 0.1);
-        backdrop-filter: blur(12px) saturate(120%);
-        -webkit-backdrop-filter: blur(12px) saturate(120%);
-        border: 1px solid rgba(var(--primary-color-rgb), 0.15);
+        background: rgba(var(--primary-color-rgb), 0.03);
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
         box-shadow: 
-            0 0 30px rgba(var(--primary-color-rgb), 0.05),
+            0 0 45px rgba(var(--primary-color-rgb), 0.1),
             inset 0 0 10px rgba(var(--primary-color-rgb), 0.05);
         padding: clamp(0.75rem, 3vw, 1.25rem);
         position: relative;
         transition: all 0.3s ease;
       }
-
-      .holographic-panel:hover {
-        transform: translateY(-2px);
-        box-shadow: 
-            0 0 45px rgba(var(--primary-color-rgb), 0.1),
-            inset 0 0 15px rgba(var(--primary-color-rgb), 0.08);
-      }
-
-      .holographic-panel::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border: 1px solid rgba(var(--primary-color-rgb), 0.3);
-        pointer-events: none;
-        clip-path: var(--clip-path);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-      .holographic-panel:hover::before {
-        opacity: 1;
-      }
-
-      /* Animated border path */
-      .holographic-panel svg.border-path {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        pointer-events: none;
-        stroke: var(--primary-color-hex);
-        stroke-width: 2;
-        fill: none;
-        stroke-dasharray: 100%;
-        stroke-dashoffset: 100%;
-        animation: border-trace 1s ease-out forwards 0.3s;
-      }
-
       
       .panel-title {
         display: flex;
@@ -347,13 +313,13 @@
       /* --- Responsive Component Styles --- */
       .header-title-panel {
           --clip-size: clamp(15px, 4vw, 25px);
-          clip-path: polygon(0 0, calc(100% - var(--clip-size)) 0, 100% 50%, calc(100% - var(--clip-size)) 100%, 0 100%);
+          clip-path: polygon(0 0, calc(100% - var(--clip-size)) 0, 100% var(--clip-size), 100% calc(100% - var(--clip-size)), calc(100% - var(--clip-size)) 100%, 0 100%);
           padding-left: clamp(0.75rem, 4vw, 1.5rem);
           padding-right: clamp(0.75rem, 4vw, 1.5rem);
       }
       .header-title-wedge {
           width: clamp(15px, 4vw, 25px);
-          clip-path: polygon(0 50%, 100% 0, 100% 100%);
+          clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
       }
       
       .settings-modal-container {
