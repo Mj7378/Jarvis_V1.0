@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { AppState } from '../types';
 import { MicrophoneIcon, SendIcon, SmileyIcon, PaperclipIcon } from './Icons';
@@ -25,7 +26,6 @@ const UserInput: React.FC<UserInputProps> = (props) => {
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isInputDisabled = appState === AppState.THINKING || appState === AppState.SPEAKING;
   const showSendButton = textContent.trim().length > 0;
 
   // Auto-sizing textarea logic
@@ -42,7 +42,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (showSendButton && !isInputDisabled) {
+    if (showSendButton) {
       onSendMessage(textContent.trim());
       setTextContent('');
       setShowEmojiPicker(false);
@@ -91,6 +91,19 @@ const UserInput: React.FC<UserInputProps> = (props) => {
       setShowEmojiPicker(false);
   }
 
+  const getStatusInfo = () => {
+    switch (appState) {
+        case AppState.LISTENING: return { text: "Listening...", color: 'text-primary' };
+        case AppState.THINKING: return { text: "Analyzing...", color: 'text-yellow-400' };
+        case AppState.SPEAKING: return { text: "Speaking...", color: 'text-purple-400' };
+        default: return null;
+    }
+  };
+
+  const statusInfo = getStatusInfo();
+  // Show overlay only when app is busy and user hasn't started typing to interrupt
+  const showStatusOverlay = statusInfo && textContent.trim().length === 0;
+
   return (
     <div className="px-2 pb-2 pt-1">
         <form 
@@ -121,25 +134,33 @@ const UserInput: React.FC<UserInputProps> = (props) => {
               {isAttachmentMenuOpen && <AttachmentMenu {...props} onClose={() => setIsAttachmentMenuOpen(false)} />}
           </div>
           
-          {/* Text Input Area */}
-          <textarea
-            ref={textareaRef}
-            value={textContent}
-            onChange={(e) => setTextContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isInputDisabled || isListening}
-            placeholder={isListening ? "Listening..." : "Message"}
-            className="flex-grow bg-transparent border-none focus:ring-0 px-2 py-2 text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity resize-none overflow-y-auto styled-scrollbar"
-            aria-label="User command input"
-            rows={1}
-            style={{ minHeight: '40px' }}
-          />
+          {/* Text Input Area Container */}
+          <div className="relative flex-grow">
+              <textarea
+                ref={textareaRef}
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={appState === AppState.LISTENING}
+                placeholder="Message J.A.R.V.I.S."
+                className="w-full bg-transparent border-none focus:ring-0 px-2 py-2 text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity resize-none overflow-y-auto styled-scrollbar"
+                aria-label="User command input"
+                rows={1}
+                style={{ minHeight: '40px' }}
+              />
+              {showStatusOverlay && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className={`font-orbitron animate-text-flicker ${statusInfo.color}`}>
+                        {statusInfo.text}
+                    </span>
+                </div>
+              )}
+          </div>
           
           {/* Action Button (Mic/Send) */}
           <button
             type={showSendButton ? 'submit' : 'button'}
             onClick={handleActionClick}
-            disabled={isInputDisabled}
             className={`flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300 w-11 h-11 text-white ${isListening ? 'bg-red-500 animate-pulse-strong' : 'bg-primary'} hover:scale-110 active:scale-105`}
             aria-label={showSendButton ? 'Send message' : (isListening ? 'Stop listening' : 'Start listening')}
           >

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 
@@ -33,15 +34,11 @@ import Suggestions from './components/Suggestions';
 type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
 
 // Helper function to remove markdown for clean speech.
-// This ensures that characters like '#' or '*' are not read aloud by TTS.
 const stripMarkdown = (text: string): string => {
     return text
-        // Removes title, subtitle, heading, and note prefixes.
         .replace(/^(# |## |### |> )/gm, '')
-        // Removes **bold** and *italic*
         .replace(/\*\*(.*?)\*\*/g, '$1')
         .replace(/\*(.*?)\*/g, '$1')
-        // Removes list item markers like * or -
         .replace(/^\s*[-*]\s+/gm, '');
 };
 
@@ -118,9 +115,10 @@ const App: React.FC = () => {
 
   // Core App State
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
-  const { chatHistory, addMessage, appendToLastMessage, updateLastMessage } = useChatHistory();
+  const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage } = useChatHistory();
   const [currentError, setCurrentError] = useState<AppError | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   
   // Theme & Settings
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
@@ -160,9 +158,6 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileHandlerRef = useRef<{ accept: string; handler: (file: File) => void } | null>(null);
   
-  // Suggestions
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-
   // Reminder System
   const handleReminderDue = useCallback((reminder: Reminder) => {
     sounds.playSuccess();
@@ -186,583 +181,451 @@ const App: React.FC = () => {
       root.style.setProperty('--primary-color-rgb', primaryRgb);
     }
     if (panelRgb) {
-        root.style.setProperty('--panel-color-rgb', panelRgb);
+        document.body.style.setProperty('--panel-rgb', panelRgb);
     }
 
-    if (themeSettings.themeMode === 'light') {
-        document.body.classList.remove('theme-dark');
-        document.body.classList.add('theme-light');
-    } else {
-        document.body.classList.remove('theme-light');
-        document.body.classList.add('theme-dark');
+    document.body.classList.remove('theme-dark', 'theme-light');
+    document.body.classList.add(`theme-${themeSettings.themeMode}`);
+    
+    const scanlineOverlay = document.querySelector('.scanline-overlay');
+    if(scanlineOverlay instanceof HTMLElement) {
+        scanlineOverlay.style.display = themeSettings.showScanlines ? 'block' : 'none';
     }
+  }, [themeSettings.primaryColor, themeSettings.panelColor, themeSettings.themeMode, themeSettings.showScanlines]);
 
-    document.body.classList.toggle('grid-active', themeSettings.showGrid);
-    document.body.classList.toggle('text-flicker-active', themeSettings.showTextFlicker);
-
-     // Save settings to local storage whenever they change
-    try {
-        localStorage.setItem('jarvis_theme_settings', JSON.stringify(themeSettings));
-    } catch (e) {
-        console.error("Failed to save settings to local storage", e);
-    }
+  // Load boot video setting on startup
+  useEffect(() => {
+    const checkBootVideo = async () => {
+        const hasVideo = await import('./utils/db').then(db => db.getVideo()).then(file => !!file);
+        setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: hasVideo }));
+    };
+    checkBootVideo();
+  }, []);
+  
+  // Save settings to local storage whenever they change
+  useEffect(() => {
+    localStorage.setItem('jarvis_theme_settings', JSON.stringify(themeSettings));
   }, [themeSettings]);
-
-  // Shutdown logic
-  const handleShutdown = useCallback(() => {
-    sounds.playDeactivate();
-    setSystemState('SNAP_DISINTEGRATION');
-    setTimeout(() => {
-      // Fully reset to pre-boot state
-      setSystemState('PRE_BOOT');
-      setAppState(AppState.IDLE);
-      setIsSettingsOpen(false);
-    }, 2000); // Reset after animation
-  }, [sounds]);
-
-  // Core AI communication logic.
-  const handleSendMessageRef = useRef<((prompt: string, imageUrl?: string) => void) | null>(null);
-  const processAiResponseRef = useRef<((prompt: string, image?: { mimeType: string; data: string; }) => void) | null>(null);
-
-  const handleOpenDesignMode = useCallback(() => {
-    setActionModalProps({
-        title: 'Enter Design Mode',
-        inputs: [{ id: 'prompt', label: 'Describe the design concept:', type: 'textarea', placeholder: 'e.g., a futuristic arc reactor HUD' }],
-        onSubmit: (data) => setDesignModePrompt(data.prompt),
-        submitLabel: 'Generate'
-    });
-    setIsActionModalOpen(true);
-  }, []);
-
-  const handleOpenSimulationMode = useCallback(() => {
-    setActionModalProps({
-        title: 'Enter Simulation Mode',
-        inputs: [{ id: 'prompt', label: 'Describe the simulation scenario:', type: 'textarea', placeholder: 'e.g., a high-speed chase through a neon city' }],
-        onSubmit: (data) => setSimulationModePrompt(data.prompt),
-        submitLabel: 'Simulate'
-    });
-    setIsActionModalOpen(true);
-  }, []);
-
-  const handleAppCommand = useCallback((params: { action?: string; value?: any }) => {
-    switch (params.action) {
-      case 'open_settings':
-        setIsSettingsOpen(true);
-        break;
-      case 'close_settings':
-        setIsSettingsOpen(false);
-        break;
-      case 'vision_mode':
-        setIsVisionMode(true);
-        break;
-      case 'design_mode':
-        if (typeof params.value === 'string' && params.value.trim()) {
-          setDesignModePrompt(params.value);
-        } else {
-          handleOpenDesignMode();
-        }
-        break;
-      case 'simulation_mode':
-        if (typeof params.value === 'string' && params.value.trim()) {
-          setSimulationModePrompt(params.value);
-        } else {
-          handleOpenSimulationMode();
-        }
-        break;
-      case 'run_diagnostics':
-        setIsDiagnosticsMode(true);
-        break;
-      case 'calibrate_voice':
-        setIsCalibrationOpen(true);
-        break;
-      case 'change_theme':
-        if (typeof params.value === 'string') {
-          const themeName = params.value.toLowerCase();
-          const selectedTheme = FULL_THEMES.find(t => t.name.toLowerCase() === themeName);
-          if (selectedTheme) {
-            setThemeSettings(prev => ({
-              ...prev,
-              primaryColor: selectedTheme.primaryColor,
-              panelColor: selectedTheme.panelColor,
-              themeMode: selectedTheme.themeMode,
-            }));
-          } else {
-              addMessage({ role: 'model', content: `I couldn't find a theme named "${params.value}".` });
-          }
-        }
-        break;
-      case 'toggle_voice':
-        if(params.value === 'on' || params.value === 'off') {
-            setThemeSettings(prev => ({
-                ...prev,
-                voiceOutputEnabled: params.value === 'on',
-            }));
-        }
-        break;
-      case 'toggle_sounds':
-        if(params.value === 'on' || params.value === 'off') {
-            setThemeSettings(prev => ({
-                ...prev,
-                uiSoundsEnabled: params.value === 'on',
-            }));
-        }
-        break;
-      case 'set_primary_color':
-        if (typeof params.value === 'string' && /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i.test(params.value)) {
-            setThemeSettings(prev => ({ ...prev, primaryColor: params.value }));
-        } else {
-             addMessage({ role: 'model', content: `"${params.value}" doesn't seem to be a valid hex color code.` });
-        }
-        break;
-      default:
-        addMessage({ role: 'model', content: "I'm sorry, I don't recognize that internal command." });
-        break;
-    }
-  }, [addMessage, handleOpenDesignMode, handleOpenSimulationMode]);
-
-  const handleDeviceCommand = useCallback(async (command: DeviceControlCommand) => {
-    addMessage({ role: 'model', content: command.spoken_response });
-    if(themeSettings.voiceOutputEnabled) queueSpeech(command.spoken_response);
-    if (command.suggestions && Array.isArray(command.suggestions)) {
-        setSuggestions(command.suggestions);
-    }
-
-    switch (command.command) {
-      case 'open_url':
-        window.open(command.params.url, '_blank');
-        break;
-      case 'search':
-        const query = encodeURIComponent(command.params.query);
-        let searchUrl: string;
-
-        if (command.app?.toLowerCase() === 'youtube') {
-            searchUrl = `https://www.youtube.com/results?search_query=${query}`;
-        } else {
-            searchUrl = `https://www.google.com/search?q=${query}`;
-        }
-        window.open(searchUrl, '_blank');
-        break;
-      case 'navigate':
-        const navQuery = encodeURIComponent(command.params.query);
-        window.open(`https://www.google.com/maps/search/?api=1&query=${navQuery}`, '_blank');
-        break;
-      case 'play_music':
-        const musicQuery = encodeURIComponent(command.params.query);
-        window.open(`https://music.youtube.com/search?q=${musicQuery}`, '_blank');
-        break;
-      case 'app_control':
-        handleAppCommand(command.params);
-        break;
-       case 'shutdown':
-        setTimeout(handleShutdown, 1000); // Delay to allow speech to finish
-        break;
-      case 'set_reminder':
-      case 'set_alarm': {
-        const { content, time } = command.params;
-        const type = command.command === 'set_alarm' ? 'alarm' : 'reminder';
-        if (content && time) {
-            const success = await addReminder(content, time);
-            if (!success) {
-                const failureMsg = { role: 'model' as const, content: `Sorry, I couldn't parse that time for the ${type}. Try something like 'in 10 minutes' or 'at 8 PM'.` };
-                addMessage(failureMsg);
-                if(themeSettings.voiceOutputEnabled) queueSpeech(failureMsg.content);
-            }
-        }
-        break;
-      }
-    }
-  }, [addMessage, queueSpeech, themeSettings.voiceOutputEnabled, handleShutdown, handleAppCommand, addReminder]);
-
-  const processAiResponse = useCallback(async (prompt: string, image?: { mimeType: string; data: string; }) => {
-    setAppState(AppState.THINKING);
+  
+  // App state change sound effects
+  useEffect(() => {
+      if (appState === AppState.ERROR) sounds.playError();
+  }, [appState, sounds]);
+  
+  // Function to handle sending a message to the AI
+  const processUserMessage = useCallback(async (
+    prompt: string,
+    image?: { mimeType: string; data: string; }
+  ) => {
     cancelSpeech();
+    setCurrentSuggestions([]);
+    
     if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
 
+    addMessage({ role: 'user', content: prompt, imageUrl: image ? `data:${image.mimeType};base64,${image.data}` : undefined });
+    setAppState(AppState.THINKING);
+
+    let fullResponse = '';
+    let isJsonCommand = false;
+    let spokenResponse = '';
+    let command: DeviceControlCommand | null = null;
+    let sources: Source[] = [];
+    let lastChunk: GenerateContentResponse | undefined;
+
     try {
         const stream = await getAiResponseStream(prompt, chatHistory, themeSettings.aiModel, image);
-        let fullResponse = "";
-        let isFirstChunk = true;
-        let isCommand = false;
-        let speechBuffer = "";
-        let commandBuffered = false;
-        let finalChunk: GenerateContentResponse | null = null;
+        addMessage({ role: 'model', content: '' });
 
         for await (const chunk of stream) {
             if (abortControllerRef.current.signal.aborted) {
-                console.log("Stream aborted by user.");
-                cancelSpeech();
+                removeLastMessage();
+                setAppState(AppState.IDLE);
                 return;
             }
-
+            
+            lastChunk = chunk;
             const chunkText = chunk.text;
-             finalChunk = chunk;
-            if (!chunkText) continue;
-
             fullResponse += chunkText;
-
-            if (isFirstChunk) {
-                isFirstChunk = false;
-                const trimmedChunk = chunkText.trim();
-                if (trimmedChunk.startsWith('{') || trimmedChunk.startsWith('```json')) {
-                    isCommand = true;
-                    commandBuffered = true;
-                } else {
-                    addMessage({ role: 'model', content: "" });
-                }
+            
+            if (!isJsonCommand && fullResponse.trim().startsWith('{')) {
+                isJsonCommand = true;
             }
-
-            if (!commandBuffered) {
-                appendToLastMessage(chunkText);
-                if (themeSettings.voiceOutputEnabled) {
-                    speechBuffer += chunkText;
-                    const sentences = speechBuffer.match(/[^.!?]+[.!?]+/g);
-                    if (sentences) {
-                        let processedText = "";
-                        sentences.forEach(sentence => {
-                            queueSpeech(stripMarkdown(sentence));
-                            processedText += sentence;
-                        });
-                        speechBuffer = speechBuffer.substring(processedText.length);
-                    }
-                }
-            }
-        }
-
-        if (isCommand) {
-            const jsonMatch = fullResponse.match(/```json\s*([\s\S]*?)\s*```|({[\s\S]*})/);
-            const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[2]) : null;
-
-            if (jsonString) {
-                try {
-                    const commandJson: AICommand = JSON.parse(jsonString);
-                    await handleDeviceCommand(commandJson as DeviceControlCommand);
-                } catch (e) {
-                    console.error("Failed to parse AI command:", e, "Response:", jsonString);
-                    addMessage({ role: 'model', content: "I encountered an error trying to execute that command. My apologies." });
-                }
-            } else {
-                console.error("Could not extract JSON from a response flagged as a command:", fullResponse);
-                addMessage({ role: 'model', content: "My command protocols seem to have malfunctioned. Please try again." });
-            }
-        } else {
-            if (themeSettings.voiceOutputEnabled && speechBuffer.trim()) {
-                queueSpeech(stripMarkdown(speechBuffer.trim()));
-            }
-        }
-
-        if (finalChunk) {
-            const chunks = finalChunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-            if (chunks && Array.isArray(chunks)) {
-                const sources: Source[] = chunks
-                    .filter((chunk: any) => chunk.web && chunk.web.uri)
-                    .map((chunk: any) => ({
-                        uri: chunk.web.uri,
-                        title: chunk.web.title || chunk.web.uri,
-                    }));
-
-                if (sources.length > 0) {
-                    updateLastMessage({ sources });
-                }
-            }
+            
+            appendToLastMessage(chunkText);
         }
         
-        const suggestionMatch = fullResponse.match(/>\s*\*Suggestions:\*\s*(.*)/s);
-        if (suggestionMatch && suggestionMatch[1]) {
-            const suggestionsText = suggestionMatch[1].replace(/"/g, '');
-            const parsedSuggestions = suggestionsText.split(/\s*\|\s*/).filter(s => s.trim().length > 0);
-            if (parsedSuggestions.length > 0) {
-                setSuggestions(parsedSuggestions);
-                const cleanContent = fullResponse.replace(suggestionMatch[0], '').trim();
-                updateLastMessage({ content: cleanContent });
+        if (lastChunk) {
+            const lastCandidate = lastChunk.candidates?.[0];
+            if (lastCandidate?.groundingMetadata?.groundingChunks) {
+                sources = lastCandidate.groundingMetadata.groundingChunks
+                    .map((chunk: any) => chunk.web)
+                    .filter(Boolean) as Source[];
+                updateLastMessage({ sources });
             }
         }
 
-    } catch (error: any) {
-        if (error.name === 'AbortError') {
-            console.log("AI response stream successfully aborted.");
-            return;
-        }
-        const appErr = error.appError || { code: 'UNKNOWN', title: 'Error', message: error.message };
-        setCurrentError(appErr);
+    } catch (e: any) {
+        console.error(e);
+        setCurrentError(e.appError || {
+            code: 'STREAM_ERROR',
+            title: 'Communication Error',
+            message: 'An error occurred while communicating with the AI. Please try again.',
+            details: e.message,
+        });
+        removeLastMessage();
         setAppState(AppState.ERROR);
-    } finally {
-        setAppState(prevState => (prevState === AppState.THINKING ? AppState.IDLE : prevState));
+        return;
     }
-  }, [chatHistory, themeSettings.aiModel, themeSettings.voiceOutputEnabled, appendToLastMessage, addMessage, handleDeviceCommand, queueSpeech, cancelSpeech, updateLastMessage]);
 
-    const handleSendMessage = useCallback((prompt: string, imageUrl?: string) => {
-    setSuggestions([]);
-    addMessage({ role: 'user', content: prompt, imageUrl });
-    if(imageUrl) {
-        const base64Data = imageUrl.split(',')[1];
-        processAiResponse(prompt, { mimeType: 'image/jpeg', data: base64Data });
+    if (isJsonCommand) {
+        try {
+            const jsonStartIndex = fullResponse.indexOf('{');
+            const jsonEndIndex = fullResponse.lastIndexOf('}');
+            const jsonString = fullResponse.substring(jsonStartIndex, jsonEndIndex + 1);
+            command = JSON.parse(jsonString) as DeviceControlCommand;
+            spokenResponse = command.spoken_response;
+            updateLastMessage({ content: spokenResponse });
+            
+            if (command.suggestions) {
+                setCurrentSuggestions(command.suggestions);
+            }
+        } catch (e) {
+            console.error("JSON parsing error:", e, "Raw response:", fullResponse);
+            spokenResponse = "I seem to have generated a malformed command. My apologies.";
+            updateLastMessage({ content: spokenResponse });
+            setCurrentError({
+                code: 'JSON_PARSE_ERROR',
+                title: 'Command Parsing Error',
+                message: "The AI's command response was not valid JSON.",
+                details: fullResponse,
+            });
+        }
     } else {
-        processAiResponse(prompt);
+        const suggestionMatch = fullResponse.match(/> \*Suggestions:\* (.*)/);
+        if (suggestionMatch && suggestionMatch[1]) {
+            const suggestionsText = suggestionMatch[1];
+            setCurrentSuggestions(suggestionsText.split('|').map(s => s.trim().replace(/"/g, '')));
+            const cleanResponse = fullResponse.replace(suggestionMatch[0], '').trim();
+            updateLastMessage({ content: cleanResponse });
+            spokenResponse = stripMarkdown(cleanResponse);
+        } else {
+            spokenResponse = stripMarkdown(fullResponse);
+        }
     }
-  }, [addMessage, processAiResponse]);
 
-  useEffect(() => {
-    handleSendMessageRef.current = handleSendMessage;
-    processAiResponseRef.current = processAiResponse;
-  }, [handleSendMessage, processAiResponse]);
-  
-  // Voice Recognition
-  const handleSpeechResult = (transcript: string) => {
-    if (transcript.trim()) {
-      handleSendMessage(transcript);
+    if (themeSettings.voiceOutputEnabled && spokenResponse) {
+        setAppState(AppState.SPEAKING);
+        queueSpeech(spokenResponse);
+    } else {
+        setAppState(AppState.IDLE);
     }
-    setAppState(AppState.IDLE);
-  };
-  const { isListening, startListening, stopListening, error: speechError } = useSpeechRecognition({ onEnd: handleSpeechResult });
+    
+    if (command) {
+        executeCommand(command);
+    }
 
-  useEffect(() => {
-    if (speechError) {
-      setCurrentError({ code: 'SPEECH_ERROR', title: 'Speech Recognition Error', message: speechError });
-      setAppState(AppState.ERROR);
-    }
-  }, [speechError]);
+  }, [addMessage, appendToLastMessage, cancelSpeech, chatHistory, queueSpeech, themeSettings.voiceOutputEnabled, updateLastMessage, removeLastMessage, themeSettings.aiModel]);
   
-  const handleToggleListening = useCallback(() => {
-    if (isListening) {
-      stopListening();
+  useEffect(() => {
+    if (appState === AppState.SPEAKING && !isSpeaking) {
       setAppState(AppState.IDLE);
+    }
+  }, [isSpeaking, appState]);
+  
+  const executeCommand = (cmd: DeviceControlCommand) => {
+    sounds.playActivate();
+    switch (cmd.command) {
+        case 'open_url':
+        case 'search':
+        case 'navigate':
+            let url = '';
+            if (cmd.command === 'open_url') url = cmd.params.url;
+            else if (cmd.command === 'search') url = cmd.app === 'YouTube' ? `https://www.youtube.com/results?search_query=${encodeURIComponent(cmd.params.query)}` : `https://www.google.com/search?q=${encodeURIComponent(cmd.params.query)}`;
+            else if (cmd.command === 'navigate') url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cmd.params.query)}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+            break;
+        case 'set_reminder':
+            addReminder(cmd.params.content, cmd.params.time);
+            break;
+        case 'shutdown':
+            setSystemState('SHUTTING_DOWN');
+            setTimeout(() => setSystemState('SNAP_DISINTEGRATION'), 4500);
+            break;
+        case 'app_control':
+            handleAppControl(cmd.params.action, cmd.params.value);
+            break;
+    }
+  };
+
+  const handleAppControl = (action: string, value: any) => {
+    switch(action) {
+        case 'open_settings': setIsSettingsOpen(true); break;
+        case 'close_settings': setIsSettingsOpen(false); break;
+        case 'vision_mode': setIsVisionMode(true); break;
+        case 'run_diagnostics': setIsDiagnosticsMode(true); break;
+        case 'calibrate_voice': setIsCalibrationOpen(true); break;
+        case 'design_mode': setDesignModePrompt(value); break;
+        case 'simulation_mode': setSimulationModePrompt(value); break;
+        case 'change_theme':
+            const theme = FULL_THEMES.find(t => t.name.toLowerCase() === value.toLowerCase());
+            if (theme) {
+                setThemeSettings(p => ({ ...p, ...theme }));
+            }
+            break;
+        case 'toggle_voice':
+            setThemeSettings(p => ({ ...p, voiceOutputEnabled: value === 'on' }));
+            break;
+        case 'toggle_sounds':
+            setThemeSettings(p => ({ ...p, uiSoundsEnabled: value === 'on' }));
+            break;
+        case 'set_primary_color':
+            setThemeSettings(p => ({ ...p, primaryColor: value }));
+            break;
+    }
+  };
+
+  const handleVoiceInput = useCallback((transcript: string) => {
+    if (transcript) {
+        processUserMessage(transcript);
     } else {
-      if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-      }
+        // When listening ends without a transcript, return to IDLE
+        setAppState(currentState => 
+            currentState === AppState.LISTENING ? AppState.IDLE : currentState
+        );
+    }
+  }, [processUserMessage]);
+
+  const { isListening, startListening, stopListening } = useSpeechRecognition({ onEnd: handleVoiceInput });
+
+  const toggleListening = () => {
       cancelSpeech();
-      
-      sounds.playClick();
-      startListening();
-      setAppState(AppState.LISTENING);
-    }
-  }, [isListening, stopListening, startListening, sounds, cancelSpeech]);
-  
-  const handleSelfHeal = () => {
-    setIsDiagnosticsMode(true);
+      if (isListening) {
+          stopListening();
+      } else {
+          // Abort any ongoing AI response generation
+          if (abortControllerRef.current) {
+              abortControllerRef.current.abort();
+          }
+          setAppState(AppState.LISTENING);
+          sounds.playActivate();
+          startListening();
+      }
   };
   
-  const handleDiagnosticsComplete = (summary: string) => {
-    setIsDiagnosticsMode(false);
-    addMessage({ role: 'model', content: summary });
-  }
-
-  const handleSetCustomBootVideo = async (file: File) => {
-    try {
-        await saveVideo(file);
-        setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: true, bootupAnimation: 'video' }));
-    } catch(err) {
-        setCurrentError({ code: 'DB_ERROR', title: 'Storage Error', message: 'Could not save the custom boot video.'});
-    }
+  const handleFileUpload = (accept: string, handler: (file: File) => void) => {
+    fileHandlerRef.current = { accept, handler };
+    fileInputRef.current?.click();
   };
 
-  const handleRemoveCustomBootVideo = async () => {
-    try {
-        await deleteVideo();
-        setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: false, bootupAnimation: 'holographic' }));
-    } catch(err) {
-        setCurrentError({ code: 'DB_ERROR', title: 'Storage Error', message: 'Could not remove the custom boot video.'});
-    }
-  };
-
-  const handleCalibrationComplete = (profileData: { name: string; rate: number; pitch: number }) => {
-    const newProfile: VoiceProfile = {
-        id: `vp_${Date.now()}`,
-        name: profileData.name,
-        rate: profileData.rate,
-        pitch: profileData.pitch,
-    };
-    setThemeSettings(prev => {
-        const updatedProfiles = [...prev.voiceProfiles, newProfile];
-        return {
-            ...prev,
-            voiceProfiles: updatedProfiles,
-            activeVoiceProfileId: newProfile.id,
-        };
-    });
-    setIsCalibrationOpen(false);
-  };
-  
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && fileHandlerRef.current) {
-      try {
-        await fileHandlerRef.current.handler(file);
-      } catch (err) {
-        setCurrentError({ code: 'FILE_READ_ERROR', title: 'File Error', message: 'Could not read the selected file.' });
-      } finally {
-        if(event.target) event.target.value = '';
-        fileHandlerRef.current = null;
-      }
+        fileHandlerRef.current.handler(file);
     }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const triggerFileUpload = (accept: string, handler: (file: File) => void) => {
-    if (fileInputRef.current) {
-      fileHandlerRef.current = { accept, handler };
-      fileInputRef.current.accept = accept;
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleGalleryUpload = () => {
-    triggerFileUpload('image/*', async (file) => {
-      const imageDataUrl = await readFileAsDataURL(file);
-      addMessage({ role: 'user', content: `Analyzing image: ${file.name}`, imageUrl: imageDataUrl });
-      processAiResponse(`Analyze this image from my gallery named "${file.name}".`, {
-        mimeType: file.type,
-        data: imageDataUrl.split(',')[1],
+  const handleDocumentUpload = (file: File) => {
+      readFileAsText(file).then(text => {
+          processUserMessage(`Please analyze this document: \n\n${text}`);
       });
-    });
-  };
-
-  const handleDocumentUpload = () => {
-    triggerFileUpload('.txt,.md,.json,.csv', async (file) => {
-      const textContent = await readFileAsText(file);
-      const prompt = `I've uploaded a document named "${file.name}". Please analyze its content. Here is the content:\n\n---\n\n${textContent}`;
-      handleSendMessage(prompt);
-    });
-  };
-
-  const handleAudioUpload = () => {
-    triggerFileUpload('audio/*', async (file) => {
-      addMessage({ role: 'user', content: `Transcribing audio file: ${file.name}` });
-      setAppState(AppState.THINKING);
-      try {
-        const base64Data = await readFileAsBase64(file);
-        const transcription = await transcribeAudio(base64Data, file.type);
-        addMessage({ role: 'model', content: `Transcription of "${file.name}":\n\n> ${transcription}` });
-      } catch (err: any) {
-        const appErr = err.appError || { code: 'TRANSCRIPTION_ERROR', title: 'Transcription Failed', message: err.message };
-        setCurrentError(appErr);
-        setAppState(AppState.ERROR);
-      } finally {
-        setAppState(AppState.IDLE);
-      }
-    });
   };
   
-  const handleLocationClick = () => {
-    if (!navigator.geolocation) {
-      setCurrentError({ code: 'GEOLOCATION_UNSUPPORTED', title: 'Geolocation Error', message: 'Geolocation is not supported by your browser.' });
-      return;
-    }
-
-    addMessage({ role: 'user', content: 'Fetching my current location...' });
-    setAppState(AppState.THINKING);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const prompt = `My current location is latitude ${latitude.toFixed(6)} and longitude ${longitude.toFixed(6)}. What can you tell me about this area? Please suggest some interesting local spots.`;
-        handleSendMessage(prompt);
-      },
-      (error) => {
-        setCurrentError({ code: 'GEOLOCATION_ERROR', title: 'Geolocation Error', message: `Could not retrieve location: ${error.message}` });
-        setAppState(AppState.IDLE);
+  const handleAudioUpload = async (file: File) => {
+      try {
+        const base64 = await readFileAsBase64(file);
+        const transcription = await transcribeAudio(base64, file.type);
+        processUserMessage(transcription);
+      } catch (err) {
+        setCurrentError({ code: 'AUDIO_TRANSCRIPTION_FAILED', title: 'Transcription Failed', message: 'Could not transcribe the provided audio file.' });
+        setAppState(AppState.ERROR);
       }
+  };
+
+  const handleGalleryUpload = (file: File) => {
+      Promise.all([readFileAsBase64(file), readFileAsDataURL(file)]).then(([base64, dataUrl]) => {
+          addMessage({ role: 'user', content: 'Analyze this image.', imageUrl: dataUrl });
+          processUserMessage('Analyze this image.', { mimeType: file.type, data: base64 });
+      });
+  };
+  
+  const handleLocationRequest = () => {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+            processUserMessage(`My current location is latitude ${latitude}, longitude ${longitude}. What's nearby?`);
+        },
+        (error) => {
+            setCurrentError({ code: 'LOCATION_ERROR', title: 'Location Error', message: "Could not retrieve your location. Please ensure you've granted permission."});
+            setAppState(AppState.ERROR);
+        }
     );
   };
-
-  const handleInitiateBoot = () => {
-    setSystemState('BOOTING');
+  
+  const handleSetCustomBootVideo = (file: File) => {
+    saveVideo(file).then(() => {
+        setThemeSettings(p => ({ ...p, hasCustomBootVideo: true, bootupAnimation: 'video' }));
+        sounds.playSuccess();
+    }).catch(err => {
+        setCurrentError({ code: 'DB_SAVE_ERROR', title: 'Storage Error', message: 'Could not save the custom boot video.', details: err.message });
+        setAppState(AppState.ERROR);
+    });
+  };
+  
+  const handleRemoveCustomBootVideo = () => {
+      deleteVideo().then(() => {
+          setThemeSettings(p => ({ ...p, hasCustomBootVideo: false, bootupAnimation: 'holographic' }));
+          sounds.playDeactivate();
+      }).catch(err => {
+          setCurrentError({ code: 'DB_DELETE_ERROR', title: 'Storage Error', message: 'Could not remove the custom boot video.', details: err.message });
+          setAppState(AppState.ERROR);
+      });
+  };
+  
+  const handleSaveVoiceProfile = (profile: { name: string; rate: number; pitch: number }) => {
+    const newProfile: VoiceProfile = { ...profile, id: `vp_${Date.now()}` };
+    setThemeSettings(p => {
+        const newProfiles = [...p.voiceProfiles, newProfile];
+        return { ...p, voiceProfiles: newProfiles, activeVoiceProfileId: newProfile.id };
+    });
+    setIsCalibrationOpen(false);
+    sounds.playSuccess();
   };
 
-  // Lifecycle rendering
-  if (systemState === 'PRE_BOOT') {
-    return <PreBootScreen onInitiate={handleInitiateBoot} />;
-  }
-  
-  if (systemState === 'BOOTING') {
-    return <BootingUp onComplete={() => setSystemState('ACTIVE')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
-  }
-  if(systemState === 'SHUTTING_DOWN') {
-      return <Shutdown />;
-  }
+  switch (systemState) {
+    case 'PRE_BOOT':
+        return <PreBootScreen onInitiate={() => { sounds.playActivate(); setSystemState('BOOTING'); }} />;
+    case 'BOOTING':
+        return <BootingUp onComplete={() => setSystemState('ACTIVE')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
+    case 'SHUTTING_DOWN':
+        return <Shutdown />;
+    case 'SNAP_DISINTEGRATION':
+        return <div className="system-terminating w-screen h-screen bg-background"><div className="hud-container"><Header onOpenSettings={() => {}} /><div className="hud-chat-panel"></div><div className="hud-bottom-panel"></div></div></div>;
+    case 'ACTIVE':
+        return (
+            <div className={`w-screen h-screen transition-colors duration-500 ${themeSettings.themeMode}`}>
+                <div className="hud-container">
+                    <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+                    
+                    <main className="hud-chat-panel holographic-panel">
+                        <ChatLog history={chatHistory} appState={appState} />
+                    </main>
 
-  // The main app view
-  return (
-    <div id="jarvis-container" className={`w-screen h-screen bg-background text-text-primary transition-opacity duration-500 ${systemState === 'ACTIVE' ? 'opacity-100' : 'opacity-0'}`}>
-        {themeSettings.showScanlines && <div className="scanline-overlay"></div>}
-        <main className={`hud-container ${systemState === 'SNAP_DISINTEGRATION' ? 'system-terminating' : ''}`}>
-            <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+                    <footer className="hud-bottom-panel">
+                        <Suggestions suggestions={currentSuggestions} onSuggestionClick={(s) => processUserMessage(s)} />
+                        <UserInput
+                            onSendMessage={processUserMessage}
+                            onToggleListening={toggleListening}
+                            appState={appState}
+                            isListening={isListening}
+                            onCameraClick={() => setIsVisionMode(true)}
+                            onGalleryClick={() => handleFileUpload('image/*', handleGalleryUpload)}
+                            onDocumentClick={() => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload)}
+                            onAudioClick={() => handleFileUpload('audio/*', handleAudioUpload)}
+                            onLocationClick={handleLocationRequest}
+                            onDesignModeClick={() => setDesignModePrompt('A futuristic concept car')}
+                            onSimulationModeClick={() => setSimulationModePrompt('A spaceship flying through an asteroid field')}
+                        />
+                    </footer>
 
-            <div className="hud-chat-panel">
-                <ChatLog history={chatHistory} appState={appState} />
+                    {isVisionMode && (
+                        <VisionMode
+                            onCapture={(imageDataUrl) => {
+                                const base64 = imageDataUrl.split(',')[1];
+                                addMessage({ role: 'user', content: "What do you see?", imageUrl: imageDataUrl });
+                                processUserMessage('What do you see?', { mimeType: 'image/jpeg', data: base64 });
+                                setIsVisionMode(false);
+                            }}
+                            onClose={() => setIsVisionMode(false)}
+                        />
+                    )}
+
+                    {isDiagnosticsMode && (
+                        <DiagnosticsMode onComplete={(summary) => {
+                            setIsDiagnosticsMode(false);
+                            processUserMessage(`I've completed the diagnostics. Here is the summary: ${summary}`);
+                        }} />
+                    )}
+
+                    {designModePrompt && (
+                        <DesignMode
+                            prompt={designModePrompt}
+                            onCancel={() => setDesignModePrompt(null)}
+                            onComplete={(prompt, imageUrl) => {
+                                setDesignModePrompt(null);
+                                addMessage({ role: 'model', content: `Here is the design for: "${prompt}"`, imageUrl });
+                            }}
+                        />
+                    )}
+
+                    {simulationModePrompt && (
+                        <SimulationMode
+                            prompt={simulationModePrompt}
+                            onCancel={() => setSimulationModePrompt(null)}
+                            onComplete={(prompt) => {
+                                setSimulationModePrompt(null);
+                                addMessage({ role: 'model', content: `Simulation complete for: "${prompt}"\n\n(Video playback in chat is not yet supported, but the simulation ran successfully.)` });
+                            }}
+                        />
+                    )}
+
+                    <SettingsModal
+                        isOpen={isSettingsOpen}
+                        onClose={() => setIsSettingsOpen(false)}
+                        onShutdown={() => { setIsSettingsOpen(false); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }}
+                        isBusy={appState !== AppState.IDLE}
+                        sounds={sounds}
+                        themeSettings={themeSettings}
+                        onThemeChange={setThemeSettings}
+                        onSetCustomBootVideo={handleSetCustomBootVideo}
+                        onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
+                        onCalibrateVoice={() => setIsCalibrationOpen(true)}
+                        onCameraClick={() => {setIsSettingsOpen(false); setIsVisionMode(true)}} 
+                        onWeather={() => {setIsSettingsOpen(false); processUserMessage("What's the weather like?")}} 
+                        onSelfHeal={() => {setIsSettingsOpen(false); setIsDiagnosticsMode(true)}} 
+                        onDesignMode={() => {setIsSettingsOpen(false); setDesignModePrompt("A futuristic city skyline")}} 
+                        onSimulationMode={() => {setIsSettingsOpen(false); setSimulationModePrompt("A cinematic view of Earth from space")}}
+                    />
+
+                    {isActionModalOpen && (
+                        <ActionModal
+                            isOpen={isActionModalOpen}
+                            onClose={() => setIsActionModalOpen(false)}
+                            {...actionModalProps}
+                        />
+                    )}
+                    
+                    <VoiceCalibrationModal
+                        isOpen={isCalibrationOpen}
+                        onClose={() => setIsCalibrationOpen(false)}
+                        onComplete={handleSaveVoiceProfile}
+                    />
+                    
+                    <ErrorModal
+                        isOpen={!!currentError}
+                        onClose={() => {
+                            setCurrentError(null);
+                            setAppState(AppState.IDLE);
+                        }}
+                        error={currentError}
+                    />
+
+                    <div className="fixed top-4 right-4 z-[60] space-y-3 pointer-events-none">
+                        {toasts.map(toast => (
+                            <NotificationToast key={toast.id} {...toast} onClose={(id) => setToasts(p => p.filter(t => t.id !== id))} />
+                        ))}
+                    </div>
+
+                    <input type="file" ref={fileInputRef} onChange={onFileSelected} className="hidden" accept={fileHandlerRef.current?.accept} />
+                </div>
             </div>
-            
-            <div className="hud-bottom-panel">
-                <Suggestions suggestions={suggestions} onSuggestionClick={handleSendMessage} />
-                 <UserInput
-                    onSendMessage={handleSendMessage}
-                    onToggleListening={handleToggleListening}
-                    appState={appState}
-                    isListening={isListening}
-                    onCameraClick={() => setIsVisionMode(true)}
-                    onGalleryClick={handleGalleryUpload}
-                    onDocumentClick={handleDocumentUpload}
-                    onAudioClick={handleAudioUpload}
-                    onLocationClick={handleLocationClick}
-                    onDesignModeClick={handleOpenDesignMode}
-                    onSimulationModeClick={handleOpenSimulationMode}
-                />
-            </div>
-
-        </main>
-        
-        {/* Notification Toasts */}
-        <div aria-live="assertive" className="fixed top-4 right-4 z-[100] w-full max-w-sm space-y-3 pointer-events-none">
-            {toasts.map((toast) => (
-                <NotificationToast
-                    key={toast.id}
-                    id={toast.id}
-                    title={toast.title}
-                    message={toast.message}
-                    onClose={(id) => setToasts(prev => prev.filter(t => t.id !== id))}
-                />
-            ))}
-        </div>
-
-        <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            className="hidden"
-        />
-
-        {/* Modals and Overlays */}
-        <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            onShutdown={handleShutdown}
-            onCameraClick={() => setIsVisionMode(true)}
-            isBusy={appState !== AppState.IDLE}
-            onWeather={() => handleSendMessage("What's the weather like?")}
-            onSelfHeal={handleSelfHeal}
-            onDesignMode={handleOpenDesignMode}
-            onSimulationMode={handleOpenSimulationMode}
-            onCalibrateVoice={() => setIsCalibrationOpen(true)}
-            sounds={sounds}
-            themeSettings={themeSettings}
-            onThemeChange={setThemeSettings}
-            onSetCustomBootVideo={handleSetCustomBootVideo}
-            onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
-        />
-
-        {isVisionMode && <VisionMode onCapture={(img) => { handleSendMessage("Analyze this image.", img); setIsVisionMode(false); }} onClose={() => setIsVisionMode(false)} />}
-        {designModePrompt && <DesignMode prompt={designModePrompt} onComplete={(p, img) => { addMessage({ role: 'user', content: `Design concept: ${p}`, imageUrl: img }); setDesignModePrompt(null); }} onCancel={() => setDesignModePrompt(null)} />}
-        {simulationModePrompt && <SimulationMode prompt={simulationModePrompt} onComplete={(p) => { addMessage({ role: 'model', content: `Simulation complete for: ${p}. Video is available.` }); setSimulationModePrompt(null); }} onCancel={() => setSimulationModePrompt(null)} />}
-        {isDiagnosticsMode && <DiagnosticsMode onComplete={handleDiagnosticsComplete} />}
-        {isCalibrationOpen && <VoiceCalibrationModal isOpen={isCalibrationOpen} onClose={() => setIsCalibrationOpen(false)} onComplete={handleCalibrationComplete} />}
-
-
-        <ErrorModal isOpen={!!currentError} onClose={() => setCurrentError(null)} error={currentError} />
-        <ActionModal isOpen={isActionModalOpen} onClose={() => setIsActionModalOpen(false)} {...actionModalProps} />
-    </div>
-  );
-};
+        );
+    default:
+        return null;
+  }
+}
 
 export default App;
