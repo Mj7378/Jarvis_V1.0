@@ -74,6 +74,16 @@ export interface Reminder {
   dueTime: number; // timestamp
 }
 
+export interface WeatherData {
+  temperature: number;
+  condition: string;
+  high: number;
+  low: number;
+  precipitation: number;
+  city: string;
+  day: string;
+}
+
 declare global {
   interface Window {
     webkitAudioContext: typeof AudioContext;

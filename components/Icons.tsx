@@ -350,6 +350,39 @@ export const FlagIcon: React.FC<IconProps> = ({ className }) => (
     </SimpleIcon>
 );
 
+// --- Weather Icons ---
+export const SunIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+    </SimpleIcon>
+);
+
+export const CloudIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999A5.002 5.002 0 109.22 5.5 4.001 4.001 0 003 15z" />
+    </SimpleIcon>
+);
+
+export const RainIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 21l-1 2m5-2l-1 2m5-2l-1 2" />
+    </SimpleIcon>
+);
+
+export const SnowIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+         <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m6-9H6m3-6l-3 3 3 3m6 0l3-3-3-3m0 12l3-3-3-3" />
+    </SimpleIcon>
+);
+
+export const CloudyIcon: React.FC<IconProps> = ({ className }) => ( // for partly cloudy
+    <SimpleIcon className={className}>
+       <path strokeLinecap="round" strokeLinejoin="round" d="M12 5.25c-4.142 0-7.5 3.358-7.5 7.5s3.358 7.5 7.5 7.5 7.5-3.358 7.5-7.5S16.142 5.25 12 5.25z"/>
+       <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.75A9.375 9.375 0 0112 22.125a9.375 9.375 0 01-9-8.25M12 2.25c4.142 0 7.5 3.358 7.5 7.5s-3.358 7.5-7.5 7.5"/>
+    </SimpleIcon>
+);
+
 // --- Attachment Icons ---
 export const GalleryIcon: React.FC<IconProps> = ({ className }) => (
     <SimpleIcon className={className}>

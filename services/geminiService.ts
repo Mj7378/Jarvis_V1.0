@@ -1,5 +1,5 @@
-import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig } from '@google/genai';
-import type { ChatMessage, Source, AppError } from '../types';
+import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig, Type } from '@google/genai';
+import type { ChatMessage, Source, AppError, WeatherData } from '../types';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set");
@@ -219,6 +219,38 @@ export async function getAiResponseStream(
   } catch (error) {
     throw handleGeminiError(error, "AI Response Stream");
   }
+}
+
+export async function getWeatherInfo(latitude: number, longitude: number): Promise<WeatherData> {
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Based on the location latitude ${latitude} and longitude ${longitude}, provide the current weather information. I need the current temperature in Celsius, a brief weather condition description (e.g., "Cloudy", "Sunny", "Rain", "Snow"), the high and low temperatures for the day in Celsius, the chance of precipitation as a percentage, the city name, and the current day of the week.`,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        temperature: { type: Type.NUMBER, description: "Current temperature in Celsius." },
+                        condition: { type: Type.STRING, description: "Brief weather condition, e.g., Cloudy, Sunny, Rain." },
+                        high: { type: Type.NUMBER, description: "Highest temperature for the day in Celsius." },
+                        low: { type: Type.NUMBER, description: "Lowest temperature for the day in Celsius." },
+                        precipitation: { type: Type.NUMBER, description: "Chance of precipitation as a whole number percentage." },
+                        city: { type: Type.STRING, description: "The name of the city." },
+                        day: { type: Type.STRING, description: "The current day of the week." },
+                    },
+                    required: ["temperature", "condition", "high", "low", "precipitation", "city", "day"],
+                },
+            },
+        });
+        
+        const jsonStr = response.text.trim();
+        const weatherData = JSON.parse(jsonStr);
+        return weatherData;
+
+    } catch (error) {
+        throw handleGeminiError(error, "Weather Information");
+    }
 }
 
 export async function streamTranslateText(text: string): Promise<AsyncGenerator<GenerateContentResponse>> {
