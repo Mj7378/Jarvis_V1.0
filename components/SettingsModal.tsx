@@ -1,34 +1,19 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RightSidebar, RightSidebarProps } from './RightSidebar';
 import { PowerIcon, SettingsIcon, CloseIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
-interface SettingsModalProps {
+interface SettingsModalProps extends Omit<RightSidebarProps, 'onSectionVisibilityChange' | 'isHovering'> {
     isOpen: boolean;
     onClose: () => void;
     onShutdown: () => void;
-    onCameraClick: () => void;
-    isBusy: boolean;
-    onWeather: () => void;
-    onSelfHeal: () => void;
-    onDesignMode: () => void;
-    onSimulationMode: () => void;
-    onCalibrateVoice: () => void;
-    sounds: ReturnType<typeof useSoundEffects>;
-    themeSettings: ThemeSettings;
-    onThemeChange: (settings: ThemeSettings | ((prev: ThemeSettings) => ThemeSettings)) => void;
-    onSetCustomBootVideo: (file: File) => void;
-    onRemoveCustomBootVideo: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { 
         isOpen, onClose, onShutdown, sounds,
-        onCameraClick, isBusy, onWeather, onSelfHeal,
-        onDesignMode, onSimulationMode, onCalibrateVoice,
-        themeSettings, onThemeChange,
-        onSetCustomBootVideo, onRemoveCustomBootVideo
     } = props;
 
     const [isHovering, setIsHovering] = useState(false);
@@ -89,18 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 {/* Content - The RightSidebar */}
                 <div className="flex-1 overflow-y-auto p-4 styled-scrollbar">
                     <RightSidebar
-                        onCameraClick={onCameraClick}
-                        isBusy={isBusy}
-                        onWeather={onWeather}
-                        onSelfHeal={onSelfHeal}
-                        onDesignMode={onDesignMode}
-                        onSimulationMode={onSimulationMode}
-                        onCalibrateVoice={onCalibrateVoice}
-                        sounds={sounds}
-                        themeSettings={themeSettings}
-                        onThemeChange={onThemeChange}
-                        onSetCustomBootVideo={onSetCustomBootVideo}
-                        onRemoveCustomBootVideo={onRemoveCustomBootVideo}
+                        {...props}
                         onSectionVisibilityChange={setIsSectionVisible}
                         isHovering={isHovering}
                     />

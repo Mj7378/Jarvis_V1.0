@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PowerIcon, SettingsIcon } from './Icons';
+import Logo from './Logo';
 
 const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) => {
     const [time, setTime] = useState(new Date());
@@ -39,7 +40,10 @@ const Header: React.FC<{ onOpenSettings: () => void; }> = ({ onOpenSettings }) =
     const circumference = 2 * Math.PI * 20; // r=20 for a 48x48 box
 
     return (
-        <header className="hud-header flex items-center justify-end">
+        <header className="hud-header flex items-center justify-between">
+            {/* Left side: Logo */}
+            <Logo />
+            
             {/* Right side: Clock & Controls */}
             <div className="flex items-center h-full text-sm text-text-primary font-mono">
                 {/* Upgraded System Clock */}

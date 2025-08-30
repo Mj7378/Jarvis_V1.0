@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface IconProps {
@@ -300,6 +301,16 @@ const SimpleIcon: React.FC<{ children: React.ReactNode, className?: string }> = 
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
         {children}
     </svg>
+);
+
+export const FaceIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <path d="M32 38 C 22 38 18 46 18 50 L 46 50 C 46 46 42 38 32 38 Z" fill="currentColor" opacity="0.6"/>
+            <circle cx="32" cy="26" r="10" fill="currentColor"/>
+             <circle cx="32" cy="26" r="10" fill="url(#glass-highlight)"/>
+        </g>
+    </IconBase>
 );
 
 export const LeafIcon: React.FC<IconProps> = ({ className }) => (

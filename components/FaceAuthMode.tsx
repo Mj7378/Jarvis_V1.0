@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { analyzeFaceForAuth } from '../services/geminiService';
-import { useSoundEffects } from '../hooks/useSoundEffects';
 
-type AuthState = 'scanning' | 'capturing' | 'analyzing' | 'success' | 'failure';
+import React, { useState, useRef, useEffect } from 'react';
+import { verifyFaceMatch, checkForFace } from '../services/geminiService';
+import { useSoundEffects } from '../hooks/useSoundEffects';
+import { getFaceProfile } from '../utils/db';
+
+type AuthState = 'initializing' | 'scanning' | 'analyzing' | 'success' | 'failure';
 
 interface FaceAuthModeProps {
   onComplete: (success: boolean) => void;
@@ -10,22 +12,33 @@ interface FaceAuthModeProps {
 }
 
 const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
-  const [authState, setAuthState] = useState<AuthState>('scanning');
+  const [authState, setAuthState] = useState<AuthState>('initializing');
   const [error, setError] = useState<string>('');
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [profileDataUrl, setProfileDataUrl] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sounds = useSoundEffects(true); // Always enable sounds for this component for feedback
+  const analysisInProgress = useRef(false);
+  const sounds = useSoundEffects(true);
 
   useEffect(() => {
+    let mediaStream: MediaStream | null = null;
+    
+    const profile = getFaceProfile();
+    if (!profile) {
+      setError("Face profile could not be loaded. Please re-enroll.");
+      setAuthState('failure');
+      return;
+    }
+    setProfileDataUrl(profile);
+    
     const startCamera = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-        setStream(mediaStream);
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
         }
+        setAuthState('scanning'); 
       } catch (err) {
         console.error("Camera access error:", err);
         setError("Could not access camera. Please ensure permissions are granted.");
@@ -34,45 +47,72 @@ const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
     };
 
     startCamera();
-
+    
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCaptureAndAnalyze = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current || authState !== 'scanning') return;
+  useEffect(() => {
+    if (authState !== 'scanning' || !profileDataUrl) {
+      return;
+    }
 
-    sounds.playClick();
-    setAuthState('capturing');
+    const detectionInterval = setInterval(async () => {
+      if (analysisInProgress.current || !videoRef.current || !canvasRef.current || !videoRef.current.srcObject) {
+        return;
+      }
+      
+      const video = videoRef.current;
+      if (video.readyState < 2 || video.videoWidth === 0) {
+          return;
+      }
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+      analysisInProgress.current = true;
 
-    if (context) {
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      if (!context) {
+        analysisInProgress.current = false;
+        return;
+      }
+      
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      const base64Data = dataUrl.split(',')[1];
+      const liveDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      const liveBase64 = liveDataUrl.split(',')[1];
       
-      setAuthState('analyzing');
+      const faceFound = await checkForFace({ mimeType: 'image/jpeg', data: liveBase64 });
 
-      const success = await analyzeFaceForAuth({ mimeType: 'image/jpeg', data: base64Data });
+      if (faceFound) {
+        clearInterval(detectionInterval);
+        sounds.playClick();
+        setAuthState('analyzing');
+        
+        const profileBase64 = profileDataUrl.split(',')[1];
+        const isMatch = await verifyFaceMatch(
+          { mimeType: 'image/jpeg', data: profileBase64 },
+          { mimeType: 'image/jpeg', data: liveBase64 }
+        );
 
-      if (success) {
-        sounds.playSuccess();
-        setAuthState('success');
+        if (isMatch) {
+          sounds.playSuccess();
+          setAuthState('success');
+        } else {
+          sounds.playError();
+          setError('Face does not match enrolled profile.');
+          setAuthState('failure');
+        }
       } else {
-        sounds.playError();
-        setAuthState('failure');
+        analysisInProgress.current = false;
       }
-    }
-  }, [authState, sounds]);
+    }, 2000);
+
+    return () => clearInterval(detectionInterval);
+  }, [authState, profileDataUrl, sounds]);
 
   useEffect(() => {
     if (authState === 'success' || authState === 'failure') {
@@ -94,8 +134,8 @@ const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
 
   const getStatusText = () => {
     switch(authState) {
-      case 'scanning': return 'POSITION FACE IN FRAME';
-      case 'capturing': return 'CAPTURING IMAGE...';
+      case 'initializing': return 'INITIALIZING BIOMETRIC SCANNER...';
+      case 'scanning': return 'SCANNING FOR FACE...';
       case 'analyzing': return 'ANALYZING BIOMETRICS...';
       case 'success': return 'AUTHENTICATION SUCCESSFUL';
       case 'failure': return 'AUTHENTICATION FAILED';
@@ -105,12 +145,13 @@ const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
   const getSubText = () => {
      if (authState === 'success') return 'Welcome, Mahesh.';
      if (authState === 'failure') return error || 'Subject not recognized.';
+     if (authState === 'scanning') return 'Please position your face in the frame.';
      return null;
   }
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm animate-fade-in-fast">
-      <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-30" />
+      <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover opacity-30" />
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Face Scanning Overlay */}
@@ -133,15 +174,6 @@ const FaceAuthMode: React.FC<FaceAuthModeProps> = ({ onComplete, onClose }) => {
       </div>
 
       <div className="absolute bottom-8 flex space-x-8">
-        {authState === 'scanning' && (
-          <button
-            onClick={handleCaptureAndAnalyze}
-            className="px-8 py-3 rounded-md bg-primary-t-80 text-background hover:bg-primary font-orbitron tracking-wider"
-            aria-label="Authenticate"
-          >
-            AUTHENTICATE
-          </button>
-        )}
         <button
           onClick={onClose}
           className="px-6 py-3 rounded-md bg-slate-700/80 text-slate-200 hover:bg-slate-600/80 font-orbitron tracking-wider"

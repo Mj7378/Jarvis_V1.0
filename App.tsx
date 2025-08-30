@@ -7,7 +7,7 @@ import { getAiResponseStream, transcribeAudio } from './services/geminiService';
 import { useChatHistory, useReminders } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
-import { saveVideo, deleteVideo } from './utils/db';
+import { saveVideo, deleteVideo, getFaceProfile, deleteFaceProfile } from './utils/db';
 
 // Types
 import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder } from './types';
@@ -27,10 +27,12 @@ import Header from './components/Header';
 import Shutdown from './components/Shutdown';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import UserInput from './components/UserInput';
+import FaceAuthMode from './components/FaceAuthMode';
+import FaceEnrollment from './components/FaceEnrollment';
 
 
 // System Lifecycle States
-type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
+type SystemState = 'PRE_BOOT' | 'AUTHENTICATING' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
 
 // Helper function to remove markdown for clean speech.
 // This ensures that characters like '#' or '*' are not read aloud by TTS.
@@ -139,6 +141,13 @@ const App: React.FC = () => {
     return DEFAULT_THEME;
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [hasFaceProfile, setHasFaceProfile] = useState(false);
+
+  // Check for an existing face profile on initial load to determine auth flow.
+    useEffect(() => {
+        const profile = getFaceProfile();
+        setHasFaceProfile(!!profile);
+    }, []);
   
   // Sound & Speech
   const sounds = useSoundEffects(themeSettings.uiSoundsEnabled, themeSettings.soundProfile);
@@ -153,6 +162,7 @@ const App: React.FC = () => {
   const [actionModalProps, setActionModalProps] = useState<Omit<ActionModalProps, 'isOpen' | 'onClose'>>({ title: '', inputs: [], onSubmit: () => {} });
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
+  const [isEnrollmentOpen, setIsEnrollmentOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   
   // File Upload
@@ -220,9 +230,34 @@ const App: React.FC = () => {
   // Core AI communication logic.
   // This block is ordered to resolve dependencies and uses a ref to break a circular dependency
   // where an app command might need to trigger a new message.
-  const handleSendMessageRef = useRef<(prompt: string, imageUrl?: string) => void>();
-  const processAiResponseRef = useRef<(prompt: string, image?: { mimeType: string; data: string; }) => void>();
+  // FIX: Initialize useRef with null to satisfy the "Expected 1 arguments, but got 0" error.
+  const handleSendMessageRef = useRef<((prompt: string, imageUrl?: string) => void) | null>(null);
+  // FIX: Initialize useRef with null to satisfy the "Expected 1 arguments, but got 0" error.
+  const processAiResponseRef = useRef<((prompt: string, image?: { mimeType: string; data: string; }) => void) | null>(null);
 
+  // FIX: Moved handleOpenDesignMode and handleOpenSimulationMode before handleAppCommand to allow them to be called
+  // when an AI command is received without a specific prompt. Wrapped in useCallback for optimization.
+  const handleOpenDesignMode = useCallback(() => {
+    setActionModalProps({
+        title: 'Enter Design Mode',
+        inputs: [{ id: 'prompt', label: 'Describe the design concept:', type: 'textarea', placeholder: 'e.g., a futuristic arc reactor HUD' }],
+        onSubmit: (data) => setDesignModePrompt(data.prompt),
+        submitLabel: 'Generate'
+    });
+    setIsActionModalOpen(true);
+  // FIX: Added missing dependencies to useCallback to satisfy exhaustive-deps rule.
+  }, [setActionModalProps, setDesignModePrompt, setIsActionModalOpen]);
+
+  const handleOpenSimulationMode = useCallback(() => {
+    setActionModalProps({
+        title: 'Enter Simulation Mode',
+        inputs: [{ id: 'prompt', label: 'Describe the simulation scenario:', type: 'textarea', placeholder: 'e.g., a high-speed chase through a neon city' }],
+        onSubmit: (data) => setSimulationModePrompt(data.prompt),
+        submitLabel: 'Simulate'
+    });
+    setIsActionModalOpen(true);
+  // FIX: Added missing dependencies to useCallback to satisfy exhaustive-deps rule.
+  }, [setActionModalProps, setSimulationModePrompt, setIsActionModalOpen]);
 
   const handleAppCommand = useCallback((params: { action?: string; value?: any }) => {
     switch (params.action) {
@@ -235,14 +270,20 @@ const App: React.FC = () => {
       case 'vision_mode':
         setIsVisionMode(true);
         break;
+      // FIX: Handle cases where design or simulation mode are triggered without a prompt.
+      // Instead of failing or doing nothing, this now opens a modal to ask the user for input.
       case 'design_mode':
-        if (typeof params.value === 'string') {
+        if (typeof params.value === 'string' && params.value.trim()) {
           setDesignModePrompt(params.value);
+        } else {
+          handleOpenDesignMode();
         }
         break;
       case 'simulation_mode':
-        if (typeof params.value === 'string') {
+        if (typeof params.value === 'string' && params.value.trim()) {
           setSimulationModePrompt(params.value);
+        } else {
+          handleOpenSimulationMode();
         }
         break;
       case 'run_diagnostics':
@@ -295,7 +336,7 @@ const App: React.FC = () => {
         break;
     }
   // FIX: State setters and stable callbacks do not need to be dependencies.
-  }, [addMessage, setThemeSettings]);
+  }, [addMessage, setThemeSettings, handleOpenDesignMode, handleOpenSimulationMode]);
 
   const handleDeviceCommand = useCallback(async (command: DeviceControlCommand) => {
     addMessage({ role: 'model', content: command.spoken_response });
@@ -520,26 +561,6 @@ const App: React.FC = () => {
     addMessage({ role: 'model', content: summary });
   }
 
-  const handleOpenDesignMode = () => {
-    setActionModalProps({
-        title: 'Enter Design Mode',
-        inputs: [{ id: 'prompt', label: 'Describe the design concept:', type: 'textarea', placeholder: 'e.g., a futuristic arc reactor HUD' }],
-        onSubmit: (data) => setDesignModePrompt(data.prompt),
-        submitLabel: 'Generate'
-    });
-    setIsActionModalOpen(true);
-  };
-
-  const handleOpenSimulationMode = () => {
-    setActionModalProps({
-        title: 'Enter Simulation Mode',
-        inputs: [{ id: 'prompt', label: 'Describe the simulation scenario:', type: 'textarea', placeholder: 'e.g., a high-speed chase through a neon city' }],
-        onSubmit: (data) => setSimulationModePrompt(data.prompt),
-        submitLabel: 'Simulate'
-    });
-    setIsActionModalOpen(true);
-  };
-  
   const handleSetCustomBootVideo = async (file: File) => {
     try {
         await saveVideo(file);
@@ -658,9 +679,52 @@ const App: React.FC = () => {
     );
   };
 
+  const handleAuthenticationComplete = (success: boolean) => {
+    if (success) {
+        setSystemState('BOOTING');
+    } else {
+        // On failure, return to pre-boot screen
+        setSystemState('PRE_BOOT');
+    }
+  };
+
+  const handleInitiateBoot = () => {
+    if (hasFaceProfile) {
+        setSystemState('AUTHENTICATING');
+    } else {
+        // If no face profile is enrolled, bypass authentication and go straight to booting.
+        setSystemState('BOOTING');
+    }
+  };
+
+    const handleEnrollmentComplete = (success: boolean) => {
+        setIsEnrollmentOpen(false);
+        if (success) {
+            setHasFaceProfile(true);
+            setToasts(prev => [...prev, {
+                id: `enroll_${Date.now()}`,
+                title: 'J.A.R.V.I.S. Security',
+                message: 'Facial profile successfully enrolled.',
+            }]);
+        }
+    };
+
+    const handleRemoveFaceProfile = () => {
+        deleteFaceProfile();
+        setHasFaceProfile(false);
+        setToasts(prev => [...prev, {
+            id: `enroll_del_${Date.now()}`,
+            title: 'J.A.R.V.I.S. Security',
+            message: 'Facial profile removed.',
+        }]);
+    };
+
   // Lifecycle rendering
   if (systemState === 'PRE_BOOT') {
-    return <PreBootScreen onInitiate={() => setSystemState('BOOTING')} />;
+    return <PreBootScreen onInitiate={handleInitiateBoot} />;
+  }
+  if (systemState === 'AUTHENTICATING') {
+    return <FaceAuthMode onComplete={handleAuthenticationComplete} onClose={() => setSystemState('PRE_BOOT')} />;
   }
   if (systemState === 'BOOTING') {
     return <BootingUp onComplete={() => setSystemState('ACTIVE')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
@@ -735,6 +799,9 @@ const App: React.FC = () => {
             onThemeChange={setThemeSettings}
             onSetCustomBootVideo={handleSetCustomBootVideo}
             onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
+            hasFaceProfile={hasFaceProfile}
+            onSetUpFaceID={() => setIsEnrollmentOpen(true)}
+            onRemoveFaceID={handleRemoveFaceProfile}
         />
 
         {isVisionMode && <VisionMode onCapture={(img) => { handleSendMessage("Analyze this image.", img); setIsVisionMode(false); }} onClose={() => setIsVisionMode(false)} />}
@@ -742,6 +809,8 @@ const App: React.FC = () => {
         {simulationModePrompt && <SimulationMode prompt={simulationModePrompt} onComplete={(p) => { addMessage({ role: 'model', content: `Simulation complete for: ${p}. Video is available.` }); setSimulationModePrompt(null); }} onCancel={() => setSimulationModePrompt(null)} />}
         {isDiagnosticsMode && <DiagnosticsMode onComplete={handleDiagnosticsComplete} />}
         {isCalibrationOpen && <VoiceCalibrationModal isOpen={isCalibrationOpen} onClose={() => setIsCalibrationOpen(false)} onComplete={handleCalibrationComplete} />}
+        {isEnrollmentOpen && <FaceEnrollment onComplete={handleEnrollmentComplete} onClose={() => setIsEnrollmentOpen(false)} />}
+
 
         <ErrorModal isOpen={!!currentError} onClose={() => setCurrentError(null)} error={currentError} />
         <ActionModal isOpen={isActionModalOpen} onClose={() => setIsActionModalOpen(false)} {...actionModalProps} />
