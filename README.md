@@ -1,49 +1,61 @@
 # J.A.R.V.I.S. V1.0 - AI Assistant
 
+<div align="center">
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React Badge"/>
+  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript Badge"/>
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS Badge"/>
+  <img src="https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white" alt="Google Gemini Badge"/>
+</div>
+<br>
+
 A sophisticated, voice and text-enabled AI assistant inspired by Iron Man's J.A.R.V.I.S. This web application leverages the full power of the Google Gemini API for intelligent, real-time conversation and features a deeply customizable, futuristic Heads-Up Display (HUD).
 
 This project is a showcase of how to build a complex, feature-rich AI application using modern web technologies, advanced Gemini models, and a focus on immersive user experience.
 
+---
+
 ## ✨ Features
 
-### Conversational AI Core
+### 🧠 Conversational AI Core
 *   **Gemini-Powered Intelligence:** At its core, J.A.R.V.I.S. uses the `gemini-2.5-flash` model for fast, witty, and context-aware conversational abilities.
 *   **Rich Persona:** A detailed system prompt establishes the iconic J.A.R.V.I.S. personality: confident, efficient, and casually brilliant.
 *   **Streaming Responses:** AI responses are streamed token-by-token for natural, real-time conversation flow.
 *   **Google Search Grounding:** J.A.R.V.I.S. can answer questions about recent events and trending topics by leveraging Google Search, ensuring up-to-date information.
 
-### Voice & Audio Interaction
+### 🎙️ Voice & Audio Interaction
 *   **Voice Commands:** Full speech-to-text integration allows you to speak commands naturally.
 *   **Voice Output:** J.A.R.V.I.S. responds with a synthesized voice, enhancing the assistant experience.
 *   **Voice Calibration:** A unique calibration module analyzes your speaking pace and clarity to adjust the AI's response speed, creating a more synchronized conversation.
 *   **Immersive UI Sounds:** Procedurally generated sound effects provide satisfying auditory feedback for all interactions.
 
-### Advanced Generative Modes
+### 🚀 Advanced Generative Modes
 *   **👁️ Vision Mode:** Activate your camera to stream video. Capture an image and ask J.A.R.V.I.S. to analyze and describe what it sees.
 *   **🎨 Design Mode:** Describe a visual concept (e.g., "a futuristic arc reactor") and have J.A.R.V.I.S. generate a high-quality image using the `imagen-4.0-generate-001` model.
 *   **🎬 Simulation Mode:** Describe a scenario (e.g., "a high-speed chase through a neon city") and watch J.A.R.V.I.S. generate a short video clip using the `veo-2.0-generate-001` model.
 *   **🌐 Universal Translator:** An experimental real-time translation module that listens to foreign speech and provides a live English translation.
 
-### Versatile Input Methods
+### 📎 Versatile Input Methods
 J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment menu to:
 *   **Upload Media:** Analyze images from your gallery.
 *   **Analyze Documents:** Upload text files for summarization or analysis.
 *   **Transcribe Audio:** Provide an audio file for J.A.R.V.I.S. to transcribe.
 *   **Use Your Location:** Share your current location to get information about your surroundings and discover local spots.
 
-### System & Device Control
+### ⚙️ System & Device Control
 *   **Reliable Command Protocol:** J.A.R.V.I.S. uses a strict JSON-only protocol for device commands, ensuring high reliability.
 *   **Web App Integration:** Issue commands to open a wide range of websites and web apps, including YouTube, WhatsApp, Google Drive, Replit, and more.
 *   **Integrated Search:** Directly ask J.A.R.V.I.S. to search Google or YouTube for specific queries.
 *   **System Functions:** Run simulated diagnostics or issue a shutdown command for a complete system lifecycle experience.
 
-### Futuristic HUD & Deep Customization
+### 🎨 Futuristic HUD & Deep Customization
 *   **Reactive Interface:** A dynamic and visually stunning HUD built with React and Tailwind CSS that reacts to the AI's state (Idle, Thinking, Speaking).
 *   **Theme Editor:** In-depth settings allow you to customize the entire look and feel:
     *   **Colors:** Change the primary UI color and panel background colors with a color picker or choose from presets.
     *   **Theme:** Switch between "Dark" and "Light" modes.
     *   **Visual Effects:** Toggle a background grid, scanline overlay, and a text flicker effect for the perfect sci-fi aesthetic.
 *   **Custom Boot Sequence:** Choose between a holographic boot animation or upload your own video for a personalized system startup.
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -59,6 +71,8 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
     *   **Web Audio API:** For generating procedural UI sound effects.
     *   **MediaDevices API:** `getUserMedia` for camera access in Vision Mode.
 *   **Modules:** Loaded directly in the browser via `aistudiocdn.com` (no build step needed).
+
+---
 
 ## 🚀 Getting Started
 
@@ -87,6 +101,8 @@ This project is designed to run directly in the browser without a build step.
 4.  **Grant Permissions:**
     Upon first use of certain features, the application will request permission to use your **camera** (for Vision Mode) and **microphone** (for voice commands). You must grant these permissions for full functionality.
 
+---
+
 ## 🤖 How It Works
 
 ### The J.A.R.V.I.S. Protocol
@@ -109,3 +125,15 @@ The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the
     *   `ChatLog.tsx`: The scrollable chat history panel.
     *   `SettingsModal.tsx`: The slide-out panel for all user-configurable settings.
     *   **Mode Modals** (`VisionMode.tsx`, `DesignMode.tsx`, etc.): Full-screen overlays for the application's advanced generative features.
+
+---
+
+## 🔧 Troubleshooting
+
+*   **API Key Not Valid Error:** This means the `API_KEY` environment variable is either not set or incorrect. Please double-check your setup from the [Getting Started](#getting-started) section.
+*   **Quota Exceeded Error:** You have made too many requests to the Gemini API in a short period. Please check your Google AI Platform quotas and billing status.
+*   **Microphone/Camera Not Working:**
+    *   Ensure you have granted the necessary permissions when the browser prompted you.
+    *   If you denied them by accident, you'll need to go into your browser's site settings for this page and manually allow camera and microphone access.
+    *   The Web Speech API for voice recognition is not supported in all browsers. For the best experience, use a modern version of Google Chrome.
+*   **Custom Boot Video Fails to Load:** The video might be in an unsupported format, or there could be an issue with your browser's IndexedDB storage. Try using a standard `.mp4` file or clearing the site's storage data and re-uploading.

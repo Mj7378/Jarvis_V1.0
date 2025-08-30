@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon, FaceIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -19,9 +19,6 @@ export interface RightSidebarProps {
     onRemoveCustomBootVideo: () => void;
     onSectionVisibilityChange: (isVisible: boolean) => void;
     isHovering: boolean;
-    hasFaceProfile: boolean;
-    onSetUpFaceID: () => void;
-    onRemoveFaceID: () => void;
 }
 
 const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
@@ -351,8 +348,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
         isBusy, 
         onCameraClick, onWeather, onSelfHeal,
         onDesignMode, onSimulationMode,
-        onSectionVisibilityChange, isHovering,
-        hasFaceProfile, onSetUpFaceID, onRemoveFaceID
+        onSectionVisibilityChange, isHovering
     } = props;
 
     const [openSection, setOpenSection] = useState<string | null>(null);
@@ -437,38 +433,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
                             <span>{action.name}</span>
                         </button>
                     ))}
-                </div>
-            </CollapsibleSection>
-
-             <CollapsibleSection
-                title="Security"
-                icon={<FaceIcon className="w-5 h-5 text-primary" />}
-                isOpen={openSection === "Security"}
-                onToggle={() => handleToggleSection("Security")}
-            >
-                <div className="space-y-3">
-                    <p className="text-sm text-text-muted">
-                    {hasFaceProfile
-                        ? "A facial profile is currently enrolled for system authentication."
-                        : "Enroll a facial profile for quick and secure system access."}
-                    </p>
-                    <div className="flex gap-2">
-                    <button 
-                        onClick={onSetUpFaceID}
-                        className="flex-1 text-center py-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-all duration-200"
-                    >
-                        {hasFaceProfile ? 'Update Profile' : 'Set Up Face ID'}
-                    </button>
-                    {hasFaceProfile && (
-                        <button
-                        onClick={onRemoveFaceID}
-                        className="py-2 px-3 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80 transition-all duration-200"
-                        aria-label="Remove facial profile"
-                        >
-                        &#x2715;
-                        </button>
-                    )}
-                    </div>
                 </div>
             </CollapsibleSection>
 

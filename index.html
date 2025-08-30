@@ -61,6 +61,12 @@
               'pop-in': 'pop-in 0.15s ease-out forwards',
               'pop-in-top-right': 'pop-in-top-right 0.15s ease-out forwards',
               'pop-in-center': 'pop-in-center 0.2s ease-out forwards',
+              'plot-dot': 'plot-dot 0.3s ease-out forwards',
+              'trace-path': 'trace-path 0.5s ease-in-out forwards',
+              'data-stream': 'data-stream 1.5s linear infinite',
+              'pulse-brain': 'pulse-brain 2.5s infinite ease-in-out',
+              'fill-bar': 'fill-bar 2s ease-out forwards',
+              'dna-rotate': 'dna-rotate 15s linear infinite',
             },
             keyframes: {
               'pulse-strong': {
@@ -116,6 +122,31 @@
               'pop-in-center': {
                 '0%': { opacity: '0', transform: 'scale(0.95)' },
                 '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              'plot-dot': {
+                '0%': { opacity: '0', r: '0' },
+                '70%': { opacity: '1', r: '2.5' },
+                '100%': { opacity: '1', r: '1.5' },
+              },
+              'trace-path': {
+                'from': { 'stroke-dashoffset': '50' },
+                'to': { 'stroke-dashoffset': '0' },
+              },
+              'data-stream': {
+                  '0%': { transform: 'translateX(-100%)' },
+                  '100%': { transform: 'translateX(0%)' },
+              },
+              'pulse-brain': {
+                  '0%, 100%': { filter: 'drop-shadow(0 0 5px currentColor)', opacity: 0.8 },
+                  '50%': { filter: 'drop-shadow(0 0 15px currentColor)', opacity: 1 },
+              },
+              'fill-bar': {
+                  'from': { width: '0%' },
+                  'to': { width: 'var(--target-width, 100%)' },
+              },
+              'dna-rotate': {
+                  'from': { transform: 'rotate(0deg)' },
+                  'to': { transform: 'rotate(360deg)' },
               },
             }
           }

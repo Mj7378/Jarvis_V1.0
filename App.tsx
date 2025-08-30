@@ -7,7 +7,7 @@ import { getAiResponseStream, transcribeAudio } from './services/geminiService';
 import { useChatHistory, useReminders } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
-import { saveVideo, deleteVideo, getFaceProfile, deleteFaceProfile } from './utils/db';
+import { saveVideo, deleteVideo } from './utils/db';
 
 // Types
 import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder } from './types';
@@ -27,12 +27,10 @@ import Header from './components/Header';
 import Shutdown from './components/Shutdown';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import UserInput from './components/UserInput';
-import FaceAuthMode from './components/FaceAuthMode';
-import FaceEnrollment from './components/FaceEnrollment';
 
 
 // System Lifecycle States
-type SystemState = 'PRE_BOOT' | 'ENROLLMENT_REQUIRED' | 'AUTHENTICATING' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
+type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
 
 // Helper function to remove markdown for clean speech.
 // This ensures that characters like '#' or '*' are not read aloud by TTS.
@@ -141,13 +139,7 @@ const App: React.FC = () => {
     return DEFAULT_THEME;
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [hasFaceProfile, setHasFaceProfile] = useState(false);
 
-  // Check for an existing face profile on initial load to determine auth flow.
-    useEffect(() => {
-        const profile = getFaceProfile();
-        setHasFaceProfile(!!profile);
-    }, []);
   
   // Sound & Speech
   const sounds = useSoundEffects(themeSettings.uiSoundsEnabled, themeSettings.soundProfile);
@@ -162,7 +154,6 @@ const App: React.FC = () => {
   const [actionModalProps, setActionModalProps] = useState<Omit<ActionModalProps, 'isOpen' | 'onClose'>>({ title: '', inputs: [], onSubmit: () => {} });
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
-  const [isEnrollmentOpen, setIsEnrollmentOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   
   // File Upload
@@ -679,70 +670,15 @@ const App: React.FC = () => {
     );
   };
 
-  const handleAuthenticationComplete = (success: boolean) => {
-    if (success) {
-        setSystemState('BOOTING');
-    } else {
-        // On failure, return to pre-boot screen
-        setSystemState('PRE_BOOT');
-    }
-  };
-
   const handleInitiateBoot = () => {
-    if (hasFaceProfile) {
-        setSystemState('AUTHENTICATING');
-    } else {
-        // If no face profile is enrolled, prompt for enrollment.
-        setSystemState('ENROLLMENT_REQUIRED');
-    }
+    setSystemState('BOOTING');
   };
-
-    const handleEnrollmentComplete = (success: boolean) => {
-        setIsEnrollmentOpen(false);
-        if (success) {
-            setHasFaceProfile(true);
-            setToasts(prev => [...prev, {
-                id: `enroll_${Date.now()}`,
-                title: 'J.A.R.V.I.S. Security',
-                message: 'Facial profile successfully updated.',
-            }]);
-        }
-    };
-
-    const handleRemoveFaceProfile = () => {
-        deleteFaceProfile();
-        setHasFaceProfile(false);
-        setToasts(prev => [...prev, {
-            id: `enroll_del_${Date.now()}`,
-            title: 'J.A.R.V.I.S. Security',
-            message: 'Facial profile removed.',
-        }]);
-    };
 
   // Lifecycle rendering
   if (systemState === 'PRE_BOOT') {
     return <PreBootScreen onInitiate={handleInitiateBoot} />;
   }
-  if (systemState === 'ENROLLMENT_REQUIRED') {
-    return <FaceEnrollment 
-        onComplete={(success) => {
-            if (success) {
-                setHasFaceProfile(true);
-                 setToasts(prev => [...prev, {
-                    id: `enroll_boot_${Date.now()}`,
-                    title: 'J.A.R.V.I.S. Security',
-                    message: 'Facial profile successfully enrolled.',
-                }]);
-            }
-            setSystemState('BOOTING');
-        }} 
-        onClose={() => setSystemState('BOOTING')} 
-        isBootSequence={true} 
-    />;
-  }
-  if (systemState === 'AUTHENTICATING') {
-    return <FaceAuthMode onComplete={handleAuthenticationComplete} onClose={() => setSystemState('PRE_BOOT')} />;
-  }
+  
   if (systemState === 'BOOTING') {
     return <BootingUp onComplete={() => setSystemState('ACTIVE')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
   }
@@ -816,9 +752,6 @@ const App: React.FC = () => {
             onThemeChange={setThemeSettings}
             onSetCustomBootVideo={handleSetCustomBootVideo}
             onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
-            hasFaceProfile={hasFaceProfile}
-            onSetUpFaceID={() => setIsEnrollmentOpen(true)}
-            onRemoveFaceID={handleRemoveFaceProfile}
         />
 
         {isVisionMode && <VisionMode onCapture={(img) => { handleSendMessage("Analyze this image.", img); setIsVisionMode(false); }} onClose={() => setIsVisionMode(false)} />}
@@ -826,7 +759,6 @@ const App: React.FC = () => {
         {simulationModePrompt && <SimulationMode prompt={simulationModePrompt} onComplete={(p) => { addMessage({ role: 'model', content: `Simulation complete for: ${p}. Video is available.` }); setSimulationModePrompt(null); }} onCancel={() => setSimulationModePrompt(null)} />}
         {isDiagnosticsMode && <DiagnosticsMode onComplete={handleDiagnosticsComplete} />}
         {isCalibrationOpen && <VoiceCalibrationModal isOpen={isCalibrationOpen} onClose={() => setIsCalibrationOpen(false)} onComplete={handleCalibrationComplete} />}
-        {isEnrollmentOpen && <FaceEnrollment onComplete={handleEnrollmentComplete} onClose={() => setIsEnrollmentOpen(false)} />}
 
 
         <ErrorModal isOpen={!!currentError} onClose={() => setCurrentError(null)} error={currentError} />

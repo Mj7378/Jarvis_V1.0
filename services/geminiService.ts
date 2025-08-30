@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig, Type } from '@google/genai';
+import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig } from '@google/genai';
 import type { ChatMessage, Source, AppError } from '../types';
 
 if (!process.env.API_KEY) {
@@ -231,94 +231,6 @@ export async function streamTranslateText(text: string): Promise<AsyncGenerator<
     return response;
   } catch (error) {
     throw handleGeminiError(error, "Stream Translation");
-  }
-}
-
-export async function checkForFace(image: { mimeType: string; data: string }): Promise<boolean> {
-  try {
-    const imagePart = {
-      inlineData: {
-        mimeType: image.mimeType,
-        data: image.data,
-      },
-    };
-
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-            {
-                role: 'user',
-                parts: [
-                    imagePart,
-                    { text: "Is there a clear, forward-facing human face visible in this image? The user is trying to authenticate. Respond in JSON with a single boolean 'face_detected' field." },
-                ],
-            },
-        ],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              face_detected: { type: Type.BOOLEAN, description: "True if a human face is clearly visible and suitable for authentication." },
-            },
-            required: ["face_detected"],
-          },
-          systemInstruction: "You are a highly accurate biometric authentication system. Your only task is to determine if a clear human face is present in an image. Respond only in the requested JSON format.",
-          thinkingConfig: { thinkingBudget: 0 },
-        }
-    });
-    
-    const jsonStr = response.text.trim();
-    const result = JSON.parse(jsonStr);
-    return result.face_detected === true;
-  } catch (error) {
-    console.error("Face detection check failed:", error);
-    // In case of an API or parsing error, we should fail safely.
-    return false;
-  }
-}
-
-export async function verifyFaceMatch(
-  profileImage: { mimeType: string; data: string },
-  liveImage: { mimeType: string; data: string }
-): Promise<boolean> {
-  try {
-    const profileImagePart = { inlineData: profileImage };
-    const liveImagePart = { inlineData: liveImage };
-
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-            {
-                role: 'user',
-                parts: [
-                    profileImagePart,
-                    liveImagePart,
-                    { text: "Are these images of the same person? The first image is the enrolled profile, the second is the live camera capture. Be strict in your analysis. Respond in JSON with a single boolean 'is_match' field." },
-                ],
-            },
-        ],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              is_match: { type: Type.BOOLEAN, description: "True if the faces in both images belong to the same person." },
-            },
-            required: ["is_match"],
-          },
-          systemInstruction: "You are a highly accurate biometric authentication system. Your task is to compare two images and determine if they are of the same person. You must be very strict. If there is any doubt (different lighting, angle, expression), you must err on the side of caution and return false. Respond only in the requested JSON format.",
-          thinkingConfig: { thinkingBudget: 0 },
-        }
-    });
-    
-    const jsonStr = response.text.trim();
-    const result = JSON.parse(jsonStr);
-    return result.is_match === true;
-  } catch (error) {
-    console.error("Face verification failed:", error);
-    // Fail safely
-    return false;
   }
 }
 
