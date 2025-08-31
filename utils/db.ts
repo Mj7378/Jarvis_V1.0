@@ -1,8 +1,8 @@
 
+
 const DB_NAME = 'JarvisDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'assets';
-const VIDEO_KEY = 'bootVideo';
 
 let db: IDBDatabase;
 
@@ -33,39 +33,39 @@ const openDb = (): Promise<IDBDatabase> => {
   });
 };
 
-export const saveVideo = async (videoFile: File): Promise<void> => {
+export const saveAsset = async (key: string, asset: File): Promise<void> => {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(videoFile, VIDEO_KEY);
+    const request = store.put(asset, key);
     
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(new Error("Failed to save video."));
+    transaction.onerror = () => reject(new Error(`Failed to save asset with key: ${key}.`));
   });
 };
 
-export const getVideo = async (): Promise<File | null> => {
+export const getAsset = async <T extends File>(key: string): Promise<T | null> => {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readonly');
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(VIDEO_KEY);
+    const request = store.get(key);
     
     request.onsuccess = () => resolve(request.result || null);
-    request.onerror = () => reject(new Error("Failed to retrieve video."));
+    request.onerror = () => reject(new Error(`Failed to retrieve asset with key: ${key}.`));
   });
 };
 
-export const deleteVideo = async (): Promise<void> => {
+export const deleteAsset = async (key: string): Promise<void> => {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(VIDEO_KEY);
+    const request = store.delete(key);
     
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(new Error("Failed to delete video."));
+    transaction.onerror = () => reject(new Error(`Failed to delete asset with key: ${key}.`));
   });
 };
 

@@ -7,7 +7,7 @@ import { getAiResponseStream, transcribeAudio } from './services/geminiService';
 import { useChatHistory, useReminders } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
-import { saveVideo, deleteVideo } from './utils/db';
+import { saveAsset, getAsset, deleteAsset } from './utils/db';
 
 // Types
 import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder } from './types';
@@ -84,6 +84,7 @@ const DEFAULT_THEME: ThemeSettings = {
   showScanlines: true,
   showTextFlicker: false,
   hasCustomBootVideo: false,
+  hasCustomShutdownVideo: false,
   bootupAnimation: 'holographic',
   voiceOutputEnabled: true,
   uiSoundsEnabled: true,
@@ -119,6 +120,9 @@ const App: React.FC = () => {
   const [currentError, setCurrentError] = useState<AppError | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
+  
+  // Staged content for multimodal input
+  const [stagedImage, setStagedImage] = useState<{ mimeType: string; data: string; dataUrl: string; } | null>(null);
   
   // Theme & Settings
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
@@ -193,13 +197,32 @@ const App: React.FC = () => {
     }
   }, [themeSettings.primaryColor, themeSettings.panelColor, themeSettings.themeMode, themeSettings.showScanlines]);
 
-  // Load boot video setting on startup
+  // Load boot video setting on startup and ensure consistency
   useEffect(() => {
-    const checkBootVideo = async () => {
-        const hasVideo = await import('./utils/db').then(db => db.getVideo()).then(file => !!file);
-        setThemeSettings(prev => ({ ...prev, hasCustomBootVideo: hasVideo }));
+    const checkMediaAssets = async () => {
+        const [bootVideo, shutdownVideo] = await Promise.all([
+            getAsset<File>('bootVideo'),
+            getAsset<File>('shutdownVideo')
+        ]);
+        
+        const hasBootVideo = !!bootVideo;
+        const hasShutdownVideo = !!shutdownVideo;
+
+        setThemeSettings(prev => {
+            const newSettings = { ...prev };
+            newSettings.hasCustomBootVideo = hasBootVideo;
+            newSettings.hasCustomShutdownVideo = hasShutdownVideo;
+
+            // If user setting is 'video' but no video is found (e.g., cleared cache),
+            // reset the setting to holographic to maintain a consistent state.
+            if (prev.bootupAnimation === 'video' && !hasBootVideo) {
+                newSettings.bootupAnimation = 'holographic';
+            }
+            
+            return newSettings;
+        });
     };
-    checkBootVideo();
+    checkMediaAssets();
   }, []);
   
   // Save settings to local storage whenever they change
@@ -335,14 +358,31 @@ const App: React.FC = () => {
     }
   }, [isSpeaking, appState]);
   
+  const handleSendMessage = (prompt: string) => {
+    processUserMessage(prompt, stagedImage ?? undefined);
+    setStagedImage(null); // Clear the image after sending
+  };
+
+  const handleCaptureWithPrompt = (imageDataUrl: string, prompt: string) => {
+    const base64 = imageDataUrl.split(',')[1];
+    const image = {
+        mimeType: 'image/jpeg',
+        data: base64,
+    };
+    processUserMessage(prompt, image);
+    setIsVisionMode(false);
+  };
+  
   const executeCommand = (cmd: DeviceControlCommand) => {
     sounds.playActivate();
     switch (cmd.command) {
         case 'open_url':
         case 'search':
         case 'navigate':
+        case 'play_music':
             let url = '';
             if (cmd.command === 'open_url') url = cmd.params.url;
+            else if (cmd.command === 'play_music') url = `https://www.youtube.com/results?search_query=${encodeURIComponent(cmd.params.query)}`;
             else if (cmd.command === 'search') url = cmd.app === 'YouTube' ? `https://www.youtube.com/results?search_query=${encodeURIComponent(cmd.params.query)}` : `https://www.google.com/search?q=${encodeURIComponent(cmd.params.query)}`;
             else if (cmd.command === 'navigate') url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cmd.params.query)}`;
             window.open(url, '_blank', 'noopener,noreferrer');
@@ -352,7 +392,6 @@ const App: React.FC = () => {
             break;
         case 'shutdown':
             setSystemState('SHUTTING_DOWN');
-            setTimeout(() => setSystemState('SNAP_DISINTEGRATION'), 4500);
             break;
         case 'app_control':
             handleAppControl(cmd.params.action, cmd.params.value);
@@ -447,8 +486,11 @@ const App: React.FC = () => {
 
   const handleGalleryUpload = (file: File) => {
       Promise.all([readFileAsBase64(file), readFileAsDataURL(file)]).then(([base64, dataUrl]) => {
-          addMessage({ role: 'user', content: 'Analyze this image.', imageUrl: dataUrl });
-          processUserMessage('Analyze this image.', { mimeType: file.type, data: base64 });
+          setStagedImage({
+              mimeType: file.type,
+              data: base64,
+              dataUrl: dataUrl,
+          });
       });
   };
   
@@ -466,7 +508,7 @@ const App: React.FC = () => {
   };
   
   const handleSetCustomBootVideo = (file: File) => {
-    saveVideo(file).then(() => {
+    saveAsset('bootVideo', file).then(() => {
         setThemeSettings(p => ({ ...p, hasCustomBootVideo: true, bootupAnimation: 'video' }));
         sounds.playSuccess();
     }).catch(err => {
@@ -476,7 +518,7 @@ const App: React.FC = () => {
   };
   
   const handleRemoveCustomBootVideo = () => {
-      deleteVideo().then(() => {
+      deleteAsset('bootVideo').then(() => {
           setThemeSettings(p => ({ ...p, hasCustomBootVideo: false, bootupAnimation: 'holographic' }));
           sounds.playDeactivate();
       }).catch(err => {
@@ -485,6 +527,26 @@ const App: React.FC = () => {
       });
   };
   
+  const handleSetCustomShutdownVideo = (file: File) => {
+    saveAsset('shutdownVideo', file).then(() => {
+        setThemeSettings(p => ({ ...p, hasCustomShutdownVideo: true }));
+        sounds.playSuccess();
+    }).catch(err => {
+        setCurrentError({ code: 'DB_SAVE_ERROR', title: 'Storage Error', message: 'Could not save the custom shutdown video.', details: err.message });
+        setAppState(AppState.ERROR);
+    });
+  };
+  
+  const handleRemoveCustomShutdownVideo = () => {
+      deleteAsset('shutdownVideo').then(() => {
+          setThemeSettings(p => ({ ...p, hasCustomShutdownVideo: false }));
+          sounds.playDeactivate();
+      }).catch(err => {
+          setCurrentError({ code: 'DB_DELETE_ERROR', title: 'Storage Error', message: 'Could not remove the custom shutdown video.', details: err.message });
+          setAppState(AppState.ERROR);
+      });
+  };
+
   const handleSaveVoiceProfile = (profile: { name: string; rate: number; pitch: number }) => {
     const newProfile: VoiceProfile = { ...profile, id: `vp_${Date.now()}` };
     setThemeSettings(p => {
@@ -501,7 +563,7 @@ const App: React.FC = () => {
     case 'BOOTING':
         return <BootingUp onComplete={() => setSystemState('ACTIVE')} useCustomVideo={themeSettings.hasCustomBootVideo} bootupAnimation={themeSettings.bootupAnimation} sounds={sounds} />;
     case 'SHUTTING_DOWN':
-        return <Shutdown />;
+        return <Shutdown useCustomVideo={themeSettings.hasCustomShutdownVideo} onComplete={() => setSystemState('SNAP_DISINTEGRATION')} />;
     case 'SNAP_DISINTEGRATION':
         return <div className="system-terminating w-screen h-screen bg-background"><div className="hud-container"><Header onOpenSettings={() => {}} /><div className="hud-chat-panel"></div><div className="hud-bottom-panel"></div></div></div>;
     case 'ACTIVE':
@@ -517,10 +579,12 @@ const App: React.FC = () => {
                     <footer className="hud-bottom-panel">
                         <Suggestions suggestions={currentSuggestions} onSuggestionClick={(s) => processUserMessage(s)} />
                         <UserInput
-                            onSendMessage={processUserMessage}
+                            onSendMessage={handleSendMessage}
                             onToggleListening={toggleListening}
                             appState={appState}
                             isListening={isListening}
+                            stagedImage={stagedImage ? { dataUrl: stagedImage.dataUrl } : null}
+                            onClearStagedImage={() => setStagedImage(null)}
                             onCameraClick={() => setIsVisionMode(true)}
                             onGalleryClick={() => handleFileUpload('image/*', handleGalleryUpload)}
                             onDocumentClick={() => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload)}
@@ -535,10 +599,14 @@ const App: React.FC = () => {
                         <VisionMode
                             onCapture={(imageDataUrl) => {
                                 const base64 = imageDataUrl.split(',')[1];
-                                addMessage({ role: 'user', content: "What do you see?", imageUrl: imageDataUrl });
-                                processUserMessage('What do you see?', { mimeType: 'image/jpeg', data: base64 });
+                                setStagedImage({
+                                    mimeType: 'image/jpeg',
+                                    data: base64,
+                                    dataUrl: imageDataUrl,
+                                });
                                 setIsVisionMode(false);
                             }}
+                            onCaptureWithPrompt={handleCaptureWithPrompt}
                             onClose={() => setIsVisionMode(false)}
                         />
                     )}
@@ -582,6 +650,8 @@ const App: React.FC = () => {
                         onThemeChange={setThemeSettings}
                         onSetCustomBootVideo={handleSetCustomBootVideo}
                         onRemoveCustomBootVideo={handleRemoveCustomBootVideo}
+                        onSetCustomShutdownVideo={handleSetCustomShutdownVideo}
+                        onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo}
                         onCalibrateVoice={() => setIsCalibrationOpen(true)}
                         onCameraClick={() => {setIsSettingsOpen(false); setIsVisionMode(true)}} 
                         onWeather={() => {setIsSettingsOpen(false); processUserMessage("What's the weather like?")}} 

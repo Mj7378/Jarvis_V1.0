@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { getVideo } from '../utils/db';
+import { getAsset } from '../utils/db';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 
 const BOOT_SEQUENCE = [
@@ -110,7 +111,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
 
     const loadCustomVideo = async () => {
       try {
-        const videoFile = await getVideo();
+        const videoFile = await getAsset<File>('bootVideo');
         if (videoFile) {
           objectUrl = URL.createObjectURL(videoFile);
           setVideoUrl(objectUrl);

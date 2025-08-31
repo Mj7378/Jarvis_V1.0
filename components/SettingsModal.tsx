@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RightSidebar, RightSidebarProps } from './RightSidebar';
 import { PowerIcon, SettingsIcon, CloseIcon } from './Icons';

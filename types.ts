@@ -58,6 +58,7 @@ export interface ThemeSettings {
   showScanlines: boolean;
   showTextFlicker: boolean;
   hasCustomBootVideo: boolean;
+  hasCustomShutdownVideo: boolean;
   bootupAnimation: 'holographic' | 'video';
   voiceOutputEnabled: boolean;
   uiSoundsEnabled: boolean;

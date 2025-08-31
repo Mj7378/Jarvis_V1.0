@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useState, useEffect } from 'react';
 import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -17,6 +18,8 @@ export interface RightSidebarProps {
     onThemeChange: (settings: ThemeSettings | ((prev: ThemeSettings) => ThemeSettings)) => void;
     onSetCustomBootVideo: (file: File) => void;
     onRemoveCustomBootVideo: () => void;
+    onSetCustomShutdownVideo: (file: File) => void;
+    onRemoveCustomShutdownVideo: () => void;
     onSectionVisibilityChange: (isVisible: boolean) => void;
     isHovering: boolean;
 }
@@ -104,9 +107,10 @@ const FULL_THEMES = [
     { name: 'Cosmic', primaryColor: '#9d6eff', panelColor: '#1e1b4b', themeMode: 'dark' as const },
 ];
 
-const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onSetCustomBootVideo' | 'onRemoveCustomBootVideo'>> = ({ themeSettings, onThemeChange, sounds, onSetCustomBootVideo, onRemoveCustomBootVideo }) => {
+const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onSetCustomBootVideo' | 'onRemoveCustomBootVideo' | 'onSetCustomShutdownVideo' | 'onRemoveCustomShutdownVideo'>> = ({ themeSettings, onThemeChange, sounds, onSetCustomBootVideo, onRemoveCustomBootVideo, onSetCustomShutdownVideo, onRemoveCustomShutdownVideo }) => {
     
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const bootFileInputRef = useRef<HTMLInputElement>(null);
+    const shutdownFileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
         sounds.playClick();
@@ -120,6 +124,13 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
         }
     };
     
+    const handleShutdownFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            onSetCustomShutdownVideo(file);
+        }
+    };
+
     const handleThemeSelect = (theme: typeof FULL_THEMES[0]) => {
         sounds.playClick();
         onThemeChange(prev => ({
@@ -252,56 +263,79 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                 </div>
             </div>
 
-            {/* Boot Animation */}
-            <div className="space-y-3 pt-4 border-t border-primary-t-20">
-                <p className="text-sm text-slate-300 font-orbitron">Boot Sequence</p>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => handleSettingChange('bootupAnimation', 'holographic')}
-                        className={`flex-1 text-center py-2 text-sm rounded-md border transition-all duration-200 transform hover:scale-[1.03] active:scale-100 ${
-                            themeSettings.bootupAnimation === 'holographic'
-                                ? 'bg-primary-t-20 border-primary'
-                                : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700/80'
-                        }`}
-                    >
-                        Holographic
-                    </button>
-                    <button
-                        onClick={() => handleSettingChange('bootupAnimation', 'video')}
-                        disabled={!themeSettings.hasCustomBootVideo}
-                        className={`flex-1 text-center py-2 text-sm rounded-md border transition-all duration-200 transform hover:scale-[1.03] active:scale-100 ${
-                            themeSettings.bootupAnimation === 'video'
-                                ? 'bg-primary-t-20 border-primary'
-                                : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700/80'
-                        } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-700/50`}
-                    >
-                        Video
-                    </button>
-                </div>
-                 <input
-                    type="file"
-                    accept="video/*"
-                    ref={fileInputRef}
-                    onChange={handleBootFileSelect}
-                    className="hidden"
-                />
-                <div className="flex gap-2">
-                    <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex-1 text-center py-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-all duration-200 transform hover:scale-[1.03] active:scale-100"
-                    >
-                        {themeSettings.hasCustomBootVideo ? 'Change Boot Video' : 'Set Custom Video'}
-                    </button>
-                    {themeSettings.hasCustomBootVideo && (
+            {/* Sequences */}
+            <div className="space-y-4 pt-4 border-t border-primary-t-20">
+                <p className="text-sm text-slate-300 font-orbitron">System Sequences</p>
+                
+                {/* Boot Animation */}
+                <div className="space-y-2">
+                    <p className="text-xs text-text-muted">Bootup Animation</p>
+                    <div className="flex gap-2">
                         <button
-                            onClick={onRemoveCustomBootVideo}
-                            className="py-2 px-3 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80 transition-all duration-200 transform hover:scale-105 active:scale-100"
-                            aria-label="Remove custom boot video"
+                            onClick={() => handleSettingChange('bootupAnimation', 'holographic')}
+                            className={`flex-1 text-center py-2 text-sm rounded-md border transition-all duration-200 transform hover:scale-[1.03] active:scale-100 ${
+                                themeSettings.bootupAnimation === 'holographic'
+                                    ? 'bg-primary-t-20 border-primary'
+                                    : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700/80'
+                            }`}
                         >
-                            &#x2715;
+                            Holographic
                         </button>
-                    )}
+                        <button
+                            onClick={() => handleSettingChange('bootupAnimation', 'video')}
+                            disabled={!themeSettings.hasCustomBootVideo}
+                            className={`flex-1 text-center py-2 text-sm rounded-md border transition-all duration-200 transform hover:scale-[1.03] active:scale-100 ${
+                                themeSettings.bootupAnimation === 'video'
+                                    ? 'bg-primary-t-20 border-primary'
+                                    : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700/80'
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-700/50`}
+                        >
+                            Video
+                        </button>
+                    </div>
+                    <input type="file" accept="video/*" ref={bootFileInputRef} onChange={handleBootFileSelect} className="hidden" />
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => bootFileInputRef.current?.click()}
+                            className="flex-1 text-center py-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-all duration-200 transform hover:scale-[1.03] active:scale-100"
+                        >
+                            {themeSettings.hasCustomBootVideo ? 'Change Boot Video' : 'Set Boot Video'}
+                        </button>
+                        {themeSettings.hasCustomBootVideo && (
+                            <button
+                                onClick={onRemoveCustomBootVideo}
+                                className="py-2 px-3 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80 transition-all duration-200 transform hover:scale-105 active:scale-100"
+                                aria-label="Remove custom boot video"
+                            >
+                                &#x2715;
+                            </button>
+                        )}
+                    </div>
                 </div>
+                
+                {/* Shutdown Animation */}
+                 <div className="space-y-2 pt-2">
+                    <p className="text-xs text-text-muted">Shutdown Animation</p>
+                    <input type="file" accept="video/*" ref={shutdownFileInputRef} onChange={handleShutdownFileSelect} className="hidden" />
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => shutdownFileInputRef.current?.click()}
+                            className="flex-1 text-center py-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-all duration-200 transform hover:scale-[1.03] active:scale-100"
+                        >
+                            {themeSettings.hasCustomShutdownVideo ? 'Change Shutdown Video' : 'Set Shutdown Video'}
+                        </button>
+                        {themeSettings.hasCustomShutdownVideo && (
+                            <button
+                                onClick={onRemoveCustomShutdownVideo}
+                                className="py-2 px-3 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80 transition-all duration-200 transform hover:scale-105 active:scale-100"
+                                aria-label="Remove custom shutdown video"
+                            >
+                                &#x2715;
+                            </button>
+                        )}
+                    </div>
+                </div>
+
             </div>
 
         </div>

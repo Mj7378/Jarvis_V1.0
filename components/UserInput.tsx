@@ -10,6 +10,8 @@ interface UserInputProps {
   onToggleListening: () => void;
   appState: AppState;
   isListening: boolean;
+  stagedImage: { dataUrl: string } | null;
+  onClearStagedImage: () => void;
   onCameraClick: () => void;
   onGalleryClick: () => void;
   onDocumentClick: () => void;
@@ -20,13 +22,13 @@ interface UserInputProps {
 }
 
 const UserInput: React.FC<UserInputProps> = (props) => {
-  const { onSendMessage, onToggleListening, appState, isListening } = props;
+  const { onSendMessage, onToggleListening, appState, isListening, stagedImage, onClearStagedImage } = props;
   const [textContent, setTextContent] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const showSendButton = textContent.trim().length > 0;
+  const showSendButton = textContent.trim().length > 0 || !!stagedImage;
 
   // Auto-sizing textarea logic
   useEffect(() => {
@@ -39,11 +41,19 @@ const UserInput: React.FC<UserInputProps> = (props) => {
       textarea.style.height = `${newHeight}px`;
     }
   }, [textContent]);
+  
+  // Focus textarea when an image is staged
+  useEffect(() => {
+    if (stagedImage) {
+        textareaRef.current?.focus();
+    }
+  }, [stagedImage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (showSendButton) {
-      onSendMessage(textContent.trim());
+    const prompt = textContent.trim();
+    if (stagedImage || prompt) {
+      onSendMessage(prompt || 'Analyze this image');
       setTextContent('');
       setShowEmojiPicker(false);
       setIsAttachmentMenuOpen(false);
@@ -105,7 +115,21 @@ const UserInput: React.FC<UserInputProps> = (props) => {
   const showStatusOverlay = statusInfo && textContent.trim().length === 0;
 
   return (
-    <div className="px-2 pb-2 pt-1">
+    <div className="px-2 pb-2 pt-1 relative">
+        {stagedImage && (
+            <div className="absolute bottom-full left-14 mb-2 p-1 bg-panel border border-primary-t-20 rounded-lg shadow-lg animate-pop-in">
+                <img src={stagedImage.dataUrl} alt="Staged content" className="h-20 w-20 object-cover rounded" />
+                <button
+                    type="button"
+                    onClick={onClearStagedImage}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold leading-none border-2 border-background transform hover:scale-110 active:scale-100 transition-transform"
+                    aria-label="Remove image"
+                >
+                    &times;
+                </button>
+            </div>
+        )}
+
         <form 
             onSubmit={handleSubmit} 
             className="w-full flex items-end gap-2 p-1.5 bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-lg rounded-full shadow-[0_0_25px_rgba(var(--primary-color-rgb),0.15)] transition-all duration-300"
@@ -142,7 +166,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
                 onChange={(e) => setTextContent(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={appState === AppState.LISTENING}
-                placeholder="Message J.A.R.V.I.S."
+                placeholder={stagedImage ? "Describe the image..." : "Message J.A.R.V.I.S."}
                 className="w-full bg-transparent border-none focus:ring-0 px-2 py-2 text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity resize-none overflow-y-auto styled-scrollbar"
                 aria-label="User command input"
                 rows={1}
