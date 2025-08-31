@@ -14,7 +14,7 @@ import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, Theme
 
 // Components
 import ChatLog from './components/ChatLog';
-import VisionMode from './components/VisionMode';
+import VisionIntelligence from './components/VisionMode';
 import ActionModal, { ActionModalProps, NotificationToast } from './components/ActionModal';
 import DesignMode from './components/DesignMode';
 import SimulationMode from './components/SimulationMode';
@@ -28,6 +28,11 @@ import Shutdown from './components/Shutdown';
 import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import UserInput from './components/UserInput';
 import Suggestions from './components/Suggestions';
+import SecurityCameraModal from './components/SecurityCameraModal';
+import { HomeIcon } from './components/Icons';
+import RealTimeVision from './components/RealTimeVision';
+import ControlCenter from './components/ControlCenter';
+import TacticalSidebar from './components/TacticalSidebar';
 
 
 // System Lifecycle States
@@ -77,8 +82,8 @@ const readFileAsBase64 = (file: File): Promise<string> =>
 
 const DEFAULT_PROFILE: VoiceProfile = { id: 'default', name: 'J.A.R.V.I.S. Enhanced', rate: 1.2, pitch: 1.0 };
 const DEFAULT_THEME: ThemeSettings = {
-  primaryColor: '#ff4b4b', // Iron Man Red
-  panelColor: '#1a0a0f',   // Dark reddish black
+  primaryColor: '#ff2d2d',
+  panelColor: '#1a0a0f',
   themeMode: 'dark',
   showGrid: true,
   showScanlines: true,
@@ -93,11 +98,12 @@ const DEFAULT_THEME: ThemeSettings = {
   activeVoiceProfileId: DEFAULT_PROFILE.id,
   wakeWord: 'JARVIS',
   aiModel: 'gemini-2.5-flash',
+  hudLayout: 'classic',
 };
 
 const FULL_THEMES = [
-    { name: 'Iron Man', primaryColor: '#ff4b4b', panelColor: '#1a0a0f', themeMode: 'dark' as const },
     { name: 'J.A.R.V.I.S.', primaryColor: '#00ffff', panelColor: '#121a2b', themeMode: 'dark' as const },
+    { name: 'Code Red', primaryColor: '#ff2d2d', panelColor: '#1a0a0f', themeMode: 'dark' as const },
     { name: 'Arc Reactor', primaryColor: '#00aeff', panelColor: '#0f172a', themeMode: 'dark' as const },
     { name: 'Stealth', primaryColor: '#64748b', panelColor: '#020617', themeMode: 'dark' as const },
     { name: 'Stark Light', primaryColor: '#0ea5e9', panelColor: '#ffffff', themeMode: 'light' as const },
@@ -108,6 +114,7 @@ type ToastNotification = {
   id: string;
   title: string;
   message: string;
+  icon?: React.ReactNode;
 };
 
 const App: React.FC = () => {
@@ -116,10 +123,11 @@ const App: React.FC = () => {
 
   // Core App State
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
-  const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage } = useChatHistory();
+  const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage, clearChatHistory } = useChatHistory();
   const [currentError, setCurrentError] = useState<AppError | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
+  const [currentView, setCurrentView] = useState<'chat' | 'dashboard'>('chat');
   
   // Staged content for multimodal input
   const [stagedImage, setStagedImage] = useState<{ mimeType: string; data: string; dataUrl: string; } | null>(null);
@@ -149,7 +157,8 @@ const App: React.FC = () => {
   const { queueSpeech, cancel: cancelSpeech, isSpeaking } = useSpeechSynthesis(activeProfile);
 
   // Modes & Modals
-  const [isVisionMode, setIsVisionMode] = useState(false);
+  const [isVisionIntelligenceOpen, setIsVisionIntelligenceOpen] = useState(false);
+  const [isRealTimeVisionOpen, setIsRealTimeVisionOpen] = useState(false);
   const [isDiagnosticsMode, setIsDiagnosticsMode] = useState(false);
   const [designModePrompt, setDesignModePrompt] = useState<string | null>(null);
   const [simulationModePrompt, setSimulationModePrompt] = useState<string | null>(null);
@@ -157,6 +166,7 @@ const App: React.FC = () => {
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  const [cameraFeed, setCameraFeed] = useState<{ location: string } | null>(null);
   
   // File Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -363,14 +373,25 @@ const App: React.FC = () => {
     setStagedImage(null); // Clear the image after sending
   };
 
-  const handleCaptureWithPrompt = (imageDataUrl: string, prompt: string) => {
-    const base64 = imageDataUrl.split(',')[1];
-    const image = {
-        mimeType: 'image/jpeg',
-        data: base64,
-    };
-    processUserMessage(prompt, image);
-    setIsVisionMode(false);
+  const handleLogVisionAnalysis = (prompt: string, imageUrl: string, response: string) => {
+    addMessage({
+        role: 'user',
+        content: prompt,
+        imageUrl,
+    });
+    addMessage({
+        role: 'model',
+        content: response,
+    });
+    setIsVisionIntelligenceOpen(false);
+    sounds.playSuccess();
+  };
+
+  const handleActivateRealTimeVision = (feature: string) => {
+    setIsVisionIntelligenceOpen(false);
+    setIsRealTimeVisionOpen(true);
+    // You could pass the feature to the component if needed, e.g., to pre-select a mode
+    console.log(`Activating real-time feature: ${feature}`);
   };
   
   const executeCommand = (cmd: DeviceControlCommand) => {
@@ -396,6 +417,18 @@ const App: React.FC = () => {
         case 'app_control':
             handleAppControl(cmd.params.action, cmd.params.value);
             break;
+        case 'home_automation':
+            if (cmd.params.device === 'camera' && cmd.params.action === 'show_feed') {
+                setCameraFeed({ location: cmd.params.location || 'Unknown Location' });
+            } else {
+                setToasts(prev => [...prev, {
+                    id: `home_auto_${Date.now()}`,
+                    title: 'Home Automation',
+                    message: cmd.spoken_response,
+                    icon: <HomeIcon className="w-6 h-6 text-primary" />,
+                }]);
+            }
+            break;
     }
   };
 
@@ -403,7 +436,7 @@ const App: React.FC = () => {
     switch(action) {
         case 'open_settings': setIsSettingsOpen(true); break;
         case 'close_settings': setIsSettingsOpen(false); break;
-        case 'vision_mode': setIsVisionMode(true); break;
+        case 'vision_mode': setIsVisionIntelligenceOpen(true); break;
         case 'run_diagnostics': setIsDiagnosticsMode(true); break;
         case 'calibrate_voice': setIsCalibrationOpen(true); break;
         case 'design_mode': setDesignModePrompt(value); break;
@@ -557,6 +590,70 @@ const App: React.FC = () => {
     sounds.playSuccess();
   };
 
+  const handleChangeActiveVoiceProfile = (profileId: string) => {
+    sounds.playClick();
+    setThemeSettings(p => ({ ...p, activeVoiceProfileId: profileId }));
+  };
+
+  const handleDeleteVoiceProfile = (profileId: string) => {
+    setThemeSettings(p => {
+        if (p.voiceProfiles.length <= 1 || profileId === 'default') {
+            sounds.playError();
+            return p;
+        }
+
+        const newProfiles = p.voiceProfiles.filter(profile => profile.id !== profileId);
+        let newActiveId = p.activeVoiceProfileId;
+
+        if (p.activeVoiceProfileId === profileId) {
+            newActiveId = 'default';
+        }
+        
+        sounds.playDeactivate();
+        return { ...p, voiceProfiles: newProfiles, activeVoiceProfileId: newActiveId };
+    });
+  };
+
+  const handleClearChat = () => {
+    clearChatHistory();
+    setIsSettingsOpen(false);
+    sounds.playDeactivate();
+    setToasts(prev => [...prev, {
+        id: `clear_${Date.now()}`,
+        title: 'Conversation Cleared',
+        message: 'Your chat history has been reset.',
+    }]);
+  };
+
+  const userInputProps = {
+    onSendMessage: handleSendMessage,
+    onToggleListening: toggleListening,
+    appState: appState,
+    isListening: isListening,
+    stagedImage: stagedImage ? { dataUrl: stagedImage.dataUrl } : null,
+    onClearStagedImage: () => setStagedImage(null),
+    onCameraClick: () => setIsVisionIntelligenceOpen(true),
+    onGalleryClick: () => handleFileUpload('image/*', handleGalleryUpload),
+    onDocumentClick: () => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload),
+    onAudioClick: () => handleFileUpload('audio/*', handleAudioUpload),
+    onLocationClick: handleLocationRequest,
+    onDesignModeClick: () => setDesignModePrompt('A futuristic concept car'),
+    onSimulationModeClick: () => setSimulationModePrompt('A spaceship flying through an asteroid field'),
+  };
+
+  const controlCenterProps = {
+    onRunDiagnostics: () => setIsDiagnosticsMode(true),
+    onVisionMode: () => setIsVisionIntelligenceOpen(true),
+    onRealTimeVision: () => setIsRealTimeVisionOpen(true),
+    onClearChat: handleClearChat,
+    onGetWeather: () => processUserMessage("What's the weather like?"),
+    onDesignMode: (prompt: string) => setDesignModePrompt(prompt),
+    onSimulationMode: (prompt: string) => setSimulationModePrompt(prompt),
+    onProcessCommand: processUserMessage,
+    onOpenSettings: () => setIsSettingsOpen(true),
+    onShowCameraFeed: (location: string) => setCameraFeed({ location }),
+  };
+
   switch (systemState) {
     case 'PRE_BOOT':
         return <PreBootScreen onInitiate={() => { sounds.playActivate(); setSystemState('BOOTING'); }} />;
@@ -565,49 +662,81 @@ const App: React.FC = () => {
     case 'SHUTTING_DOWN':
         return <Shutdown useCustomVideo={themeSettings.hasCustomShutdownVideo} onComplete={() => setSystemState('SNAP_DISINTEGRATION')} />;
     case 'SNAP_DISINTEGRATION':
-        return <div className="system-terminating w-screen h-screen bg-background"><div className="hud-container"><Header onOpenSettings={() => {}} /><div className="hud-chat-panel"></div><div className="hud-bottom-panel"></div></div></div>;
+        return <div className="system-terminating w-screen h-screen bg-background"><div className="hud-container"><Header onOpenSettings={() => {}} currentView={currentView} onSetView={setCurrentView} /><div className="hud-chat-panel"></div><div className="hud-bottom-panel"></div></div></div>;
     case 'ACTIVE':
         return (
             <div className={`w-screen h-screen transition-colors duration-500 ${themeSettings.themeMode}`}>
-                <div className="hud-container">
-                    <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+                <div className={`hud-container ${themeSettings.hudLayout === 'tactical' ? 'layout-tactical' : ''}`}>
                     
-                    <main className="hud-chat-panel holographic-panel">
-                        <ChatLog history={chatHistory} appState={appState} />
-                    </main>
+                    <Header onOpenSettings={() => setIsSettingsOpen(true)} currentView={currentView} onSetView={setCurrentView} />
 
-                    <footer className="hud-bottom-panel">
-                        <Suggestions suggestions={currentSuggestions} onSuggestionClick={(s) => processUserMessage(s)} />
-                        <UserInput
-                            onSendMessage={handleSendMessage}
-                            onToggleListening={toggleListening}
-                            appState={appState}
-                            isListening={isListening}
-                            stagedImage={stagedImage ? { dataUrl: stagedImage.dataUrl } : null}
-                            onClearStagedImage={() => setStagedImage(null)}
-                            onCameraClick={() => setIsVisionMode(true)}
-                            onGalleryClick={() => handleFileUpload('image/*', handleGalleryUpload)}
-                            onDocumentClick={() => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload)}
-                            onAudioClick={() => handleFileUpload('audio/*', handleAudioUpload)}
-                            onLocationClick={handleLocationRequest}
-                            onDesignModeClick={() => setDesignModePrompt('A futuristic concept car')}
-                            onSimulationModeClick={() => setSimulationModePrompt('A spaceship flying through an asteroid field')}
+                    {themeSettings.hudLayout === 'classic' ? (
+                        <>
+                            {currentView === 'chat' ? (
+                                <>
+                                    <main className="hud-chat-panel holographic-panel view-container">
+                                        <ChatLog history={chatHistory} appState={appState} />
+                                    </main>
+
+                                    <footer className="hud-bottom-panel view-container" style={{ animationDelay: '100ms' }}>
+                                        <Suggestions suggestions={currentSuggestions} onSuggestionClick={(s) => processUserMessage(s)} />
+                                        <UserInput {...userInputProps} />
+                                    </footer>
+                                </>
+                            ) : (
+                                 <ControlCenter {...controlCenterProps} />
+                            )}
+                        </>
+                    ) : (
+                        <>
+                           <TacticalSidebar
+                                onRunDiagnostics={() => setIsDiagnosticsMode(true)}
+                                onVisionMode={() => setIsVisionIntelligenceOpen(true)}
+                                onClearChat={handleClearChat}
+                           />
+                           <div className="hud-main-tactical">
+                                {currentView === 'chat' ? (
+                                     <>
+                                        <main className="holographic-panel view-container flex-1 min-h-0 flex flex-col">
+                                            <ChatLog history={chatHistory} appState={appState} />
+                                        </main>
+                                        <footer className="view-container" style={{ animationDelay: '100ms' }}>
+                                            <Suggestions suggestions={currentSuggestions} onSuggestionClick={(s) => processUserMessage(s)} />
+                                            <UserInput {...userInputProps} />
+                                        </footer>
+                                    </>
+                                ) : (
+                                    <ControlCenter {...controlCenterProps} />
+                                )}
+                           </div>
+                        </>
+                    )}
+
+                    {isVisionIntelligenceOpen && (
+                        <VisionIntelligence
+                           onClose={() => setIsVisionIntelligenceOpen(false)}
+                           onLogToChat={handleLogVisionAnalysis}
+                           onActivateRealTimeFeature={handleActivateRealTimeVision}
                         />
-                    </footer>
-
-                    {isVisionMode && (
-                        <VisionMode
-                            onCapture={(imageDataUrl) => {
-                                const base64 = imageDataUrl.split(',')[1];
-                                setStagedImage({
-                                    mimeType: 'image/jpeg',
-                                    data: base64,
-                                    dataUrl: imageDataUrl,
-                                });
-                                setIsVisionMode(false);
+                    )}
+                    
+                    {isRealTimeVisionOpen && (
+                        <RealTimeVision 
+                            onClose={() => setIsRealTimeVisionOpen(false)}
+                            onGestureRecognized={(gesture) => {
+                                setToasts(prev => [...prev, {
+                                    id: `gesture_${Date.now()}`,
+                                    title: 'Gesture Detected',
+                                    message: `Recognized gesture: ${gesture}`,
+                                }]);
                             }}
-                            onCaptureWithPrompt={handleCaptureWithPrompt}
-                            onClose={() => setIsVisionMode(false)}
+                        />
+                    )}
+
+                    {cameraFeed && (
+                        <SecurityCameraModal 
+                            location={cameraFeed.location} 
+                            onClose={() => setCameraFeed(null)} 
                         />
                     )}
 
@@ -653,11 +782,14 @@ const App: React.FC = () => {
                         onSetCustomShutdownVideo={handleSetCustomShutdownVideo}
                         onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo}
                         onCalibrateVoice={() => setIsCalibrationOpen(true)}
-                        onCameraClick={() => {setIsSettingsOpen(false); setIsVisionMode(true)}} 
+                        onCameraClick={() => {setIsSettingsOpen(false); setIsVisionIntelligenceOpen(true)}} 
                         onWeather={() => {setIsSettingsOpen(false); processUserMessage("What's the weather like?")}} 
                         onSelfHeal={() => {setIsSettingsOpen(false); setIsDiagnosticsMode(true)}} 
                         onDesignMode={() => {setIsSettingsOpen(false); setDesignModePrompt("A futuristic city skyline")}} 
                         onSimulationMode={() => {setIsSettingsOpen(false); setSimulationModePrompt("A cinematic view of Earth from space")}}
+                        onClearChat={handleClearChat}
+                        onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile}
+                        onDeleteVoiceProfile={handleDeleteVoiceProfile}
                     />
 
                     {isActionModalOpen && (

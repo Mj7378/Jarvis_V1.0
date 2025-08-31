@@ -1,7 +1,9 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import type { ChatMessage, Reminder } from '../types';
 import { parseTimeString } from '../utils/db';
 
+const CHAT_HISTORY_STORAGE_KEY = 'jarvis_chat_history';
 
 const getGreeting = (): ChatMessage => {
   const currentHour = new Date().getHours();
@@ -21,7 +23,28 @@ const getGreeting = (): ChatMessage => {
 };
 
 export const useChatHistory = () => {
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([getGreeting()]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
+    try {
+      const savedHistory = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load chat history from local storage", e);
+    }
+    return [getGreeting()];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistory));
+    } catch (e) {
+      console.error("Failed to save chat history to local storage", e);
+    }
+  }, [chatHistory]);
 
   const addMessage = useCallback((message: Omit<ChatMessage, 'timestamp'>) => {
     const newMessage: ChatMessage = {
@@ -64,8 +87,12 @@ export const useChatHistory = () => {
       });
   }, []);
 
+  const clearChatHistory = useCallback(() => {
+    setChatHistory([getGreeting()]);
+  }, []);
 
-  return { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage };
+
+  return { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage, clearChatHistory };
 };
 
 const REMINDERS_STORAGE_KEY = 'jarvis_reminders';

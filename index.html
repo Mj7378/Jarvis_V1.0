@@ -155,8 +155,8 @@
     </script>
     <style type="text/css">
       :root {
-        --primary-color-hex: #ff4b4b;
-        --primary-color-rgb: 255, 75, 75;
+        --primary-color-hex: #ff2d2d;
+        --primary-color-rgb: 255, 45, 45;
         --corner-clip-size: clamp(15px, 4vw, 30px);
       }
       
@@ -278,8 +278,31 @@
         grid-template-rows: auto minmax(0, 1fr) auto; /* Allow chat to shrink and grow */
         grid-template-areas:
             "header"
-            "chat"
-            "input";
+            "main"
+            "footer";
+      }
+      
+      .hud-container.layout-tactical {
+        grid-template-columns: clamp(280px, 22vw, 320px) 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas:
+            "sidebar header"
+            "sidebar main";
+      }
+
+      .hud-sidebar { 
+          grid-area: sidebar;
+          display: flex;
+          flex-direction: column;
+          gap: clamp(0.25rem, 2vw, 1rem);
+          min-height: 0;
+      }
+      .hud-main-tactical {
+          grid-area: main;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+          gap: clamp(0.25rem, 2vw, 1rem);
       }
 
       .hud-header { 
@@ -290,24 +313,25 @@
         align-items: center; 
       }
       
-      .hud-chat-panel {
-          grid-area: chat;
+      .hud-chat-panel, .control-center-container {
+          grid-area: main;
           display: flex;
           flex-direction: column;
           min-height: 0; /* Critical for flex + scroll */
       }
       
       .hud-bottom-panel { 
-        grid-area: input; 
+        grid-area: footer; 
         position: relative;
       }
-      
-      @keyframes fade-in-fast {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+
+      .view-container {
+        animation: view-fade-in 0.5s ease-out forwards;
       }
-      .animate-fade-in-fast {
-        animation: fade-in-fast 0.4s ease-out forwards;
+
+      @keyframes view-fade-in {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
       }
       
       /* --- Responsive Component Styles --- */
@@ -450,6 +474,38 @@
         color: var(--color-text-muted);
         opacity: 0.6;
       }
+
+      /* Control Center Layout */
+      .control-center-container {
+        display: grid;
+        min-height: 0;
+        gap: clamp(0.25rem, 2vw, 1rem);
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+          "actions generative"
+          "home home";
+        overflow: auto;
+        padding-right: 8px; /* For scrollbar */
+      }
+      .control-panel {
+        min-height: 150px;
+      }
+
+      #actions-panel { grid-area: actions; }
+      #generative-panel { grid-area: generative; }
+      #home-panel { grid-area: home; }
+
+      @media (max-width: 768px) {
+          .control-center-container {
+              grid-template-columns: 1fr;
+              grid-template-rows: auto;
+              grid-template-areas:
+                  "actions"
+                  "generative"
+                  "home";
+          }
+      }
     </style>
   <script type="importmap">
 {
@@ -459,7 +515,8 @@
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.15.0",
     "react-syntax-highlighter": "https://aistudiocdn.com/react-syntax-highlighter@^15.6.6",
-    "react-syntax-highlighter/": "https://aistudiocdn.com/react-syntax-highlighter@^15.6.6/"
+    "react-syntax-highlighter/": "https://aistudiocdn.com/react-syntax-highlighter@^15.6.6/",
+    "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm"
   }
 }
 </script>

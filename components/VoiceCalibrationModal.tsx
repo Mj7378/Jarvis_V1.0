@@ -76,7 +76,6 @@ const calculateAccuracy = (str1: string, str2: string): number => {
     return Math.max(0, ((longer.length - distance) / longer.length) * 100);
 };
 
-
 const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, onClose, onComplete }) => {
     const [state, setState] = useState<CalibrationState>('idle');
     const [mode, setMode] = useState<CalibrationMode>('record');

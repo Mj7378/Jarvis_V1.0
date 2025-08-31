@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { AppState } from '../types';
 import { MicrophoneIcon, SendIcon, SmileyIcon, PaperclipIcon } from './Icons';

@@ -39,7 +39,7 @@ const SystemStatus: React.FC = () => {
   };
 
   return (
-    <div className="panel p-4 mt-auto">
+    <div className="panel p-4">
       <h2 className="panel-title text-secondary">
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V3m0 18v-3" /></svg>
         <span>System Status</span>

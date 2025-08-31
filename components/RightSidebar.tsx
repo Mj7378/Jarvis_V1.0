@@ -1,7 +1,7 @@
 
 
 import React, { useRef, useState, useEffect } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon } from './Icons';
+import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon, ConversationIcon, TrashIcon, DashboardIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -22,13 +22,21 @@ export interface RightSidebarProps {
     onRemoveCustomShutdownVideo: () => void;
     onSectionVisibilityChange: (isVisible: boolean) => void;
     isHovering: boolean;
+    onClearChat: () => void;
+    onDeleteVoiceProfile: (profileId: string) => void;
+    onChangeActiveVoiceProfile: (profileId: string) => void;
 }
 
-const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice }) => {
+const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onCalibrateVoice' | 'onDeleteVoiceProfile' | 'onChangeActiveVoiceProfile'>> = ({ themeSettings, onThemeChange, sounds, onCalibrateVoice, onDeleteVoiceProfile, onChangeActiveVoiceProfile }) => {
     const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
         sounds.playClick();
         onThemeChange(prev => ({ ...prev, [key]: value }));
     };
+
+    const handleActiveProfileChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        sounds.playClick();
+        onChangeActiveVoiceProfile(e.target.value);
+    }
 
     return (
         <div className="space-y-3">
@@ -78,7 +86,51 @@ const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                     <option value="retro">Retro</option>
                 </select>
             </div>
-            <div className="flex items-center justify-between">
+
+            <div className="pt-4 mt-4 border-t border-primary-t-20 space-y-3">
+                <p className="font-orbitron text-sm text-slate-300">Voice Profiles</p>
+                <div className="flex items-center justify-between">
+                    <label htmlFor="active-voice-profile-select" className={`text-sm transition-opacity ${!themeSettings.voiceOutputEnabled ? 'text-text-muted opacity-50' : 'text-slate-300'}`}>
+                        Active Profile
+                    </label>
+                    <select
+                        id="active-voice-profile-select"
+                        value={themeSettings.activeVoiceProfileId || ''}
+                        onChange={handleActiveProfileChange}
+                        disabled={!themeSettings.voiceOutputEnabled}
+                        className="w-40 bg-slate-800/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm disabled:bg-disabled-bg disabled:text-disabled-text"
+                    >
+                        {themeSettings.voiceProfiles.map(profile => (
+                            <option key={profile.id} value={profile.id}>{profile.name}</option>
+                        ))}
+                    </select>
+                </div>
+                
+                <div className="space-y-2 max-h-32 overflow-y-auto styled-scrollbar pr-1">
+                    {themeSettings.voiceProfiles.map(profile => (
+                        <div key={profile.id} className="flex items-center justify-between p-1.5 pl-3 bg-slate-900/50 rounded-md">
+                            <span className="text-sm truncate pr-2">{profile.name} {profile.id === 'default' && <span className="text-xs text-text-muted">(Default)</span>}</span>
+                            <button
+                                onClick={() => onDeleteVoiceProfile(profile.id)}
+                                disabled={profile.id === 'default' || themeSettings.voiceProfiles.length <= 1}
+                                className="p-2 text-text-muted hover:text-red-400 rounded-md disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text-muted transition-colors"
+                                aria-label={`Delete profile ${profile.name}`}
+                            >
+                                <TrashIcon className="w-4 h-4 flex-shrink-0" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                <button 
+                    onClick={onCalibrateVoice}
+                    className="w-full text-center py-2 mt-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-all duration-200 transform hover:scale-[1.03] active:scale-100"
+                >
+                    Add New Voice Profile
+                </button>
+            </div>
+            
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-primary-t-20">
                 <label htmlFor="wakeword-input" className="text-sm text-slate-300">Wake Word</label>
                 <input
                     id="wakeword-input"
@@ -88,12 +140,6 @@ const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                     className="w-36 bg-slate-800/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
                 />
             </div>
-             <button 
-                onClick={onCalibrateVoice}
-                className="w-full text-center py-2 mt-2 text-sm bg-slate-700/50 rounded-md border border-slate-600/50 hover:bg-slate-700/80 transition-all duration-200 transform hover:scale-[1.03] active:scale-100"
-            >
-                Calibrate Voice
-            </button>
         </div>
     );
 };
@@ -342,6 +388,55 @@ const ThemeSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
     );
 };
 
+const LayoutIcon: React.FC<{ type: 'classic' | 'tactical', className?: string }> = ({ type, className }) => {
+    if (type === 'tactical') {
+        return (
+            <svg viewBox="0 0 24 24" className={className}>
+                <rect x="1" y="1" width="7" height="22" rx="1"/>
+                <rect x="9" y="1" width="14" height="4" rx="1"/>
+                <rect x="9" y="6" width="14" height="17" rx="1"/>
+            </svg>
+        );
+    }
+    // classic
+    return (
+         <svg viewBox="0 0 24 24" className={className}>
+            <rect x="1" y="1" width="22" height="4" rx="1"/>
+            <rect x="1" y="6" width="22" height="12" rx="1"/>
+            <rect x="1" y="19" width="22" height="4" rx="1"/>
+        </svg>
+    );
+};
+
+const LayoutSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = ({ themeSettings, onThemeChange, sounds }) => {
+    
+    const handleLayoutChange = (layout: 'classic' | 'tactical') => {
+        sounds.playClick();
+        onThemeChange(prev => ({ ...prev, hudLayout: layout }));
+    };
+
+    const layouts = [
+        { name: 'Classic', type: 'classic' as const },
+        { name: 'Tactical', type: 'tactical' as const },
+    ];
+
+    return (
+        <div>
+            <p className="block text-sm text-slate-300 mb-2 font-orbitron">Select Layout</p>
+            <div className="grid grid-cols-2 gap-3">
+                {layouts.map(layout => (
+                    <button key={layout.name} onClick={() => handleLayoutChange(layout.type)} className="group focus:outline-none focus-visible:ring-2 ring-offset-2 ring-offset-background ring-primary rounded-lg">
+                        <div className={`relative w-full aspect-video p-2 rounded-lg border-2 transition-all duration-200 ${themeSettings.hudLayout === layout.type ? 'border-white scale-105' : 'border-transparent group-hover:border-primary-t-50'}`}>
+                           <LayoutIcon type={layout.type} className={`w-full h-full ${themeSettings.hudLayout === layout.type ? 'fill-primary' : 'fill-primary-t-50'} group-hover:fill-primary transition-colors`} />
+                        </div>
+                        <p className={`text-xs text-center mt-1.5 transition-colors ${themeSettings.hudLayout === layout.type ? 'text-text-primary' : 'text-text-muted group-hover:text-text-secondary'}`}>{layout.name}</p>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 const CollapsibleSection: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; isOpen: boolean; onToggle: () => void; }> = ({ title, icon, children, isOpen, onToggle }) => {
     const id = `collapsible-${title.replace(/\s+/g, '-')}`;
 
@@ -381,7 +476,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
     const { 
         isBusy, 
         onCameraClick, onWeather, onSelfHeal,
-        onDesignMode, onSimulationMode,
+        onDesignMode, onSimulationMode, onClearChat,
         onSectionVisibilityChange, isHovering
     } = props;
 
@@ -485,6 +580,21 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
                     </div>
                 </div>
             </CollapsibleSection>
+            
+            <CollapsibleSection
+                title="Conversation"
+                icon={<ConversationIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "Conversation"}
+                onToggle={() => handleToggleSection("Conversation")}
+            >
+                <button
+                    onClick={onClearChat}
+                    className="w-full flex items-center justify-center gap-3 p-2 rounded-md text-yellow-400 border border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-300 transition-all duration-300 group"
+                >
+                    <TrashIcon className="w-5 h-5" />
+                    <span className="font-orbitron tracking-wider text-sm">Clear History</span>
+                </button>
+            </CollapsibleSection>
 
             <CollapsibleSection
                 title="Voice & Audio"
@@ -502,6 +612,15 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
                 onToggle={() => handleToggleSection("Theme & Appearance")}
             >
                  <ThemeSettingsPanelContent {...props} />
+            </CollapsibleSection>
+            
+            <CollapsibleSection
+                title="HUD Layout"
+                icon={<DashboardIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "HUD Layout"}
+                onToggle={() => handleToggleSection("HUD Layout")}
+            >
+                <LayoutSettingsPanelContent {...props} />
             </CollapsibleSection>
         </aside>
     );

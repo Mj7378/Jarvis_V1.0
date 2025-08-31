@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '../types';
 import { AppState } from '../types';
@@ -44,7 +45,7 @@ const CopyButton: React.FC<{ textToCopy: string }> = ({ textToCopy }) => {
     );
 };
 
-const FormattedMessage: React.FC<{ text: string }> = React.memo(({ text }) => {
+export const FormattedMessage: React.FC<{ text: string }> = React.memo(({ text }) => {
     const renderInline = (line: string) => {
         const parts = line.split(/(`.*?`|\*\*.*?\*\*)/g);
         return parts.map((part, i) => {

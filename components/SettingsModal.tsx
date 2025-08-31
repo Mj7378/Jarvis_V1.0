@@ -10,6 +10,7 @@ interface SettingsModalProps extends Omit<RightSidebarProps, 'onSectionVisibilit
     isOpen: boolean;
     onClose: () => void;
     onShutdown: () => void;
+    onClearChat: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {

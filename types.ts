@@ -22,7 +22,7 @@ export enum AppState {
 
 export interface DeviceControlCommand {
     action: 'device_control';
-    command: 'open_url' | 'search' | 'navigate' | 'unsupported' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown' | 'app_control';
+    command: 'open_url' | 'search' | 'navigate' | 'unsupported' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown' | 'app_control' | 'home_automation';
     app: string;
     params: any & {
         action?: string;
@@ -67,6 +67,7 @@ export interface ThemeSettings {
   activeVoiceProfileId: string | null;
   wakeWord: string;
   aiModel: 'gemini-2.5-flash';
+  hudLayout: 'classic' | 'tactical';
 }
 
 export interface Reminder {

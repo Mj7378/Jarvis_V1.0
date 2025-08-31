@@ -46,6 +46,7 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 *   **Web App Integration:** Issue commands to open a wide range of websites and web apps, including YouTube, WhatsApp, Google Drive, Replit, and more.
 *   **Integrated Search:** Directly ask J.A.R.V.I.S. to search Google or YouTube for specific queries.
 *   **System Functions:** Run simulated diagnostics or issue a shutdown command for a complete system lifecycle experience.
+*   **🏠 Home Automation (Simulated):** Command J.A.R.V.I.S. to control smart lights, thermostats, locks, and security cameras. All commands are simulated with UI feedback, providing a complete smart-home control experience.
 
 ### 🎨 Futuristic HUD & Deep Customization
 *   **Reactive Interface:** A dynamic and visually stunning HUD built with React and Tailwind CSS that reacts to the AI's state (Idle, Thinking, Speaking).
@@ -109,7 +110,7 @@ This project is designed to run directly in the browser without a build step.
 
 The core of the AI's functionality is defined by a detailed **system instruction** provided to the Gemini model (`services/geminiService.ts`). This prompt establishes the J.A.R.V.I.S. personality and defines a strict communication protocol. There are two main interaction modes:
 
-1.  **Device Control Protocol:** When a user's command is interpreted as an action (like opening a URL or searching), the AI is instructed to respond **only with a JSON object**. This structured data is then parsed by the frontend to execute the command. This prevents conversational filler and ensures reliable command execution.
+1.  **Device Control Protocol:** When a user's command is interpreted as an action (like opening a URL or controlling a smart device), the AI is instructed to respond **only with a JSON object**. This structured data is then parsed by the frontend to execute the command. This prevents conversational filler and ensures reliable command execution.
 
 2.  **Conversational Interaction:** For any other query, the AI engages in a natural, text-based conversation, adopting the J.A.R.V.I.S. persona.
 

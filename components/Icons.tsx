@@ -126,6 +126,16 @@ export const TrashIcon: React.FC<IconProps> = ({ className }) => (
     </IconBase>
 );
 
+export const ConversationIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <g filter="url(#icon-3d-shadow)">
+            <path d="M10 10 H 54 V 42 H 36 L 28 50 V 42 H 10 Z" fill="#4A5568" />
+            <path d="M10 10 H 54 V 42 H 36 L 28 50 V 42 H 10 Z" fill="url(#metal-grad)" />
+            <path d="M10 10 H 54 V 42 H 36 L 28 50 V 42 H 10 Z" fill="url(#glass-highlight)" />
+        </g>
+    </IconBase>
+);
+
 export const GeminiIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
         <g filter="url(#icon-3d-shadow)" transform="translate(2 2)">
@@ -296,13 +306,54 @@ export const CheckIcon: React.FC<IconProps> = ({ className }) => (
 );
 
 
-// --- Emoji Category Icons ---
-const SimpleIcon: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+// --- Simple Icon Base ---
+const SimpleIcon: React.FC<{ children: React.ReactNode, className?: string, viewBox?: string }> = ({ children, className, viewBox="0 0 24 24" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox={viewBox} stroke="currentColor" strokeWidth="1.5">
         {children}
     </svg>
 );
 
+// --- Vision Intelligence Icons ---
+export const VQAIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </SimpleIcon>
+);
+
+export const ObjectDetectionIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 10h.01M15 10h.01M9 14h6" />
+    </SimpleIcon>
+);
+
+export const TextRecognitionIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+         <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+    </SimpleIcon>
+);
+
+export const FaceRecognitionIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+    </SimpleIcon>
+);
+
+export const EyeTrackingIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </SimpleIcon>
+);
+
+export const GestureControlIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11" />
+    </SimpleIcon>
+);
+
+
+// --- Emoji Category Icons ---
 export const FaceIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
         <g filter="url(#icon-3d-shadow)">
@@ -403,5 +454,22 @@ export const LocationIcon: React.FC<IconProps> = ({ className }) => (
     <SimpleIcon className={className}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </SimpleIcon>
+);
+export const HomeIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    </SimpleIcon>
+);
+
+export const DashboardIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className} viewBox="0 0 24 24" >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </SimpleIcon>
+);
+
+export const ChatIcon: React.FC<IconProps> = ({ className }) => (
+    <SimpleIcon className={className} viewBox="0 0 24 24" >
+       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
     </SimpleIcon>
 );
