@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { AppState } from '../types';
 import { MicrophoneIcon, SendIcon, SmileyIcon, PaperclipIcon } from './Icons';
@@ -20,10 +18,11 @@ interface UserInputProps {
   onLocationClick: () => void;
   onDesignModeClick: () => void;
   onSimulationModeClick: () => void;
+  wakeWord: string;
 }
 
 const UserInput: React.FC<UserInputProps> = (props) => {
-  const { onSendMessage, onToggleListening, appState, isListening, stagedImage, onClearStagedImage } = props;
+  const { onSendMessage, onToggleListening, appState, isListening, stagedImage, onClearStagedImage, wakeWord } = props;
   const [textContent, setTextContent] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -105,6 +104,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
   const getStatusInfo = () => {
     switch (appState) {
         case AppState.LISTENING: return { text: "Listening...", color: 'text-primary' };
+        case AppState.AWAITING_WAKE_WORD: return { text: `Say "${wakeWord}"`, color: 'text-primary' };
         case AppState.THINKING: return { text: "Analyzing...", color: 'text-yellow-400' };
         case AppState.SPEAKING: return { text: "Speaking...", color: 'text-purple-400' };
         default: return null;
@@ -114,6 +114,8 @@ const UserInput: React.FC<UserInputProps> = (props) => {
   const statusInfo = getStatusInfo();
   // Show overlay only when app is busy and user hasn't started typing to interrupt
   const showStatusOverlay = statusInfo && textContent.trim().length === 0;
+  const isCommandListening = isListening && appState === AppState.LISTENING;
+
 
   return (
     <div className="px-2 pb-2 pt-1 relative">
@@ -166,7 +168,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={appState === AppState.LISTENING}
+                disabled={appState === AppState.LISTENING || appState === AppState.AWAITING_WAKE_WORD}
                 placeholder={stagedImage ? "Describe the image..." : "Message J.A.R.V.I.S."}
                 className="w-full bg-transparent border-none focus:ring-0 px-2 py-2 text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity resize-none overflow-y-auto styled-scrollbar"
                 aria-label="User command input"
@@ -186,7 +188,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
           <button
             type={showSendButton ? 'submit' : 'button'}
             onClick={handleActionClick}
-            className={`flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300 w-11 h-11 text-white ${isListening ? 'bg-red-500 animate-pulse-strong' : 'bg-primary'} hover:scale-110 active:scale-105`}
+            className={`flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300 w-11 h-11 text-white ${isCommandListening ? 'bg-red-500 animate-pulse-strong' : 'bg-primary'} hover:scale-110 active:scale-105`}
             aria-label={showSendButton ? 'Send message' : (isListening ? 'Stop listening' : 'Start listening')}
           >
             <div className="relative w-7 h-7 flex items-center justify-center overflow-hidden">

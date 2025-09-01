@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig, Type } from '@google/genai';
+import { GoogleGenAI, GenerateContentResponse, Content, GenerateContentConfig, Type, Modality } from '@google/genai';
 import type { ChatMessage, Source, AppError, WeatherData } from '../types';
 
 if (!process.env.API_KEY) {
@@ -229,6 +229,49 @@ export async function generateImage(prompt: string): Promise<string> {
         return `data:image/jpeg;base64,${base64ImageBytes}`;
     } catch (error) {
         throw handleGeminiError(error, "Image Generation");
+    }
+}
+
+export async function editImage(prompt: string, imageBase64: string): Promise<string> {
+    try {
+        const imagePart = {
+            inlineData: {
+                mimeType: 'image/jpeg', // The app always generates/uses jpeg
+                data: imageBase64,
+            },
+        };
+        const textPart = { text: prompt };
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image-preview',
+            contents: { parts: [imagePart, textPart] },
+            config: {
+                responseModalities: [Modality.IMAGE, Modality.TEXT],
+            },
+        });
+
+        // Find the image part in the response
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            }
+        }
+        
+        throw new Error("AI did not return an image. It may have refused the request.");
+
+    } catch (error) {
+        // Check if the error is from the API about safety settings
+        if (error instanceof Error && (error.message.includes('safety policy') || error.message.includes('blocked'))) {
+             const customError = new Error("The edit could not be completed due to safety restrictions.");
+            (customError as any).appError = {
+                code: 'SAFETY_POLICY_VIOLATION',
+                title: 'Request Blocked',
+                message: "The requested image edit was blocked by the safety policy. Please try a different prompt.",
+                details: error.message,
+            };
+            throw customError;
+        }
+        throw handleGeminiError(error, "Image Editing");
     }
 }
 

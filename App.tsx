@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 
@@ -350,8 +351,10 @@ const DEFAULT_THEME: ThemeSettings = {
   voiceProfiles: [DEFAULT_PROFILE],
   activeVoiceProfileId: DEFAULT_PROFILE.id,
   wakeWord: 'JARVIS',
+  wakeWordEnabled: false,
   aiProvider: 'automatic',
   hudLayout: 'classic',
+  persona: 'stark',
   homeAssistantUrl: '',
   homeAssistantToken: '',
 };
@@ -480,7 +483,7 @@ const App: React.FC = () => {
     return () => {
         haServiceRef.current?.disconnect();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks-exhaustive-deps
   }, []); // Run only on mount
 
   // Apply theme settings to the document
@@ -750,13 +753,12 @@ const App: React.FC = () => {
     setAppState(AppState.THINKING);
 
     let fullResponse = '';
-    let isJsonCommand = false;
     let spokenResponse = '';
     let sources: Source[] = [];
     let lastChunk: GenerateContentResponse | undefined;
 
     try {
-        const stream = await aiOrchestrator.getAiResponseStream(prompt, chatHistory, image, operatingSystem);
+        const stream = await aiOrchestrator.getAiResponseStream(prompt, chatHistory, image, operatingSystem, themeSettings.persona);
         addMessage({ role: 'model', content: '' });
 
         for await (const chunk of stream) {
@@ -767,14 +769,8 @@ const App: React.FC = () => {
             }
             
             lastChunk = chunk;
-            const chunkText = chunk.text;
-            fullResponse += chunkText;
-            
-            if (!isJsonCommand && fullResponse.trim().startsWith('{') || fullResponse.trim().startsWith('[')) {
-                isJsonCommand = true;
-            }
-            
-            appendToLastMessage(chunkText);
+            fullResponse += chunk.text;
+            appendToLastMessage(chunk.text);
         }
         
         if (lastChunk) {
@@ -800,45 +796,53 @@ const App: React.FC = () => {
         return;
     }
 
-    if (isJsonCommand) {
-        try {
-            const trimmedResponse = fullResponse.trim();
-            let commands: DeviceControlCommand[] = [];
+    const extractJsonString = (text: string): string | null => {
+        const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (markdownMatch && markdownMatch[1]) {
+            return markdownMatch[1].trim();
+        }
 
-            if (trimmedResponse.startsWith('[')) {
-                const jsonString = trimmedResponse.slice(trimmedResponse.indexOf('['), trimmedResponse.lastIndexOf(']') + 1);
-                commands = JSON.parse(jsonString);
-            } else if (trimmedResponse.startsWith('{')) {
-                const jsonString = trimmedResponse.slice(trimmedResponse.indexOf('{'), trimmedResponse.lastIndexOf('}') + 1);
-                commands = [JSON.parse(jsonString)];
-            }
+        const firstBrace = text.indexOf('{');
+        const firstBracket = text.indexOf('[');
+
+        if (firstBrace === -1 && firstBracket === -1) {
+            return null;
+        }
+        
+        let startIndex;
+        if (firstBrace === -1) startIndex = firstBracket;
+        else if (firstBracket === -1) startIndex = firstBrace;
+        else startIndex = Math.min(firstBrace, firstBracket);
+        
+        return text.substring(startIndex);
+    };
+
+    const jsonString = extractJsonString(fullResponse);
+    let commandProcessed = false;
+
+    if (jsonString) {
+        try {
+            const parsedJson = JSON.parse(jsonString);
+            const commandArray = (Array.isArray(parsedJson) ? parsedJson : [parsedJson]) as AICommand[];
             
-            if (commands.length > 0) {
-                const firstCommand = commands[0];
+            if (commandArray.length > 0 && typeof commandArray[0] === 'object' && commandArray[0] !== null) {
+                const firstCommand = commandArray[0];
                 spokenResponse = firstCommand.spoken_response;
                 updateLastMessage({ content: spokenResponse });
                 if (firstCommand.suggestions) {
                     setCurrentSuggestions(firstCommand.suggestions);
                 }
 
-                executeCommandsSequentially(commands);
-            } else {
-                 spokenResponse = "I understood the command, but couldn't formulate an action.";
-                 updateLastMessage({ content: spokenResponse });
+                executeCommandsSequentially(commandArray);
+                commandProcessed = true;
             }
-            
         } catch (e) {
-            console.error("JSON parsing error:", e, "Raw response:", fullResponse);
-            spokenResponse = "I seem to have generated a malformed command. My apologies.";
-            updateLastMessage({ content: spokenResponse });
-            setCurrentError({
-                code: 'JSON_PARSE_ERROR',
-                title: 'Command Parsing Error',
-                message: "The AI's command response was not valid JSON.",
-                details: fullResponse,
-            });
+            console.warn("JSON parsing error, falling back to text.", e, "Raw response:", fullResponse);
+            // Fallback to text processing by leaving commandProcessed = false
         }
-    } else {
+    }
+    
+    if (!commandProcessed) {
         const suggestionMatch = fullResponse.match(/> \*Suggestions:\* (.*)/);
         if (suggestionMatch && suggestionMatch[1]) {
             const suggestionsText = suggestionMatch[1];
@@ -858,7 +862,7 @@ const App: React.FC = () => {
         setAppState(AppState.IDLE);
     }
 
-  }, [addMessage, appendToLastMessage, cancelSpeech, chatHistory, queueSpeech, themeSettings.voiceOutputEnabled, updateLastMessage, removeLastMessage, executeCommandsSequentially, operatingSystem]);
+  }, [addMessage, appendToLastMessage, cancelSpeech, chatHistory, queueSpeech, themeSettings.voiceOutputEnabled, themeSettings.persona, updateLastMessage, removeLastMessage, executeCommandsSequentially, operatingSystem]);
   
   useEffect(() => {
     if (appState === AppState.SPEAKING && !isSpeaking) {
@@ -897,25 +901,72 @@ const App: React.FC = () => {
     haServiceRef.current?.callService(domain, service, { entity_id, ...service_data });
   }, []);
 
-  const handleVoiceInput = useCallback((transcript: string) => {
-    if (transcript) {
-        processUserMessage(transcript);
-    } else {
-        // When listening ends without a transcript, return to IDLE
-        setAppState(currentState => 
-            currentState === AppState.LISTENING ? AppState.IDLE : currentState
-        );
-    }
-  }, [processUserMessage]);
+  // --- Voice Input & Wake Word Logic ---
+  const handleRecognitionEnd = useCallback((transcript: string) => {
+      if (appState === AppState.AWAITING_WAKE_WORD) {
+        // Listener timed out or was stopped by wake word detection.
+        // The useEffect lifecycle manager will handle restarting it.
+        return;
+      }
+      if (appState === AppState.LISTENING) {
+        // This was a command listening session. Process it.
+        if (transcript) {
+            processUserMessage(transcript);
+        } else {
+            setAppState(AppState.IDLE); // Go to idle if nothing was said
+        }
+      }
+  }, [appState, processUserMessage]);
+  
+  const onTranscriptChangeHandlerRef = useRef<(transcript: string) => void>();
+  
+  const { isListening, startListening, stopListening } = useSpeechRecognition({
+      continuous: appState === AppState.AWAITING_WAKE_WORD,
+      interimResults: true,
+      onEnd: handleRecognitionEnd,
+      onTranscriptChange: (transcript) => onTranscriptChangeHandlerRef.current?.(transcript),
+  });
+  
+  // FIX: This effect resolves a dependency cycle. `useSpeechRecognition` needs a transcript handler,
+  // but the handler needs the `stopListening` function from the hook. By using a ref and an effect,
+  // we can define the handler after the hook is initialized, giving it access to `stopListening`.
+  useEffect(() => {
+    onTranscriptChangeHandlerRef.current = (transcript: string) => {
+        if (appState === AppState.AWAITING_WAKE_WORD && themeSettings.wakeWordEnabled && transcript.toLowerCase().includes(themeSettings.wakeWord.toLowerCase())) {
+            stopListening(); // This will trigger handleRecognitionEnd
+            setAppState(AppState.LISTENING);
+            sounds.playActivate();
+        }
+    };
+  }, [appState, themeSettings.wakeWord, themeSettings.wakeWordEnabled, stopListening, sounds]);
 
-  const { isListening, startListening, stopListening } = useSpeechRecognition({ onEnd: handleVoiceInput });
+
+  // Wake word lifecycle management
+  useEffect(() => {
+    const shouldBeListeningForWakeWord = themeSettings.wakeWordEnabled && appState === AppState.IDLE;
+    const isCurrentlyListeningForWakeWord = (appState === AppState.AWAITING_WAKE_WORD || appState === AppState.LISTENING) && isListening;
+
+    if (shouldBeListeningForWakeWord && !isCurrentlyListeningForWakeWord) {
+        setAppState(AppState.AWAITING_WAKE_WORD);
+        startListening();
+    }
+
+    if (!themeSettings.wakeWordEnabled && isListening) {
+        stopListening();
+        if (appState === AppState.AWAITING_WAKE_WORD) {
+            setAppState(AppState.IDLE);
+        }
+    }
+  }, [themeSettings.wakeWordEnabled, appState, isListening, startListening, stopListening]);
+
 
   const toggleListening = () => {
       cancelSpeech();
       if (isListening) {
           stopListening();
+          // The onEnd handler and useEffect will correctly transition state to IDLE.
       } else {
-          // Abort any ongoing AI response generation
+          // Manually start a command listening session, interrupting wake word mode.
           if (abortControllerRef.current) {
               abortControllerRef.current.abort();
           }
@@ -1097,6 +1148,7 @@ const App: React.FC = () => {
     onLocationClick: handleLocationRequest,
     onDesignModeClick: () => setDesignModePrompt('A futuristic concept car'),
     onSimulationModeClick: () => setSimulationModePrompt('A spaceship flying through an asteroid field'),
+    wakeWord: themeSettings.wakeWord,
   };
 
   const controlCenterProps = {
@@ -1219,7 +1271,7 @@ const App: React.FC = () => {
                             onCancel={() => setDesignModePrompt(null)}
                             onComplete={(prompt, imageUrl) => {
                                 setDesignModePrompt(null);
-                                addMessage({ role: 'model', content: `Here is the design for: "${prompt}"`, imageUrl });
+                                addMessage({ role: 'model', content: `Here is the final image from the Image Studio session.`, imageUrl });
                             }}
                         />
                     )}

@@ -78,7 +78,7 @@ const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
             bg: 'bg-red-400/20'
         },
         {
-            label: 'Design',
+            label: 'Image Studio',
             icon: <GenerateImageIcon className="w-7 h-7" />,
             action: () => handleAction(onDesignModeClick),
             color: 'text-sky-400',

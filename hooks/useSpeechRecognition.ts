@@ -1,10 +1,14 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 // For browser compatibility
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-export const useSpeechRecognition = (options: { continuous?: boolean; interimResults?: boolean; onEnd?: (transcript: string) => void } = {}) => {
+export const useSpeechRecognition = (options: { 
+    continuous?: boolean; 
+    interimResults?: boolean; 
+    onEnd?: (transcript: string) => void;
+    onTranscriptChange?: (transcript: string) => void;
+} = {}) => {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
     const [error, setError] = useState('');
@@ -14,7 +18,9 @@ export const useSpeechRecognition = (options: { continuous?: boolean; interimRes
     // Refs to hold the latest transcript and onEnd callback to avoid stale closures
     const transcriptRef = useRef('');
     const onEndRef = useRef(options.onEnd);
+    const onTranscriptChangeRef = useRef(options.onTranscriptChange);
     onEndRef.current = options.onEnd;
+    onTranscriptChangeRef.current = options.onTranscriptChange;
 
     useEffect(() => {
         if (!SpeechRecognition) {
@@ -23,9 +29,7 @@ export const useSpeechRecognition = (options: { continuous?: boolean; interimRes
         }
 
         const recognition = new SpeechRecognition();
-        recognition.continuous = options.continuous || false;
-        recognition.interimResults = options.interimResults || false;
-
+        
         recognition.onresult = (event: any) => {
             const fullTranscript = Array.from(event.results)
                 .map((result: any) => result[0])
@@ -34,6 +38,10 @@ export const useSpeechRecognition = (options: { continuous?: boolean; interimRes
             
             transcriptRef.current = fullTranscript;
             setTranscript(fullTranscript);
+
+            if (onTranscriptChangeRef.current) {
+                onTranscriptChangeRef.current(fullTranscript);
+            }
         };
 
         recognition.onerror = (event: any) => {
@@ -71,13 +79,14 @@ export const useSpeechRecognition = (options: { continuous?: boolean; interimRes
                 recognitionRef.current.stop();
             }
         };
-    // The dependency array is critical. By removing `isListening`, we ensure the
-    // recognition object is created only once per component mount, not on every state change.
-    }, [options.continuous, options.interimResults]);
+    }, []);
 
     const startListening = useCallback(() => {
         if (recognitionRef.current && !isListening) {
             try {
+                recognitionRef.current.continuous = options.continuous || false;
+                recognitionRef.current.interimResults = options.interimResults || false;
+
                 setError('');
                 setTranscript('');
                 transcriptRef.current = '';
@@ -90,7 +99,7 @@ export const useSpeechRecognition = (options: { continuous?: boolean; interimRes
                 setIsListening(false);
             }
         }
-    }, [isListening]);
+    }, [isListening, options.continuous, options.interimResults]);
 
     const stopListening = useCallback(() => {
         if (recognitionRef.current && isListening) {

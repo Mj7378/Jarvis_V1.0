@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useRef, useState, useEffect } from 'react';
 import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon, ConversationIcon, TrashIcon, DashboardIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -133,14 +129,65 @@ const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
             </div>
             
             <div className="flex items-center justify-between pt-4 mt-4 border-t border-primary-t-20">
-                <label htmlFor="wakeword-input" className="text-sm text-slate-300">Wake Word</label>
+                <label htmlFor="wakeword-toggle" className="text-sm text-slate-300 cursor-pointer">Enable Wake Word</label>
+                <div className="relative">
+                    <input 
+                        type="checkbox" 
+                        id="wakeword-toggle"
+                        checked={themeSettings.wakeWordEnabled}
+                        onChange={(e) => handleSettingChange('wakeWordEnabled', e.target.checked)}
+                        className="toggle-checkbox absolute w-full h-full opacity-0"
+                    />
+                    <label htmlFor="wakeword-toggle" className="toggle-label">
+                        <div className="toggle-dot"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+                <label htmlFor="wakeword-input" className={`text-sm transition-opacity ${!themeSettings.wakeWordEnabled ? 'text-text-muted opacity-50' : 'text-slate-300'}`}>Wake Word</label>
                 <input
                     id="wakeword-input"
                     type="text"
                     value={themeSettings.wakeWord}
                     onChange={(e) => handleSettingChange('wakeWord', e.target.value)}
-                    className="w-36 bg-slate-800/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                    disabled={!themeSettings.wakeWordEnabled}
+                    className="w-36 bg-slate-800/80 border border-primary-t-20 rounded-md p-1 px-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm disabled:bg-disabled-bg disabled:text-disabled-text disabled:cursor-not-allowed"
                 />
+            </div>
+        </div>
+    );
+};
+
+const AICoreSettingsPanel: React.FC<Pick<RightSidebarProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = 
+({ themeSettings, onThemeChange, sounds }) => {
+    const handlePersonaChange = (persona: 'classic' | 'stark') => {
+        sounds.playClick();
+        onThemeChange(p => ({ ...p, persona: persona }));
+    };
+
+    const personas = [
+        { id: 'classic' as const, name: 'Classic J.A.R.V.I.S.' },
+        { id: 'stark' as const, name: 'Stark Protocol' },
+    ];
+
+    return (
+        <div className="space-y-2">
+            <p className="text-sm text-text-muted">Select the AI's core personality.</p>
+            <div className="flex gap-2">
+                {personas.map(persona => (
+                    <button 
+                        key={persona.id} 
+                        onClick={() => handlePersonaChange(persona.id)}
+                        className={`flex-1 text-center py-2 text-sm rounded-md border transition-all duration-200 transform hover:scale-[1.03] active:scale-100 ${
+                            themeSettings.persona === persona.id
+                                ? 'bg-primary-t-20 border-primary'
+                                : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700/80'
+                        }`}
+                    >
+                        {persona.name}
+                    </button>
+                ))}
             </div>
         </div>
     );
@@ -522,7 +569,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
     ];
     
     const quickActions = [
-        { name: 'Design Mode', icon: <GenerateImageIcon className="w-4 h-4 inline-block" />, action: onDesignMode },
+        { name: 'Image Studio', icon: <GenerateImageIcon className="w-4 h-4 inline-block" />, action: onDesignMode },
         { name: 'Simulation Mode', icon: <GenerateVideoIcon className="w-4 h-4 inline-block" />, action: onSimulationMode },
     ];
     
@@ -580,6 +627,15 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
                     <TrashIcon className="w-5 h-5" />
                     <span className="font-orbitron tracking-wider text-sm">Clear History</span>
                 </button>
+            </CollapsibleSection>
+            
+            <CollapsibleSection
+                title="AI Core"
+                icon={<GeminiIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "AI Core"}
+                onToggle={() => handleToggleSection("AI Core")}
+            >
+                <AICoreSettingsPanel {...props} />
             </CollapsibleSection>
 
             <CollapsibleSection

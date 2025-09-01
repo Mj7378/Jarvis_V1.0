@@ -61,7 +61,7 @@ const GenerativeToolsModule: React.FC<Pick<ControlCenterProps, 'onDesignMode' | 
              <h2 className="panel-title">Generative Tools</h2>
              <div className="flex-1 flex flex-col justify-around">
                 <div>
-                    <label className="text-xs font-orbitron text-text-muted flex items-center gap-2 mb-1"><GenerateImageIcon className="w-4 h-4" /> Design Mode</label>
+                    <label className="text-xs font-orbitron text-text-muted flex items-center gap-2 mb-1"><GenerateImageIcon className="w-4 h-4" /> Image Studio</label>
                     <input type="text" value={designPrompt} onChange={e => setDesignPrompt(e.target.value)} className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-1.5 px-2 text-sm focus:ring-2 ring-primary focus:outline-none"/>
                     <button onClick={() => onDesignMode(designPrompt)} className="w-full mt-2 py-1.5 text-sm bg-primary-t-50 hover:bg-primary-t-80 rounded-md transition-colors">Generate</button>
                 </div>

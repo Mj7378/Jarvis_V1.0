@@ -30,7 +30,7 @@ This project is a showcase of how to build a complex, feature-rich AI applicatio
 
 ### 🚀 Advanced Generative Modes
 *   **👁️ Vision Mode:** Activate your camera to stream video. Capture an image and ask J.A.R.V.I.S. to analyze and describe what it sees.
-*   **🎨 Design Mode:** Describe a visual concept (e.g., "a futuristic arc reactor") and have J.A.R.V.I.S. generate a high-quality image using the `imagen-4.0-generate-001` model.
+*   **🎨 Image Studio (Design Mode):** Describe an initial concept and have J.A.R.V.I.S. generate an image. Then, use conversational commands to interactively edit the image—add objects, change colors, alter the background, and more, leveraging the `gemini-2.5-flash-image-preview` model.
 *   **🎬 Simulation Mode:** Describe a scenario (e.g., "a high-speed chase through a neon city") and watch J.A.R.V.I.S. generate a short video clip using the `veo-2.0-generate-001` model.
 *   **🌐 Universal Translator:** An experimental real-time translation module that listens to foreign speech and provides a live English translation.
 
@@ -52,6 +52,7 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 *   **Reactive Interface:** A dynamic and visually stunning HUD built with React and Tailwind CSS that reacts to the AI's state (Idle, Thinking, Speaking).
 *   **Theme Editor:** In-depth settings allow you to customize the entire look and feel:
     *   **Colors:** Change the primary UI color and panel background colors with a color picker or choose from presets.
+    *   **Dynamic Persona:** Switch between the classic, helpful J.A.R.V.I.S. and the witty, sarcastic "Stark Protocol" persona to tailor your conversational experience.
     *   **Theme:** Switch between "Dark" and "Light" modes.
     *   **Visual Effects:** Toggle a background grid, scanline overlay, and a text flicker effect for the perfect sci-fi aesthetic.
 *   **Custom Boot Sequence:** Choose between a holographic boot animation or upload your own video for a personalized system startup.
@@ -65,6 +66,7 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 *   **AI Models:** Google Gemini API (`@google/genai`)
     *   **Chat & Vision:** `gemini-2.5-flash`
     *   **Image Generation:** `imagen-4.0-generate-001`
+    *   **Image Editing:** `gemini-2.5-flash-image-preview`
     *   **Video Generation:** `veo-2.0-generate-001`
 *   **Browser Storage:** IndexedDB for storing the custom boot video file.
 *   **Web APIs:**
@@ -108,7 +110,7 @@ This project is designed to run directly in the browser without a build step.
 
 ### The J.A.R.V.I.S. Protocol
 
-The core of the AI's functionality is defined by a detailed **system instruction** provided to the Gemini model (`services/geminiService.ts`). This prompt establishes the J.A.R.V.I.S. personality and defines a strict communication protocol. There are two main interaction modes:
+The core of the AI's functionality is defined by a detailed **system instruction** provided to the Gemini model (`services/aiOrchestrator.ts`). This prompt establishes the J.A.R.V.I.S. personality and defines a strict communication protocol. There are two main interaction modes:
 
 1.  **Device Control Protocol:** When a user's command is interpreted as an action (like opening a URL or controlling a smart device), the AI is instructed to respond **only with a JSON object**. This structured data is then parsed by the frontend to execute the command. This prevents conversational filler and ensures reliable command execution.
 
@@ -119,13 +121,13 @@ The core of the AI's functionality is defined by a detailed **system instruction
 The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the visual feedback for the user (e.g., `THINKING`, `LISTENING`, `SPEAKING`). The application is broken down into a series of modular components:
 
 *   `App.tsx`: The root component that manages all state, user input, and orchestrates communication with services and modals.
-*   `services/geminiService.ts`: A dedicated module for all interactions with the `@google/genai` SDK, containing the system prompt and API call logic.
+*   `services/aiOrchestrator.ts`: A dedicated module for all interactions with the `@google/genai` SDK, containing the system prompt and API call logic.
 *   `hooks/`: Reusable hooks for managing chat history, sound effects, speech synthesis, and speech recognition.
 *   `components/`: A comprehensive library of UI components, including:
     *   `CoreInterface.tsx`: The central animated orb that displays the AI's status.
     *   `ChatLog.tsx`: The scrollable chat history panel.
     *   `SettingsModal.tsx`: The slide-out panel for all user-configurable settings.
-    *   **Mode Modals** (`VisionMode.tsx`, `DesignMode.tsx`, etc.): Full-screen overlays for the application's advanced generative features.
+    *   **Mode Modals** (`VisionMode.tsx`, `ImageStudio.tsx`, etc.): Full-screen overlays for the application's advanced generative features.
 
 ---
 

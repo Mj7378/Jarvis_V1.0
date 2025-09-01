@@ -18,6 +18,7 @@ export enum AppState {
   ERROR = 'ERROR',
   SPEAKING = 'SPEAKING',
   LISTENING = 'LISTENING',
+  AWAITING_WAKE_WORD = 'AWAITING_WAKE_WORD',
 }
 
 export interface DeviceControlCommand {
@@ -66,8 +67,10 @@ export interface ThemeSettings {
   voiceProfiles: VoiceProfile[];
   activeVoiceProfileId: string | null;
   wakeWord: string;
+  wakeWordEnabled: boolean;
   aiProvider: 'automatic' | 'google_gemini' | 'pica_ai';
   hudLayout: 'classic' | 'tactical';
+  persona: 'classic' | 'stark';
   homeAssistantUrl: string;
   homeAssistantToken: string;
 }
