@@ -10,7 +10,7 @@ import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveAsset, getAsset, deleteAsset } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder, SmartHomeState } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
@@ -110,6 +110,23 @@ const FULL_THEMES = [
     { name: 'Cosmic', primaryColor: '#9d6eff', panelColor: '#1e1b4b', themeMode: 'dark' as const },
 ];
 
+const INITIAL_SMART_HOME_STATE: SmartHomeState = {
+    lights: {
+        'Living Room': true,
+        'Bedroom': false,
+        'Kitchen': false,
+    },
+    thermostat: 21,
+    security: {
+        frontDoorLocked: true,
+    },
+    appliances: {
+        ceilingFan: 'off',
+        airPurifier: false,
+    },
+};
+
+
 type ToastNotification = {
   id: string;
   title: string;
@@ -132,6 +149,9 @@ const App: React.FC = () => {
   // Staged content for multimodal input
   const [stagedImage, setStagedImage] = useState<{ mimeType: string; data: string; dataUrl: string; } | null>(null);
   
+  // Smart Home State
+  const [smartHomeState, setSmartHomeState] = useState<SmartHomeState>(INITIAL_SMART_HOME_STATE);
+
   // Theme & Settings
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
     try {
@@ -418,18 +438,100 @@ const App: React.FC = () => {
             handleAppControl(cmd.params.action, cmd.params.value);
             break;
         case 'home_automation':
-            if (cmd.params.device === 'camera' && cmd.params.action === 'show_feed') {
-                setCameraFeed({ location: cmd.params.location || 'Unknown Location' });
-            } else {
-                setToasts(prev => [...prev, {
-                    id: `home_auto_${Date.now()}`,
-                    title: 'Home Automation',
-                    message: cmd.spoken_response,
-                    icon: <HomeIcon className="w-6 h-6 text-primary" />,
-                }]);
-            }
+            handleHomeAutomation(cmd);
             break;
     }
+  };
+
+  const handleHomeAutomation = (cmd: DeviceControlCommand) => {
+        const { device, action, location, value } = cmd.params;
+        
+        // Always provide UI feedback via a toast notification.
+        setToasts(prev => [...prev, {
+            id: `home_auto_${Date.now()}`,
+            title: 'Home Automation',
+            message: cmd.spoken_response,
+            icon: <HomeIcon className="w-6 h-6 text-primary" />,
+        }]);
+        
+        // Handle specific device actions
+        if (device === 'camera' && action === 'show_feed') {
+            setCameraFeed({ location: location || 'Unknown Location' });
+            return;
+        }
+
+        setSmartHomeState(prev => {
+            // Use deep copy to prevent state mutation issues
+            const newState = JSON.parse(JSON.stringify(prev));
+
+            switch(device) {
+                case 'lights':
+                    const roomKey = Object.keys(newState.lights).find(k => k.toLowerCase() === location?.toLowerCase());
+                    if (roomKey) {
+                        newState.lights[roomKey] = (action === 'turn_on');
+                    }
+                    break;
+                case 'lock':
+                    newState.security.frontDoorLocked = (action === 'lock');
+                    break;
+                case 'thermostat':
+                    // Extract number from value like "22C" or "72F"
+                    const temp = parseInt(value);
+                    if (!isNaN(temp)) {
+                         newState.thermostat = temp; // Assuming Celsius for simplicity
+                    }
+                    break;
+                case 'fan':
+                    if (['off', 'low', 'high'].includes(value)) {
+                        newState.appliances.ceilingFan = value;
+                    }
+                    break;
+                case 'air_purifier':
+                    newState.appliances.airPurifier = (action === 'turn_on');
+                    break;
+                case 'scene':
+                     switch(value) {
+                        case 'movie night':
+                            newState.lights['Living Room'] = true;
+                            newState.lights['Bedroom'] = false;
+                            newState.lights['Kitchen'] = false;
+                            newState.thermostat = 20;
+                            newState.security.frontDoorLocked = true;
+                            break;
+                        case 'good morning':
+                            newState.lights['Bedroom'] = true;
+                            newState.lights['Living Room'] = true;
+                            newState.thermostat = 22;
+                            newState.appliances.airPurifier = true;
+                            break;
+                        case 'away':
+                            Object.keys(newState.lights).forEach(room => newState.lights[room] = false);
+                            newState.thermostat = 18;
+                            newState.security.frontDoorLocked = true;
+                            newState.appliances.airPurifier = false;
+                            newState.appliances.ceilingFan = 'off';
+                            break;
+                        case 'bedtime':
+                            newState.lights['Living Room'] = false;
+                            newState.lights['Kitchen'] = false;
+                            newState.lights['Bedroom'] = true;
+                            newState.thermostat = 19;
+                            newState.security.frontDoorLocked = true;
+                            newState.appliances.airPurifier = false;
+                            newState.appliances.ceilingFan = 'off';
+                            break;
+                        case 'welcome home':
+                            newState.lights['Living Room'] = true;
+                            newState.lights['Kitchen'] = true;
+                            newState.thermostat = 21;
+                            newState.security.frontDoorLocked = false;
+                            newState.appliances.airPurifier = true;
+                            break;
+                    }
+                    break;
+            }
+            return newState;
+        });
   };
 
   const handleAppControl = (action: string, value: any) => {
@@ -652,6 +754,7 @@ const App: React.FC = () => {
     onProcessCommand: processUserMessage,
     onOpenSettings: () => setIsSettingsOpen(true),
     onShowCameraFeed: (location: string) => setCameraFeed({ location }),
+    smartHomeState: smartHomeState,
   };
 
   switch (systemState) {

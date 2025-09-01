@@ -86,6 +86,21 @@ export interface WeatherData {
   day: string;
 }
 
+export interface SmartHomeState {
+    lights: {
+        [key: string]: boolean; // room: isOn
+    };
+    thermostat: number; // in Celsius
+    security: {
+        frontDoorLocked: boolean;
+    };
+    appliances: {
+        ceilingFan: 'off' | 'low' | 'high';
+        airPurifier: boolean;
+    };
+}
+
+
 declare global {
   interface Window {
     webkitAudioContext: typeof AudioContext;
