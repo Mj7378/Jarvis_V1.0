@@ -1,8 +1,9 @@
 
 
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RightSidebar, RightSidebarProps } from './RightSidebar';
-import { PowerIcon, SettingsIcon, CloseIcon } from './Icons';
+import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -11,7 +12,66 @@ interface SettingsModalProps extends Omit<RightSidebarProps, 'onSectionVisibilit
     onClose: () => void;
     onShutdown: () => void;
     onClearChat: () => void;
+    onConnectHA: () => void;
+    onDisconnectHA: () => void;
+    haConnectionStatus: string;
 }
+
+const HomeAssistantSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds' | 'onConnectHA' | 'onDisconnectHA' | 'haConnectionStatus'>> = 
+({ themeSettings, onThemeChange, sounds, onConnectHA, onDisconnectHA, haConnectionStatus }) => {
+
+    const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
+        onThemeChange(prev => ({ ...prev, [key]: value }));
+    };
+
+    const getStatusIndicator = () => {
+        switch (haConnectionStatus) {
+            case 'connected': return <span className="text-green-400">Connected</span>;
+            case 'connecting':
+            case 'authenticating':
+                return <span className="text-yellow-400 animate-pulse">Connecting...</span>;
+            case 'error': return <span className="text-red-400">Connection Failed</span>;
+            case 'disconnected':
+            default:
+                return <span className="text-text-muted">Disconnected</span>;
+        }
+    };
+    
+    return (
+        <div className="space-y-4">
+            <div>
+                <label htmlFor="ha-url" className="block text-sm text-slate-300 mb-1">Instance URL</label>
+                <input
+                    type="text"
+                    id="ha-url"
+                    value={themeSettings.homeAssistantUrl}
+                    onChange={(e) => handleSettingChange('homeAssistantUrl', e.target.value)}
+                    placeholder="ws://homeassistant.local:8123/api/websocket"
+                    className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                />
+            </div>
+             <div>
+                <label htmlFor="ha-token" className="block text-sm text-slate-300 mb-1">Long-Lived Access Token</label>
+                <input
+                    type="password"
+                    id="ha-token"
+                    value={themeSettings.homeAssistantToken}
+                    onChange={(e) => handleSettingChange('homeAssistantToken', e.target.value)}
+                    placeholder="Enter your token"
+                    className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                />
+            </div>
+            <div className="flex items-center justify-between pt-2">
+                <div className="text-sm">Status: {getStatusIndicator()}</div>
+                <div className="flex gap-2">
+                    <button onClick={onDisconnectHA} disabled={haConnectionStatus === 'disconnected'} className="px-3 py-1.5 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80 disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
+                    <button onClick={onConnectHA} disabled={haConnectionStatus === 'connected' || haConnectionStatus === 'connecting'} className="px-3 py-1.5 text-sm bg-primary-t-50 rounded-md border border-primary-t-80 hover:bg-primary-t-80 disabled:opacity-50 disabled:cursor-not-allowed">Connect</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { 
@@ -20,6 +80,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
     const [isHovering, setIsHovering] = useState(false);
     const [isSectionVisible, setIsSectionVisible] = useState(false);
+    const [openSection, setOpenSection] = useState<string | null>(null);
     const closeTimeoutRef = useRef<number | null>(null);
 
     const handleClose = useCallback(() => {
@@ -46,6 +107,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
     const handleShutdown = () => {
         onShutdown();
+    };
+
+    const handleToggleSection = (sectionTitle: string) => {
+        props.sounds.playClick();
+        setOpenSection(prevOpenSection => 
+            prevOpenSection === sectionTitle ? null : sectionTitle
+        );
+    };
+
+    const CollapsibleSection: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; isOpen: boolean; onToggle: () => void; }> = ({ title, icon, children, isOpen, onToggle }) => {
+        const id = `collapsible-${title.replace(/\s+/g, '-')}`;
+        return (
+            <div className="border border-primary-t-20 rounded-lg overflow-hidden transition-all duration-300 bg-panel/20">
+                <h3>
+                    <button type="button" onClick={onToggle} className="w-full flex items-center justify-between p-3 hover:bg-primary-t-20 transition-colors duration-200" aria-expanded={isOpen} aria-controls={id}>
+                        <div className="flex items-center gap-3">{icon}<span className="font-orbitron text-text-secondary">{title}</span></div>
+                        <svg className={`w-5 h-5 transition-transform duration-300 text-text-muted ${isOpen ? 'rotate-90' : 'rotate-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                </h3>
+                <div id={id} className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                    <div className="overflow-hidden"><div className="p-3 border-t border-primary-t-20">{children}</div></div>
+                </div>
+            </div>
+        );
     };
     
     return (
@@ -75,11 +160,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 
                 {/* Content - The RightSidebar */}
                 <div className="flex-1 overflow-y-auto p-4 styled-scrollbar">
-                    <RightSidebar
-                        {...props}
-                        onSectionVisibilityChange={setIsSectionVisible}
-                        isHovering={isHovering}
-                    />
+                     <div className="flex flex-col space-y-2">
+                        <RightSidebar
+                            {...props}
+                            onSectionVisibilityChange={setIsSectionVisible}
+                            isHovering={isHovering}
+                        />
+                         <CollapsibleSection
+                            title="Smart Home Integration"
+                            icon={<HomeIcon className="w-5 h-5 text-primary" />}
+                            isOpen={openSection === "Smart Home Integration"}
+                            onToggle={() => handleToggleSection("Smart Home Integration")}
+                        >
+                            <HomeAssistantSettingsPanel {...props} />
+                        </CollapsibleSection>
+                    </div>
                 </div>
 
                 {/* Footer */}

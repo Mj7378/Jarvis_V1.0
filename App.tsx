@@ -1,16 +1,18 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 
 // Services, Hooks, Utils
 import { getAiResponseStream, transcribeAudio } from './services/geminiService';
+import { HomeAssistantService } from './services/homeAssistantService';
 import { useChatHistory, useReminders } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveAsset, getAsset, deleteAsset } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder, SmartHomeState } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder, SmartHomeState, HaEntity } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
@@ -37,6 +39,7 @@ import TacticalSidebar from './components/TacticalSidebar';
 
 // System Lifecycle States
 type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
+type HaConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error' | 'authenticating';
 
 // Helper function to remove markdown for clean speech.
 const stripMarkdown = (text: string): string => {
@@ -99,6 +102,8 @@ const DEFAULT_THEME: ThemeSettings = {
   wakeWord: 'JARVIS',
   aiModel: 'gemini-2.5-flash',
   hudLayout: 'classic',
+  homeAssistantUrl: '',
+  homeAssistantToken: '',
 };
 
 const FULL_THEMES = [
@@ -111,19 +116,7 @@ const FULL_THEMES = [
 ];
 
 const INITIAL_SMART_HOME_STATE: SmartHomeState = {
-    lights: {
-        'Living Room': true,
-        'Bedroom': false,
-        'Kitchen': false,
-    },
-    thermostat: 21,
-    security: {
-        frontDoorLocked: true,
-    },
-    appliances: {
-        ceilingFan: 'off',
-        airPurifier: false,
-    },
+    entities: {}
 };
 
 
@@ -149,8 +142,10 @@ const App: React.FC = () => {
   // Staged content for multimodal input
   const [stagedImage, setStagedImage] = useState<{ mimeType: string; data: string; dataUrl: string; } | null>(null);
   
-  // Smart Home State
+  // Smart Home State & Service
   const [smartHomeState, setSmartHomeState] = useState<SmartHomeState>(INITIAL_SMART_HOME_STATE);
+  const haServiceRef = useRef<HomeAssistantService | null>(null);
+  const [haConnectionStatus, setHaConnectionStatus] = useState<HaConnectionStatus>('disconnected');
 
   // Theme & Settings
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
@@ -203,6 +198,29 @@ const App: React.FC = () => {
   }, [sounds]);
 
   const { addReminder } = useReminders(handleReminderDue);
+
+  // Home Assistant Service Initializer
+  useEffect(() => {
+    haServiceRef.current = new HomeAssistantService(
+        (newEntities) => {
+            setSmartHomeState({ entities: newEntities });
+        },
+        (status) => {
+            setHaConnectionStatus(status);
+            if(status === 'connected') sounds.playSuccess();
+            if(status === 'error') sounds.playError();
+        }
+    );
+
+    if (themeSettings.homeAssistantUrl && themeSettings.homeAssistantToken) {
+        haServiceRef.current.connect(themeSettings.homeAssistantUrl, themeSettings.homeAssistantToken);
+    }
+
+    return () => {
+        haServiceRef.current?.disconnect();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only on mount
 
   // Apply theme settings to the document
   useEffect(() => {
@@ -443,96 +461,79 @@ const App: React.FC = () => {
     }
   };
 
-  const handleHomeAutomation = (cmd: DeviceControlCommand) => {
-        const { device, action, location, value } = cmd.params;
-        
-        // Always provide UI feedback via a toast notification.
+  const findEntityId = useCallback((target: { name?: string, area?: string }, domain: string): string | null => {
+    const { entities } = smartHomeState;
+    if (!entities) return null;
+
+    const targetName = target.name?.toLowerCase();
+    
+    // Prioritize direct name match
+    if(targetName) {
+        for (const entityId in entities) {
+            if (entityId.startsWith(`${domain}.`)) {
+                const friendlyName = entities[entityId].attributes.friendly_name?.toLowerCase();
+                if (friendlyName === targetName) {
+                    return entityId;
+                }
+            }
+        }
+    }
+    
+    // Fallback to searching within an area
+    if(target.area) {
+        // This requires area information which isn't directly on the entity.
+        // For a simple implementation, we can check if the friendly_name contains the area.
+        const targetArea = target.area.toLowerCase();
+        for (const entityId in entities) {
+             if (entityId.startsWith(`${domain}.`)) {
+                const friendlyName = entities[entityId].attributes.friendly_name?.toLowerCase();
+                if (friendlyName?.includes(targetArea)) {
+                    return entityId; // Return first match in area
+                }
+            }
+        }
+    }
+
+    return null;
+  }, [smartHomeState]);
+
+  const handleDirectHomeStateChange = useCallback((params: { domain: string, service: string, entity_id: string, [key: string]: any }) => {
+    const { domain, service, entity_id, ...service_data } = params;
+    haServiceRef.current?.callService(domain, service, { entity_id, ...service_data });
+  }, []);
+
+  const handleHomeAutomation = useCallback((cmd: DeviceControlCommand) => {
+        // Always provide UI feedback via a toast notification for AI commands.
         setToasts(prev => [...prev, {
             id: `home_auto_${Date.now()}`,
             title: 'Home Automation',
             message: cmd.spoken_response,
             icon: <HomeIcon className="w-6 h-6 text-primary" />,
         }]);
+
+        const { domain, service, target, service_data = {} } = cmd.params;
         
-        // Handle specific device actions
-        if (device === 'camera' && action === 'show_feed') {
-            setCameraFeed({ location: location || 'Unknown Location' });
+        // Handle camera feed action specifically
+        if (domain === 'camera' && service === 'show_feed') {
+            setCameraFeed({ location: target.name || 'Unknown Location' });
             return;
         }
 
-        setSmartHomeState(prev => {
-            // Use deep copy to prevent state mutation issues
-            const newState = JSON.parse(JSON.stringify(prev));
+        const entityId = findEntityId(target, domain);
 
-            switch(device) {
-                case 'lights':
-                    const roomKey = Object.keys(newState.lights).find(k => k.toLowerCase() === location?.toLowerCase());
-                    if (roomKey) {
-                        newState.lights[roomKey] = (action === 'turn_on');
-                    }
-                    break;
-                case 'lock':
-                    newState.security.frontDoorLocked = (action === 'lock');
-                    break;
-                case 'thermostat':
-                    // Extract number from value like "22C" or "72F"
-                    const temp = parseInt(value);
-                    if (!isNaN(temp)) {
-                         newState.thermostat = temp; // Assuming Celsius for simplicity
-                    }
-                    break;
-                case 'fan':
-                    if (['off', 'low', 'high'].includes(value)) {
-                        newState.appliances.ceilingFan = value;
-                    }
-                    break;
-                case 'air_purifier':
-                    newState.appliances.airPurifier = (action === 'turn_on');
-                    break;
-                case 'scene':
-                     switch(value) {
-                        case 'movie night':
-                            newState.lights['Living Room'] = true;
-                            newState.lights['Bedroom'] = false;
-                            newState.lights['Kitchen'] = false;
-                            newState.thermostat = 20;
-                            newState.security.frontDoorLocked = true;
-                            break;
-                        case 'good morning':
-                            newState.lights['Bedroom'] = true;
-                            newState.lights['Living Room'] = true;
-                            newState.thermostat = 22;
-                            newState.appliances.airPurifier = true;
-                            break;
-                        case 'away':
-                            Object.keys(newState.lights).forEach(room => newState.lights[room] = false);
-                            newState.thermostat = 18;
-                            newState.security.frontDoorLocked = true;
-                            newState.appliances.airPurifier = false;
-                            newState.appliances.ceilingFan = 'off';
-                            break;
-                        case 'bedtime':
-                            newState.lights['Living Room'] = false;
-                            newState.lights['Kitchen'] = false;
-                            newState.lights['Bedroom'] = true;
-                            newState.thermostat = 19;
-                            newState.security.frontDoorLocked = true;
-                            newState.appliances.airPurifier = false;
-                            newState.appliances.ceilingFan = 'off';
-                            break;
-                        case 'welcome home':
-                            newState.lights['Living Room'] = true;
-                            newState.lights['Kitchen'] = true;
-                            newState.thermostat = 21;
-                            newState.security.frontDoorLocked = false;
-                            newState.appliances.airPurifier = true;
-                            break;
-                    }
-                    break;
+        if (entityId) {
+            // FIX: The variable is `entityId` (camelCase), but the property must be `entity_id` (snake_case).
+             haServiceRef.current?.callService(domain, service, { entity_id: entityId, ...service_data });
+        } else {
+            // Handle case where entity isn't found
+            const errorMsg = `I couldn't find a device named "${target.name || ''}" in the "${target.area || ''}" area.`;
+            addMessage({ role: 'model', content: errorMsg });
+            if (themeSettings.voiceOutputEnabled) {
+                setAppState(AppState.SPEAKING);
+                queueSpeech(errorMsg);
             }
-            return newState;
-        });
-  };
+        }
+  }, [findEntityId, addMessage, queueSpeech, themeSettings.voiceOutputEnabled]);
 
   const handleAppControl = (action: string, value: any) => {
     switch(action) {
@@ -727,6 +728,15 @@ const App: React.FC = () => {
     }]);
   };
 
+  const handleConnectHA = () => {
+    haServiceRef.current?.connect(themeSettings.homeAssistantUrl, themeSettings.homeAssistantToken);
+  };
+  
+  const handleDisconnectHA = () => {
+      haServiceRef.current?.disconnect();
+  };
+
+
   const userInputProps = {
     onSendMessage: handleSendMessage,
     onToggleListening: toggleListening,
@@ -752,6 +762,7 @@ const App: React.FC = () => {
     onDesignMode: (prompt: string) => setDesignModePrompt(prompt),
     onSimulationMode: (prompt: string) => setSimulationModePrompt(prompt),
     onProcessCommand: processUserMessage,
+    onDirectHomeStateChange: handleDirectHomeStateChange,
     onOpenSettings: () => setIsSettingsOpen(true),
     onShowCameraFeed: (location: string) => setCameraFeed({ location }),
     smartHomeState: smartHomeState,
@@ -893,6 +904,9 @@ const App: React.FC = () => {
                         onClearChat={handleClearChat}
                         onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile}
                         onDeleteVoiceProfile={handleDeleteVoiceProfile}
+                        onConnectHA={handleConnectHA}
+                        onDisconnectHA={handleDisconnectHA}
+                        haConnectionStatus={haConnectionStatus}
                     />
 
                     {isActionModalOpen && (

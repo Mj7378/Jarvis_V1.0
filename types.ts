@@ -68,6 +68,8 @@ export interface ThemeSettings {
   wakeWord: string;
   aiModel: 'gemini-2.5-flash';
   hudLayout: 'classic' | 'tactical';
+  homeAssistantUrl: string;
+  homeAssistantToken: string;
 }
 
 export interface Reminder {
@@ -86,17 +88,28 @@ export interface WeatherData {
   day: string;
 }
 
+// Home Assistant Types
+export interface HaEntityAttributes {
+  friendly_name?: string;
+  [key: string]: any;
+}
+
+export interface HaEntity {
+  entity_id: string;
+  state: string;
+  attributes: HaEntityAttributes;
+  last_changed: string;
+  last_updated: string;
+  context: {
+    id: string;
+    parent_id: string | null;
+    user_id: string | null;
+  };
+}
+
 export interface SmartHomeState {
-    lights: {
-        [key: string]: boolean; // room: isOn
-    };
-    thermostat: number; // in Celsius
-    security: {
-        frontDoorLocked: boolean;
-    };
-    appliances: {
-        ceilingFan: 'off' | 'low' | 'high';
-        airPurifier: boolean;
+    entities: {
+        [entityId: string]: HaEntity;
     };
 }
 
