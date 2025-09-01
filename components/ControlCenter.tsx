@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SmartHomeState, HaEntity } from '../types';
-import SystemStatus from './SystemStatus';
 import WeatherWidget from './WeatherWidget';
 import { CameraIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, SettingsIcon, LockClosedIcon, LockOpenIcon, FanIcon, SceneIcon, AirPurifierIcon, AppLauncherIcon } from './Icons';
 
@@ -23,12 +22,6 @@ interface ControlCenterProps {
 
 // --- INTERNAL MODULES ---
 
-const SystemStatusModule: React.FC = () => (
-    <div id="status-panel" className="control-panel">
-        <SystemStatus />
-    </div>
-);
-
 const WeatherModule: React.FC = () => (
     <div id="weather-panel" className="holographic-panel control-panel flex flex-col items-center justify-center p-4">
         <WeatherWidget />
@@ -45,11 +38,11 @@ const QuickActionsModule: React.FC<Pick<ControlCenterProps, 'onRunDiagnostics' |
     ];
 
     return (
-        <div id="actions-panel" className="holographic-panel control-panel flex flex-col">
+        <div id="actions-panel" className="holographic-panel control-panel">
             <h2 className="panel-title">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-3 flex-1">
                 {actions.map(action => (
-                    <button key={action.label} onClick={action.action} className="text-center p-2 bg-slate-800/50 rounded-md border border-slate-700/50 hover:bg-primary-t-20 hover:border-primary-t-50 transition-all flex flex-col items-center justify-center h-20 transform hover:scale-105 active:scale-100">
+                    <button key={action.label} onClick={action.action} className="text-center p-2 bg-slate-800/50 rounded-md border border-slate-700/50 hover:bg-primary-t-20 hover:border-primary-t-50 transition-all flex flex-col items-center justify-center min-h-[5rem] transform hover:scale-105 active:scale-100">
                         <div className="text-primary">{action.icon}</div>
                         <p className="text-xs text-slate-300 mt-2">{action.label}</p>
                     </button>
@@ -64,7 +57,7 @@ const GenerativeToolsModule: React.FC<Pick<ControlCenterProps, 'onDesignMode' | 
     const [simPrompt, setSimPrompt] = useState('A spaceship flying through an asteroid field');
     
     return (
-        <div id="generative-panel" className="holographic-panel control-panel flex flex-col">
+        <div id="generative-panel" className="holographic-panel control-panel">
              <h2 className="panel-title">Generative Tools</h2>
              <div className="flex-1 flex flex-col justify-around">
                 <div>
@@ -103,7 +96,7 @@ const SmartHomeDashboard: React.FC<Pick<ControlCenterProps, 'onDirectHomeStateCh
 
     if (entities.length === 0) {
         return (
-            <div id="home-panel" className="holographic-panel control-panel flex flex-col items-center justify-center text-center">
+            <div id="home-panel" className="holographic-panel control-panel flex-col items-center justify-center text-center">
                  <h2 className="panel-title">Smart Home Dashboard</h2>
                  <div className="text-text-muted">
                     <p>Not connected to Home Assistant.</p>
@@ -114,9 +107,9 @@ const SmartHomeDashboard: React.FC<Pick<ControlCenterProps, 'onDirectHomeStateCh
     }
 
     return (
-        <div id="home-panel" className="holographic-panel control-panel flex flex-col">
+        <div id="home-panel" className="holographic-panel control-panel">
             <h2 className="panel-title">Smart Home Dashboard</h2>
-            <div className="grid grid-rows-2 grid-cols-2 gap-4 flex-1 min-h-0 overflow-y-auto styled-scrollbar pr-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 overflow-y-auto styled-scrollbar pr-2">
 
                 {/* Lighting */}
                 {lights.length > 0 && <div>
@@ -204,7 +197,6 @@ const SmartHomeDashboard: React.FC<Pick<ControlCenterProps, 'onDirectHomeStateCh
 const ControlCenter: React.FC<Omit<ControlCenterProps, 'onProcessCommand'>> = (props) => {
     return (
         <div className="control-center-container styled-scrollbar view-container">
-            <SystemStatusModule />
             <WeatherModule />
             <QuickActionsModule 
                 onRunDiagnostics={props.onRunDiagnostics}

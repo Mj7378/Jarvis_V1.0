@@ -480,47 +480,18 @@
         display: grid;
         min-height: 0;
         gap: clamp(0.25rem, 2vw, 1rem);
-        grid-template-columns: 1fr; /* Mobile-first: single column */
-        grid-template-rows: auto;
-        grid-template-areas:
-          "status"
-          "weather"
-          "actions"
-          "generative"
-          "home";
+        /* A fully responsive grid that creates columns based on available space */
+        grid-template-columns: repeat(auto-fit, minmax(clamp(280px, 40vw, 400px), 1fr));
         overflow: auto;
         padding-right: 8px; /* For scrollbar */
       }
-      .control-panel {
-        min-height: 150px;
-      }
-
-      #status-panel { grid-area: status; }
-      #weather-panel { grid-area: weather; }
-      #actions-panel { grid-area: actions; }
-      #generative-panel { grid-area: generative; }
-      #home-panel { grid-area: home; }
       
-      /* Tablet view */
-      @media (min-width: 768px) {
-          .control-center-container {
-              grid-template-columns: 1fr 1fr;
-              grid-template-areas:
-                  "status weather"
-                  "actions generative"
-                  "home home";
-          }
+      /* Let panels determine their own height based on content */
+      .control-panel {
+        display: flex;
+        flex-direction: column;
       }
 
-      /* Desktop view */
-      @media (min-width: 1280px) { /* xl */
-          .control-center-container {
-              grid-template-columns: repeat(3, 1fr);
-              grid-template-areas:
-                  "status actions generative"
-                  "weather home home";
-          }
-      }
     </style>
   <script type="importmap">
 {

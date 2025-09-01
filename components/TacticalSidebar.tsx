@@ -1,5 +1,4 @@
 import React from 'react';
-import SystemStatus from './SystemStatus';
 import Logo from './Logo';
 import { CameraIcon, SelfHealIcon, TrashIcon } from './Icons';
 
@@ -22,12 +21,7 @@ const TacticalSidebar: React.FC<TacticalSidebarProps> = ({ onRunDiagnostics, onV
             <div className="holographic-panel !p-2 flex items-center justify-center">
                 <Logo />
             </div>
-            <div className="holographic-panel flex-1 flex flex-col min-h-0">
-                <div className="flex-1 flex flex-col justify-center">
-                    <SystemStatus />
-                </div>
-            </div>
-             <div className="holographic-panel">
+             <div className="holographic-panel flex-1">
                 <h2 className="panel-title">Quick Actions</h2>
                 <div className="space-y-2">
                      {actions.map(action => (
