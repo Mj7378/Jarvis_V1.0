@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getWeatherInfo } from '../services/geminiService';
+import { aiOrchestrator } from '../services/aiOrchestrator';
 import type { WeatherData } from '../types';
 import { SunIcon, CloudIcon, RainIcon, SnowIcon, CloudyIcon } from './Icons';
 
@@ -11,7 +11,7 @@ const WeatherWidget: React.FC = () => {
     useEffect(() => {
         const fetchWeather = (position: GeolocationPosition) => {
             const { latitude, longitude } = position.coords;
-            getWeatherInfo(latitude, longitude)
+            aiOrchestrator.getWeatherInfo(latitude, longitude)
                 .then(data => {
                     setWeather(data);
                     setIsLoading(false);

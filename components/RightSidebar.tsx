@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useRef, useState, useEffect } from 'react';
 import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon, ConversationIcon, TrashIcon, DashboardIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -562,22 +564,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
                             <span>{action.name}</span>
                         </button>
                     ))}
-                </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection
-                title="AI Model"
-                icon={<GeminiIcon className="w-5 h-5 text-primary" />}
-                isOpen={openSection === "AI Model"}
-                onToggle={() => handleToggleSection("AI Model")}
-            >
-                <div className="flex items-center justify-between">
-                    <label className="text-sm text-slate-300">Active Model</label>
-                    <div
-                        className="bg-slate-800/80 border border-primary-t-20 rounded-md p-2 px-4 text-slate-200 text-sm"
-                    >
-                        Gemini 2.5 Flash
-                    </div>
                 </div>
             </CollapsibleSection>
             

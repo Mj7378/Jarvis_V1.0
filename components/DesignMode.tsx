@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateImage } from '../services/geminiService';
+import { aiOrchestrator } from '../services/aiOrchestrator';
 import { GenerateImageIcon } from './Icons';
 
 interface DesignModeProps {
@@ -16,7 +16,7 @@ const DesignMode: React.FC<DesignModeProps> = ({ prompt, onComplete, onCancel })
   useEffect(() => {
     const getDesign = async () => {
       try {
-        const result = await generateImage(prompt);
+        const result = await aiOrchestrator.generateImage(prompt);
         setImageDataUrl(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');

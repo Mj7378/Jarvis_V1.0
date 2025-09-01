@@ -1,7 +1,8 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import { streamTranslateText } from '../services/geminiService';
+import { aiOrchestrator } from '../services/aiOrchestrator';
 import { UniversalTranslatorIcon } from './Icons';
 import AudioVisualizer from './AudioVisualizer';
 
@@ -67,7 +68,7 @@ const UniversalTranslator: React.FC<UniversalTranslatorProps> = ({ onClose, audi
     lastSpokenSentence.current = "";
 
     try {
-        const stream = await streamTranslateText(text);
+        const stream = await aiOrchestrator.streamTranslateText(text);
         let currentResponse = "";
 
         for await (const chunk of stream) {

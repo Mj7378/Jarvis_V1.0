@@ -1,9 +1,6 @@
-
-
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RightSidebar, RightSidebarProps } from './RightSidebar';
-import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon } from './Icons';
+import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -67,6 +64,39 @@ const HomeAssistantSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettin
                     <button onClick={onDisconnectHA} disabled={haConnectionStatus === 'disconnected'} className="px-3 py-1.5 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80 disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
                     <button onClick={onConnectHA} disabled={haConnectionStatus === 'connected' || haConnectionStatus === 'connecting'} className="px-3 py-1.5 text-sm bg-primary-t-50 rounded-md border border-primary-t-80 hover:bg-primary-t-80 disabled:opacity-50 disabled:cursor-not-allowed">Connect</button>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+
+const AIEngineSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'sounds'>> = 
+({ themeSettings, onThemeChange, sounds }) => {
+    const handleProviderChange = (provider: ThemeSettings['aiProvider']) => {
+        sounds.playClick();
+        onThemeChange(p => ({ ...p, aiProvider: provider }));
+    };
+
+    const providers = [
+        { id: 'automatic' as const, name: 'Automatic Selection' },
+        { id: 'google_gemini' as const, name: 'Google Gemini (Primary)' },
+        { id: 'pica_ai' as const, name: 'Pica AI (Secondary)' },
+    ];
+
+    return (
+        <div className="space-y-2">
+            <p className="text-sm text-text-muted">Select the primary AI engine. "Automatic" allows J.A.R.V.I.S. to choose the best model for the task.</p>
+            <div className="space-y-2">
+                {providers.map(provider => (
+                    <button 
+                        key={provider.id} 
+                        onClick={() => handleProviderChange(provider.id)}
+                        className={`w-full text-left p-2 rounded-md border transition-all duration-200 flex items-center justify-between ${themeSettings.aiProvider === provider.id ? 'bg-primary-t-20 border-primary' : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/80'}`}
+                    >
+                        <span>{provider.name} {provider.id === 'pica_ai' && <span className="text-xs text-yellow-400">(Simulated)</span>}</span>
+                        {themeSettings.aiProvider === provider.id && <CheckIcon className="w-5 h-5 text-primary"/>}
+                    </button>
+                ))}
             </div>
         </div>
     );
@@ -142,7 +172,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             aria-labelledby="settings-title"
         >
             <div
-                className={`absolute top-20 right-4 w-96 max-h-[calc(100dvh-6rem)] bg-background shadow-2xl shadow-primary/20 border-2 border-primary-t-20 rounded-xl flex flex-col origin-top-right ${isOpen ? 'animate-pop-in-top-right' : 'opacity-0 pointer-events-none'}`}
+                className={`absolute top-4 right-4 left-4 sm:left-auto sm:top-20 sm:w-96 max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-6rem)] bg-background shadow-2xl shadow-primary/20 border-2 border-primary-t-20 rounded-xl flex flex-col origin-top-right ${isOpen ? 'animate-pop-in-top-right' : 'opacity-0 pointer-events-none'}`}
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
@@ -166,6 +196,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                             onSectionVisibilityChange={setIsSectionVisible}
                             isHovering={isHovering}
                         />
+                        <CollapsibleSection
+                            title="AI Engine Configuration"
+                            icon={<GeminiIcon className="w-5 h-5 text-primary" />}
+                            isOpen={openSection === "AI Engine Configuration"}
+                            onToggle={() => handleToggleSection("AI Engine Configuration")}
+                        >
+                            <AIEngineSettingsPanel {...props} />
+                        </CollapsibleSection>
                          <CollapsibleSection
                             title="Smart Home Integration"
                             icon={<HomeIcon className="w-5 h-5 text-primary" />}

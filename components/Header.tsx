@@ -47,7 +47,7 @@ const Header: React.FC<{
     return (
         <header className="hud-header flex items-center justify-between relative">
             {/* Left side: Logo */}
-            <div className="flex-1 flex justify-start">
+            <div className="flex justify-start">
                 <Logo />
             </div>
 
@@ -57,7 +57,7 @@ const Header: React.FC<{
             </div>
             
             {/* Right side: Clock & Controls */}
-            <div className="flex-1 flex justify-end">
+            <div className="flex justify-end">
                 <div className="flex items-center h-full text-sm text-text-primary font-mono">
                     {/* Upgraded System Clock */}
                     <div className="pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">

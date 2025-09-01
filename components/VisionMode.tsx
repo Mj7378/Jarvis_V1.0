@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import { getAiResponseStream } from '../services/geminiService';
+import { aiOrchestrator } from '../services/aiOrchestrator';
 import { FormattedMessage } from './ChatLog'; // Re-use the message formatter
 import {
     CloseIcon, MicrophoneIcon, ObjectDetectionIcon, TextRecognitionIcon,
@@ -109,7 +109,7 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
       const image = { mimeType: 'image/jpeg', data: base64 };
       
       try {
-        const stream = await getAiResponseStream(prompt, [], 'gemini-2.5-flash', image);
+        const stream = await aiOrchestrator.getAiResponseStream(prompt, [], image);
         for await (const chunk of stream) {
             setAnalysisResult(prev => prev + chunk.text);
         }

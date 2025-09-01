@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { transcribeAudio } from '../services/geminiService';
+import { aiOrchestrator } from '../services/aiOrchestrator';
 import { CloseIcon, MicrophoneIcon } from './Icons';
 
 interface VoiceCalibrationModalProps {
@@ -153,7 +153,7 @@ const VoiceCalibrationModal: React.FC<VoiceCalibrationModalProps> = ({ isOpen, o
                 fileToBase64(audioFile),
             ]);
             
-            const transcription = await transcribeAudio(base64Data, audioFile.type);
+            const transcription = await aiOrchestrator.transcribeAudio(base64Data, audioFile.type);
             
             const wordCount = transcription.trim().split(/\s+/).length;
             const wpm = Math.round((wordCount / duration) * 60) || 0;

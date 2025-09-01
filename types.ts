@@ -22,7 +22,7 @@ export enum AppState {
 
 export interface DeviceControlCommand {
     action: 'device_control';
-    command: 'open_url' | 'search' | 'navigate' | 'unsupported' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown' | 'app_control' | 'home_automation';
+    command: 'open_url' | 'search' | 'navigate' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown' | 'app_control' | 'home_automation' | 'wolfram_alpha_query';
     app: string;
     params: any & {
         action?: string;
@@ -66,7 +66,7 @@ export interface ThemeSettings {
   voiceProfiles: VoiceProfile[];
   activeVoiceProfileId: string | null;
   wakeWord: string;
-  aiModel: 'gemini-2.5-flash';
+  aiProvider: 'automatic' | 'google_gemini' | 'pica_ai';
   hudLayout: 'classic' | 'tactical';
   homeAssistantUrl: string;
   homeAssistantToken: string;
@@ -113,6 +113,16 @@ export interface SmartHomeState {
     };
 }
 
+export interface CustomAppDefinition {
+  id: string;
+  name: string;
+  url: string;
+  // For now, only text-based icons are supported for custom apps.
+  iconType: 'text';
+  iconValue: string; // The character to display
+  bgColor: string;
+  textColor: string;
+}
 
 declare global {
   interface Window {

@@ -1,11 +1,8 @@
-
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { SmartHomeState, HaEntity } from '../types';
 import SystemStatus from './SystemStatus';
 import WeatherWidget from './WeatherWidget';
-import { CameraIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, TrashIcon, SettingsIcon, LockClosedIcon, LockOpenIcon, FanIcon, SceneIcon, AirPurifierIcon } from './Icons';
+import { CameraIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, SettingsIcon, LockClosedIcon, LockOpenIcon, FanIcon, SceneIcon, AirPurifierIcon, AppLauncherIcon } from './Icons';
 
 // --- PROPS INTERFACE ---
 interface ControlCenterProps {
@@ -20,6 +17,7 @@ interface ControlCenterProps {
     onOpenSettings: () => void;
     onShowCameraFeed: (location: string) => void;
     smartHomeState: SmartHomeState;
+    onOpenAppLauncher: () => void;
 }
 
 
@@ -38,22 +36,22 @@ const WeatherModule: React.FC = () => (
 );
 
 
-const QuickActionsModule: React.FC<Pick<ControlCenterProps, 'onRunDiagnostics' | 'onVisionMode' | 'onClearChat' | 'onOpenSettings'>> = ({ onRunDiagnostics, onVisionMode, onClearChat, onOpenSettings }) => {
+const QuickActionsModule: React.FC<Pick<ControlCenterProps, 'onRunDiagnostics' | 'onVisionMode' | 'onOpenSettings' | 'onOpenAppLauncher'>> = ({ onRunDiagnostics, onVisionMode, onOpenSettings, onOpenAppLauncher }) => {
     const actions = [
         { label: "Run Diagnostics", icon: <SelfHealIcon className="w-8 h-8"/>, action: onRunDiagnostics },
         { label: "Vision Mode", icon: <CameraIcon className="w-8 h-8" />, action: onVisionMode },
-        { label: "Clear Chat", icon: <TrashIcon className="w-8 h-8" />, action: onClearChat },
+        { label: "App Launcher", icon: <AppLauncherIcon className="w-8 h-8" />, action: onOpenAppLauncher },
         { label: "Settings", icon: <SettingsIcon className="w-8 h-8" />, action: onOpenSettings },
     ];
 
     return (
-        <div id="actions-panel" className="holographic-panel control-panel">
+        <div id="actions-panel" className="holographic-panel control-panel flex flex-col">
             <h2 className="panel-title">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-3 h-[calc(100%-2.75rem)]">
+            <div className="grid grid-cols-2 gap-3 flex-1">
                 {actions.map(action => (
-                    <button key={action.label} onClick={action.action} className="text-center p-2 bg-slate-800/50 rounded-md border border-slate-700/50 hover:bg-primary-t-20 hover:border-primary-t-50 transition-all flex flex-col items-center justify-center space-y-2 transform hover:scale-105 active:scale-100">
+                    <button key={action.label} onClick={action.action} className="text-center p-2 bg-slate-800/50 rounded-md border border-slate-700/50 hover:bg-primary-t-20 hover:border-primary-t-50 transition-all flex flex-col items-center justify-center h-20 transform hover:scale-105 active:scale-100">
                         <div className="text-primary">{action.icon}</div>
-                        <p className="text-xs text-slate-300">{action.label}</p>
+                        <p className="text-xs text-slate-300 mt-2">{action.label}</p>
                     </button>
                 ))}
             </div>
@@ -116,39 +114,27 @@ const SmartHomeDashboard: React.FC<Pick<ControlCenterProps, 'onDirectHomeStateCh
     }
 
     return (
-        <div id="home-panel" className="holographic-panel control-panel">
+        <div id="home-panel" className="holographic-panel control-panel flex flex-col">
             <h2 className="panel-title">Smart Home Dashboard</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100%-2.75rem)] overflow-y-auto styled-scrollbar pr-2">
+            <div className="grid grid-rows-2 grid-cols-2 gap-4 flex-1 min-h-0 overflow-y-auto styled-scrollbar pr-2">
 
-                {/* Column 1: Lighting & Scenes */}
-                <div className="space-y-4">
-                    {lights.length > 0 && <div>
-                        <h3 className="font-orbitron text-sm text-text-secondary mb-2">Lighting</h3>
-                        <div className="space-y-2">
-                            {lights.map(light => (
-                                <div key={light.entity_id} className="flex items-center justify-between bg-panel/50 p-2 rounded-md">
-                                    <label htmlFor={light.entity_id} className="text-sm cursor-pointer truncate pr-2">{light.attributes.friendly_name}</label>
-                                    <div className="relative">
-                                        <input type="checkbox" id={light.entity_id} checked={light.state === 'on'} onChange={() => onDirectHomeStateChange({ domain: 'light', service: 'toggle', entity_id: light.entity_id })} className="toggle-checkbox absolute w-full h-full opacity-0" />
-                                        <label htmlFor={light.entity_id} className="toggle-label !w-11 !h-6"><div className="toggle-dot !w-4 !h-4"></div></label>
-                                    </div>
+                {/* Lighting */}
+                {lights.length > 0 && <div>
+                    <h3 className="font-orbitron text-sm text-text-secondary mb-2">Lighting</h3>
+                    <div className="space-y-2">
+                        {lights.map(light => (
+                            <div key={light.entity_id} className="flex items-center justify-between bg-panel/50 p-2 rounded-md">
+                                <label htmlFor={light.entity_id} className="text-sm cursor-pointer truncate pr-2">{light.attributes.friendly_name}</label>
+                                <div className="relative">
+                                    <input type="checkbox" id={light.entity_id} checked={light.state === 'on'} onChange={() => onDirectHomeStateChange({ domain: 'light', service: 'toggle', entity_id: light.entity_id })} className="toggle-checkbox absolute w-full h-full opacity-0" />
+                                    <label htmlFor={light.entity_id} className="toggle-label !w-11 !h-6"><div className="toggle-dot !w-4 !h-4"></div></label>
                                 </div>
-                            ))}
-                        </div>
-                    </div>}
-                     {scenes.length > 0 && <div>
-                        <h3 className="font-orbitron text-sm text-text-secondary mb-2 flex items-center gap-2"><SceneIcon className="w-4 h-4" /> Scenes</h3>
-                        <div className="grid grid-cols-1 gap-2">
-                           {scenes.slice(0, 5).map(scene => (
-                               <button key={scene.entity_id} onClick={() => onDirectHomeStateChange({ domain: 'scene', service: 'turn_on', entity_id: scene.entity_id })} className="w-full text-center p-2 rounded-md hover:bg-primary-t-20 bg-panel/50 text-sm transition-colors text-text-primary truncate">
-                                   {scene.attributes.friendly_name}
-                                </button>
-                           ))}
-                        </div>
-                    </div>}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>}
                 
-                {/* Column 2: Climate & Switches */}
+                {/* Climate & Switches */}
                 <div className="space-y-4">
                      {climate && <div>
                         <h3 className="font-orbitron text-sm text-text-secondary mb-2">Climate Control</h3>
@@ -180,7 +166,19 @@ const SmartHomeDashboard: React.FC<Pick<ControlCenterProps, 'onDirectHomeStateCh
                     </div>
                 </div>
 
-                {/* Column 3: Security */}
+                {/* Scenes */}
+                 {scenes.length > 0 && <div>
+                    <h3 className="font-orbitron text-sm text-text-secondary mb-2 flex items-center gap-2"><SceneIcon className="w-4 h-4" /> Scenes</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                       {scenes.slice(0, 5).map(scene => (
+                           <button key={scene.entity_id} onClick={() => onDirectHomeStateChange({ domain: 'scene', service: 'turn_on', entity_id: scene.entity_id })} className="w-full text-center p-2 rounded-md hover:bg-primary-t-20 bg-panel/50 text-sm transition-colors text-text-primary truncate">
+                               {scene.attributes.friendly_name}
+                            </button>
+                       ))}
+                    </div>
+                </div>}
+                
+                {/* Security */}
                  {(locks.length > 0 || cameras.length > 0) && <div className="space-y-2">
                     <h3 className="font-orbitron text-sm text-text-secondary mb-2">Security</h3>
                     {locks.map(lock => (
@@ -211,8 +209,8 @@ const ControlCenter: React.FC<Omit<ControlCenterProps, 'onProcessCommand'>> = (p
             <QuickActionsModule 
                 onRunDiagnostics={props.onRunDiagnostics}
                 onVisionMode={props.onVisionMode}
-                onClearChat={props.onClearChat}
                 onOpenSettings={props.onOpenSettings}
+                onOpenAppLauncher={props.onOpenAppLauncher}
             />
             <GenerativeToolsModule 
                 onDesignMode={props.onDesignMode}

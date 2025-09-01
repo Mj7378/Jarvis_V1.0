@@ -1,8 +1,10 @@
-
+import type { CustomAppDefinition } from '../types';
 
 const DB_NAME = 'JarvisDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'assets';
+const DB_VERSION = 2; // Bump version for schema change
+const ASSETS_STORE_NAME = 'assets';
+const CUSTOM_APPS_STORE_NAME = 'customApps';
+
 
 let db: IDBDatabase;
 
@@ -26,8 +28,12 @@ const openDb = (): Promise<IDBDatabase> => {
     request.onupgradeneeded = (event) => {
       const dbInstance = (event.target as IDBOpenDBRequest).result;
       // Create an object store if it doesn't exist.
-      if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-        dbInstance.createObjectStore(STORE_NAME);
+      if (!dbInstance.objectStoreNames.contains(ASSETS_STORE_NAME)) {
+        dbInstance.createObjectStore(ASSETS_STORE_NAME);
+      }
+       // Create the new object store for custom apps
+      if (!dbInstance.objectStoreNames.contains(CUSTOM_APPS_STORE_NAME)) {
+        dbInstance.createObjectStore(CUSTOM_APPS_STORE_NAME, { keyPath: 'id' });
       }
     };
   });
@@ -36,8 +42,8 @@ const openDb = (): Promise<IDBDatabase> => {
 export const saveAsset = async (key: string, asset: File): Promise<void> => {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
+    const transaction = db.transaction(ASSETS_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(ASSETS_STORE_NAME);
     const request = store.put(asset, key);
     
     transaction.oncomplete = () => resolve();
@@ -48,8 +54,8 @@ export const saveAsset = async (key: string, asset: File): Promise<void> => {
 export const getAsset = async <T extends File>(key: string): Promise<T | null> => {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
+    const transaction = db.transaction(ASSETS_STORE_NAME, 'readonly');
+    const store = transaction.objectStore(ASSETS_STORE_NAME);
     const request = store.get(key);
     
     request.onsuccess = () => resolve(request.result || null);
@@ -60,13 +66,62 @@ export const getAsset = async <T extends File>(key: string): Promise<T | null> =
 export const deleteAsset = async (key: string): Promise<void> => {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
+    const transaction = db.transaction(ASSETS_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(ASSETS_STORE_NAME);
     const request = store.delete(key);
     
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(new Error(`Failed to delete asset with key: ${key}.`));
   });
+};
+
+// --- New Functions for Custom Apps ---
+export const saveCustomApp = async (app: CustomAppDefinition): Promise<void> => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CUSTOM_APPS_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(CUSTOM_APPS_STORE_NAME);
+    store.put(app);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error(`Failed to save custom app with id: ${app.id}.`));
+  });
+};
+
+export const getCustomApps = async (): Promise<CustomAppDefinition[]> => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CUSTOM_APPS_STORE_NAME, 'readonly');
+    const store = transaction.objectStore(CUSTOM_APPS_STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(new Error('Failed to retrieve custom apps.'));
+  });
+};
+
+export const deleteCustomApp = async (appId: string): Promise<void> => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CUSTOM_APPS_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(CUSTOM_APPS_STORE_NAME);
+    store.delete(appId);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error(`Failed to delete custom app with id: ${appId}.`));
+  });
+};
+
+
+export const getOperatingSystem = (): 'Windows' | 'macOS' | 'Linux' | 'Android' | 'iOS' | 'Unknown' => {
+  const userAgent = window.navigator.userAgent;
+
+  if (userAgent.indexOf("Win") !== -1) return "Windows";
+  if (userAgent.indexOf("Mac") !== -1) return "macOS";
+  // Check for Linux before Android, as Android user agents also contain "Linux"
+  if (userAgent.indexOf("Linux") !== -1 && userAgent.indexOf("Android") === -1) return "Linux";
+  if (userAgent.indexOf("Android") !== -1) return "Android";
+  // Use a regex to check for iOS devices
+  if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) return "iOS";
+  
+  return "Unknown";
 };
 
 export const parseTimeString = (timeString: string): number | null => {
