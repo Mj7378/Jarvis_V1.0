@@ -32,7 +32,6 @@ This project is a showcase of how to build a complex, feature-rich AI applicatio
 *   **👁️ Vision Mode:** Activate your camera to stream video. Capture an image and ask J.A.R.V.I.S. to analyze and describe what it sees.
 *   **🎨 Image Studio (Design Mode):** Describe an initial concept and have J.A.R.V.I.S. generate an image. Then, use conversational commands to interactively edit the image—add objects, change colors, alter the background, and more, leveraging the `gemini-2.5-flash-image-preview` model.
 *   **🎬 Simulation Mode:** Describe a scenario (e.g., "a high-speed chase through a neon city") and watch J.A.R.V.I.S. generate a short video clip using the `veo-2.0-generate-001` model.
-*   **🌐 Universal Translator:** An experimental real-time translation module that listens to foreign speech and provides a live English translation.
 
 ### 📎 Versatile Input Methods
 J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment menu to:
@@ -43,10 +42,11 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 
 ### ⚙️ System & Device Control
 *   **Reliable Command Protocol:** J.A.R.V.I.S. uses a strict JSON-only protocol for device commands, ensuring high reliability.
-*   **Web App Integration:** Issue commands to open a wide range of websites and web apps, including YouTube, WhatsApp, Google Drive, Replit, and more.
+*   **Web App Integration:** Issue commands to open a wide range of built-in websites and web apps, including YouTube, Gmail, Google Drive, GitHub, TradingView, WhatsApp, Replit, and Wikipedia.
+*   **Custom App Launcher:** Add your own favorite web apps to the launcher for quick, voice-activated access.
 *   **Integrated Search:** Directly ask J.A.R.V.I.S. to search Google or YouTube for specific queries.
 *   **System Functions:** Run simulated diagnostics or issue a shutdown command for a complete system lifecycle experience.
-*   **🏠 Home Automation (Simulated):** Command J.A.R.V.I.S. to control smart lights, thermostats, locks, and security cameras. All commands are simulated with UI feedback, providing a complete smart-home control experience.
+*   **🏠 Home Automation Integration:** Connect directly to your Home Assistant instance via WebSockets. Control lights, locks, climate, fans, and scenes, and view camera feeds directly from the UI.
 
 ### 🎨 Futuristic HUD & Deep Customization
 *   **Dynamic Panel-Based UI:** A stunning and flexible interface built with React and Tailwind CSS. Major functions like Vision Mode, Settings, and the Control Center open in a dedicated side-panel, resizing the main chat view without ever overlapping it. This creates a true, non-colliding command center experience.
@@ -69,7 +69,7 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
     *   **Image Generation:** `imagen-4.0-generate-001`
     *   **Image Editing:** `gemini-2.5-flash-image-preview`
     *   **Video Generation:** `veo-2.0-generate-001`
-*   **Browser Storage:** IndexedDB for storing the custom boot video file.
+*   **Browser Storage:** IndexedDB for storing custom boot/shutdown videos and user-added application definitions.
 *   **Web APIs:**
     *   **Web Speech API:** `SpeechRecognition` for voice input and `SpeechSynthesis` for voice output.
     *   **Web Audio API:** For generating procedural UI sound effects.
@@ -84,25 +84,40 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 
 1.  A modern web browser (Chrome recommended for best Web API compatibility).
 2.  A valid Google Gemini API key.
+3.  (Optional) Google Cloud and Dropbox accounts for enabling cloud sync.
 
 ### Installation & Running
 
 This project is designed to run directly in the browser without a build step.
 
-1.  **Set up the API Key:**
-    The application is hard-coded to look for the API key in an environment variable named `API_KEY`. You must ensure this variable is available in the environment where you serve the application.
+1.  **Set up Environment Variables:**
+    The application requires several secret keys to be configured as environment variables. You must ensure these variables are available in the environment where you serve the application.
+    *   `API_KEY`: Your Google Gemini API key.
+    *   `GOOGLE_CLIENT_ID`: (Optional) Your Google Cloud OAuth 2.0 Client ID for enabling Google Drive sync.
+    *   `DROPBOX_CLIENT_ID`: (Optional) Your Dropbox App Client ID for enabling Dropbox sync.
 
-2.  **Serve the files:**
+2.  **(Optional) Configure OAuth for Cloud Sync:**
+    To use the Google Drive or Dropbox sync features, you must configure their respective OAuth consent screens.
+    *   **For Google Drive:**
+        *   In your Google Cloud Console, under APIs & Services > Credentials, create an "OAuth 2.0 Client ID".
+        *   Select "Web application" as the application type.
+        *   Add the URL where you are hosting the application (e.g., `http://localhost:3000`) to both "Authorized JavaScript origins" and "Authorized redirect URIs".
+    *   **For Dropbox:**
+        *   In your Dropbox App Console, create a new app.
+        *   Choose "Scoped access" and select the `files.content.write` and `account_info.read` permissions.
+        *   Under the "Settings" tab, add the URL where you are hosting the application (e.g., `http://localhost:3000`) to the "Redirect URIs" section.
+
+3.  **Serve the files:**
     Use any simple static file server to serve the project's root directory.
     ```bash
     # If you have Node.js installed, you can use the `serve` package
     npx serve
     ```
 
-3.  **Open in Browser:**
+4.  **Open in Browser:**
     Navigate to the local server's address (e.g., `http://localhost:3000`).
 
-4.  **Grant Permissions:**
+5.  **Grant Permissions:**
     Upon first use of certain features, the application will request permission to use your **camera** (for Vision Mode) and **microphone** (for voice commands). You must grant these permissions for full functionality.
 
 ---
@@ -126,14 +141,19 @@ The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the
 *   `hooks/`: Reusable hooks for managing chat history, sound effects, speech synthesis, and speech recognition.
 *   `components/`: A comprehensive library of UI components, including:
     *   `ChatLog.tsx`: The scrollable chat history panel.
-    *   `LeftSidebarDock.tsx`: The new icon-based sidebar for launching modules.
-    *   **Module Panels** (`VisionMode.tsx`, `DesignMode.tsx`, etc.): Self-contained panels for the application's advanced features that appear in a dedicated screen area.
+    *   `TacticalSidebar.tsx`: The icon-based sidebar for launching modules.
+    *   **Module Panels** (`VisionMode.tsx`, `GenerativeStudio.tsx`, etc.): Self-contained panels for the application's advanced features that appear in a dedicated screen area.
 
 ---
 
 ## 🔧 Troubleshooting
 
 *   **API Key Not Valid Error:** This means the `API_KEY` environment variable is either not set or incorrect. Please double-check your setup from the [Getting Started](#getting-started) section.
+*   **Cloud Sync Not Connecting:**
+    *   Ensure you have set the `GOOGLE_CLIENT_ID` and/or `DROPBOX_CLIENT_ID` environment variables.
+    *   Verify that you have correctly configured the "Authorized JavaScript origins" (for Google) and "Redirect URIs" (for both) in your cloud project settings to match the URL where you are running the application.
+    *   Check your browser's console for any OAuth-related errors.
+    *   Your browser might be blocking the authentication pop-up. Disable your pop-up blocker for this site and try again.
 *   **Quota Exceeded Error:** You have made too many requests to the Gemini API in a short period. Please check your Google AI Platform quotas and billing status.
 *   **Microphone/Camera Not Working:**
     *   Ensure you have granted the necessary permissions when the browser prompted you.

@@ -172,10 +172,33 @@ export interface CustomAppDefinition {
   textColor: string;
 }
 
+// Google Drive Sync Types
+export interface DriveUser {
+  name: string;
+  email: string;
+  imageUrl: string;
+}
+
+// Dropbox Sync Types
+export interface DropboxUser {
+  name: string;
+  email: string;
+  imageUrl: string;
+}
+
+export interface SyncedData {
+  chatHistory: ChatMessage[];
+  tasks: Task[];
+  themeSettings: ThemeSettings;
+}
+
+
 declare global {
   interface Window {
     webkitAudioContext: typeof AudioContext;
     SpeechRecognition: any;
     webkitSpeechRecognition: any;
+    gapi: any;
+    google: any;
   }
 }

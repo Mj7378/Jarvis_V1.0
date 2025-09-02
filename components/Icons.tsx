@@ -223,6 +223,19 @@ export const PlusIcon: React.FC<IconProps> = ({ className }) => (
     </IconBase>
 );
 
+export const DriveIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7.71 3.25L1.15 14.28l2.3 4.47h17.1l2.3-4.47L16.29 3.25H7.71zM8.41 16.28L4.85 9.75l3.56-6.5h7.18l3.56 6.5-3.56 6.53H8.41z"/>
+    </svg>
+);
+
+export const DropboxIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3.1 7.2l4.4-3.3 4.4 3.3-4.4 3.3-4.4-3.3zm13.4 0l4.4-3.3-4.4-3.3-4.4 3.3 4.4 3.3zM7.5 10.5l4.4-3.3 4.4 3.3-4.4 3.3-4.4-3.3zm-.1 1.1l-4.4 3.3 4.4 3.3 4.4-3.3-4.4-3.3zm8.9 0l4.4 3.3-4.4 3.3-4.4-3.3 4.4 3.3z"/>
+    </svg>
+);
+
+
 {/* FIX: Add missing icons for EmojiPicker */}
 {/* --- EmojiPicker Icons --- */}
 export const SmileyIcon: React.FC<IconProps> = ({ className }) => (

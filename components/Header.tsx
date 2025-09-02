@@ -37,11 +37,11 @@ const Header: React.FC<{
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-    });
+    }); // Produces DD/MM/YYYY
+
+    const [day, month, year] = formattedDate.split('/');
 
     const dayOfWeek = time.toLocaleDateString('en-US', { timeZone, weekday: 'short' }).toUpperCase();
-    
-    const circumference = 2 * Math.PI * 20; // r=20 for a 48x48 box
 
     return (
         <header className="hud-header flex items-center justify-between relative">
@@ -57,42 +57,32 @@ const Header: React.FC<{
             
             {/* Right side: Clock & Controls */}
             <div className="flex justify-end">
-                <div className="flex items-center h-full text-sm text-text-primary font-mono">
+                <div className="flex items-center h-full text-sm text-text-primary">
                     {/* Upgraded System Clock */}
                     <div className="system-clock pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
-                        <div className="seconds-dial relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
-                            <svg className="w-full h-full" viewBox="0 0 48 48">
-                                <circle cx="24" cy="24" r="20" className="stroke-primary-t-20" strokeWidth="2" fill="none" />
-                                <circle
-                                    cx="24"
-                                    cy="24"
-                                    r="20"
-                                    className="stroke-primary"
-                                    strokeWidth="2"
-                                    fill="none"
-                                    strokeLinecap="round"
-                                    transform="rotate(-90 24 24)"
-                                    style={{
-                                        strokeDasharray: circumference,
-                                        strokeDashoffset: circumference - (parseInt(seconds, 10) / 60) * circumference,
-                                        transition: 'stroke-dashoffset 0.3s linear',
-                                        filter: 'drop-shadow(0 0 5px var(--primary-color-hex))',
-                                    }}
-                                />
-                            </svg>
-                            <div className="seconds-text absolute inset-0 flex items-center justify-center font-mono text-primary text-base md:text-lg font-bold">
-                                {seconds}
-                            </div>
-                        </div>
                         <div className="text-right">
-                            <div className="time-display font-mono text-lg sm:text-xl md:text-2xl text-text-primary tracking-wider flex items-baseline">
+                            <div 
+                                className="time-display font-orbitron text-xl sm:text-2xl md:text-3xl text-primary tracking-wider flex items-baseline justify-end"
+                                style={{ textShadow: '0 0 8px var(--primary-color-hex), 0 0 15px rgba(var(--primary-color-rgb), 0.7), 0 0 25px rgba(var(--primary-color-rgb), 0.5)' }}
+                            >
                                 <span>{hours}</span>
-                                <span className="animate-pulse mx-px">:</span>
+                                <span className="animate-pulse mx-0.5">:</span>
                                 <span>{minutes}</span>
-                                <span className="ampm-display text-base ml-2">{ampm}</span>
+                                <span className="animate-pulse mx-0.5">:</span>
+                                <span>{seconds}</span>
+                                <span className="ampm-display font-orbitron text-lg ml-2">{ampm}</span>
                             </div>
-                            <div className="date-display font-sans text-xs text-text-muted tracking-widest mt-1 hidden sm:block">
-                                {dayOfWeek} | {formattedDate}
+                            <div 
+                                className="date-display font-orbitron text-sm text-primary opacity-80 tracking-widest mt-1 hidden sm:flex items-baseline justify-end"
+                                style={{ textShadow: '0 0 5px rgba(var(--primary-color-rgb), 0.7)' }}
+                            >
+                                <span>{dayOfWeek}</span>
+                                <span className="mx-2">|</span>
+                                <span>{day}</span>
+                                <span className="mx-0.5">/</span>
+                                <span>{month}</span>
+                                <span className="mx-0.5">/</span>
+                                <span>{year}</span>
                             </div>
                         </div>
                     </div>

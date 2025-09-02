@@ -1,8 +1,9 @@
 
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon } from './Icons';
+import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon, DriveIcon, DropboxIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
-import type { ThemeSettings } from '../types';
+import type { ThemeSettings, DriveUser, DropboxUser } from '../types';
 
 
 interface SettingsModalProps {
@@ -23,6 +24,14 @@ interface SettingsModalProps {
     onCalibrateVoice: () => void;
     onChangeActiveVoiceProfile: (profileId: string) => void;
     onDeleteVoiceProfile: (profileId: string) => void;
+    isDriveReady: boolean;
+    isSyncing: boolean;
+    driveUser: DriveUser | null;
+    onConnectDrive: () => void;
+    onDisconnectDrive: () => void;
+    dropboxUser: DropboxUser | null;
+    onConnectDropbox: () => void;
+    onDisconnectDropbox: () => void;
 }
 
 
@@ -278,6 +287,83 @@ const AIEngineSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' |
     );
 };
 
+const CloudSyncPanel: React.FC<Pick<SettingsModalProps, 'isDriveReady' | 'isSyncing' | 'driveUser' | 'onConnectDrive' | 'onDisconnectDrive' | 'dropboxUser' | 'onConnectDropbox' | 'onDisconnectDropbox'>> =
+({ isDriveReady, isSyncing, driveUser, onConnectDrive, onDisconnectDrive, dropboxUser, onConnectDropbox, onDisconnectDropbox }) => {
+
+    const connectedUser = driveUser || dropboxUser;
+    const connectedService = driveUser ? 'drive' : (dropboxUser ? 'dropbox' : null);
+
+    // Show connected view if either Google Drive or Dropbox user exists
+    if (connectedUser && connectedService) {
+        return (
+            <div className="space-y-4">
+                <p className="text-sm text-text-muted">Your session is synced and backed up via {connectedService === 'drive' ? 'Google Drive' : 'Dropbox'}.</p>
+                <div className="p-3 bg-panel/50 rounded-lg border border-primary-t-20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <img src={connectedUser.imageUrl} alt="User" className="w-10 h-10 rounded-full" />
+                        <div>
+                            <p className="font-bold">{connectedUser.name}</p>
+                            <p className="text-xs text-text-muted">{connectedUser.email}</p>
+                        </div>
+                    </div>
+                    {connectedService === 'drive' ? (
+                        <DriveIcon className="w-8 h-8 text-sky-400" />
+                    ) : (
+                        <DropboxIcon className="w-8 h-8 text-blue-400" />
+                    )}
+                </div>
+                <button
+                    onClick={connectedService === 'drive' ? onDisconnectDrive : onDisconnectDropbox}
+                    className="w-full p-2 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80"
+                >
+                    Disconnect
+                </button>
+            </div>
+        );
+    }
+    
+    // Not connected view
+    return (
+        <div className="space-y-4">
+            <p className="text-sm text-text-muted">Connect a cloud provider to sync your chat history, tasks, and settings.</p>
+            <div className="space-y-2">
+                {/* Google Drive */}
+                <button
+                    onClick={onConnectDrive}
+                    disabled={!isDriveReady || isSyncing || !process.env.GOOGLE_CLIENT_ID}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-primary-t-20 hover:bg-primary-t-20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                >
+                    <DriveIcon className="w-8 h-8 text-sky-400" />
+                    <div className="text-left">
+                        <p className="font-bold">Google Drive</p>
+                        <p className="text-xs text-text-muted">Recommended for seamless integration.</p>
+                    </div>
+                    <div className="ml-auto">
+                        {isSyncing && <svg className="w-5 h-5 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
+                    </div>
+                </button>
+                {/* Dropbox */}
+                <button
+                    onClick={onConnectDropbox}
+                    disabled={isSyncing || !process.env.DROPBOX_CLIENT_ID}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-primary-t-20 hover:bg-primary-t-20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                >
+                    <DropboxIcon className="w-8 h-8 text-blue-400" />
+                    <div className="text-left">
+                        <p className="font-bold">Dropbox</p>
+                        <p className="text-xs text-text-muted">Sync with your Dropbox account.</p>
+                    </div>
+                </button>
+            </div>
+            {(!process.env.GOOGLE_CLIENT_ID || !process.env.DROPBOX_CLIENT_ID) && 
+                <p className="text-xs text-yellow-500 text-center">
+                    Admin: One or more cloud provider Client IDs are not set.
+                </p>
+            }
+        </div>
+    );
+};
+
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { 
@@ -351,6 +437,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     </CollapsibleSection>
                     <CollapsibleSection title="Smart Home" icon={<HomeIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Smart Home"} onToggle={() => handleToggleSection("Smart Home")}>
                         <HomeAssistantSettingsPanel {...props} />
+                    </CollapsibleSection>
+                    <CollapsibleSection title="Cloud Sync" icon={<DriveIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Cloud Sync"} onToggle={() => handleToggleSection("Cloud Sync")}>
+                        <CloudSyncPanel {...props} />
                     </CollapsibleSection>
                     <CollapsibleSection title="Conversation" icon={<ConversationIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Conversation"} onToggle={() => handleToggleSection("Conversation")}>
                         <button onClick={onClearChat} className="w-full flex items-center justify-center gap-3 p-2 rounded-md text-yellow-400 border border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-300 transition-all duration-300 group">
