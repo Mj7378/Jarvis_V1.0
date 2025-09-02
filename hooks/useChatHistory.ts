@@ -1,6 +1,7 @@
 
+
 import { useState, useCallback, useEffect } from 'react';
-import type { ChatMessage, Reminder } from '../types';
+import type { ChatMessage, Task } from '../types';
 import { parseTimeString } from '../utils/db';
 
 const CHAT_HISTORY_STORAGE_KEY = 'jarvis_chat_history';
@@ -95,78 +96,123 @@ export const useChatHistory = () => {
   return { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage, clearChatHistory };
 };
 
-const REMINDERS_STORAGE_KEY = 'jarvis_reminders';
+const TASKS_STORAGE_KEY = 'jarvis_tasks';
 
-export const useReminders = (onReminderDue: (reminder: Reminder) => void) => {
-  const [reminders, setReminders] = useState<Reminder[]>(() => {
+export const useTasks = (onTaskDue: (task: Task) => void) => {
+  const [tasks, setTasks] = useState<Task[]>(() => {
     try {
-      const saved = localStorage.getItem(REMINDERS_STORAGE_KEY);
+      const saved = localStorage.getItem(TASKS_STORAGE_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Failed to load reminders from local storage", e);
+      console.error("Failed to load tasks from local storage", e);
       return [];
     }
   });
 
-  // Save reminders to localStorage whenever they change
+  // Save tasks to localStorage whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(reminders));
+      localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
     } catch (e) {
-      console.error("Failed to save reminders to local storage", e);
+      console.error("Failed to save tasks to local storage", e);
     }
-  }, [reminders]);
+  }, [tasks]);
 
-  // Check for due reminders every 10 seconds
+  // Check for due tasks and reset recurring tasks
   useEffect(() => {
+    const notifiedThisSession = new Set<string>();
+    
     const interval = setInterval(() => {
       const now = Date.now();
       
-      setReminders(prev => {
-        const stillActive: Reminder[] = [];
-        prev.forEach(r => {
-          if (r.dueTime <= now) {
-            // Trigger both in-app and native notifications
-            onReminderDue(r); 
-            if (Notification.permission === 'granted') {
-              new Notification('J.A.R.V.I.S. Reminder', {
-                body: r.content,
-                // Assuming a favicon exists at the root
-                icon: '/favicon.ico'
-              });
+      setTasks(prevTasks => {
+        const updatedTasks = [...prevTasks];
+        let wasChanged = false;
+
+        updatedTasks.forEach((task, index) => {
+            // Reset completed recurring tasks for their next cycle
+            if (task.recurrence && task.completed) {
+                const nextCycleStart = new Date(task.nextDueDate);
+                if (now >= nextCycleStart.getTime()) {
+                    // Find the next *future* due date
+                    while(nextCycleStart.getTime() <= now) {
+                        switch (task.recurrence) {
+                            case 'daily': nextCycleStart.setDate(nextCycleStart.getDate() + 1); break;
+                            case 'weekly': nextCycleStart.setDate(nextCycleStart.getDate() + 7); break;
+                            case 'weekdays':
+                                do { nextCycleStart.setDate(nextCycleStart.getDate() + 1); } while (nextCycleStart.getDay() === 0 || nextCycleStart.getDay() === 6);
+                                break;
+                            case 'weekends':
+                                do { nextCycleStart.setDate(nextCycleStart.getDate() + 1); } while (nextCycleStart.getDay() > 0 && nextCycleStart.getDay() < 6);
+                                break;
+                        }
+                    }
+                    updatedTasks[index] = { ...task, completed: false, nextDueDate: nextCycleStart.getTime() };
+                    wasChanged = true;
+                }
             }
-          } else {
-            stillActive.push(r);
+        });
+
+        // Notify for newly due tasks
+        updatedTasks.forEach(task => {
+          if (!task.completed && task.nextDueDate <= now && !notifiedThisSession.has(task.id)) {
+              onTaskDue(task);
+              if (Notification.permission === 'granted') {
+                new Notification('J.A.R.V.I.S. Reminder', {
+                  body: task.content,
+                  icon: '/favicon.ico'
+                });
+              }
+              notifiedThisSession.add(task.id);
           }
         });
-        return stillActive;
+        
+        return wasChanged ? updatedTasks : prevTasks;
       });
-
-    }, 10000); // Check every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
-  }, [onReminderDue]);
+  }, [onTaskDue]);
 
-  const addReminder = useCallback(async (content: string, timeString: string): Promise<boolean> => {
-    const dueTime = parseTimeString(timeString);
-    if (!dueTime) {
+  const addTask = useCallback(async (
+    content: string,
+    timeString: string,
+    recurrence: Task['recurrence'] = null
+  ): Promise<boolean> => {
+    const dueDate = parseTimeString(timeString);
+    if (!dueDate) {
       console.error(`Could not parse time string: "${timeString}"`);
       return false;
     }
 
-    // Request notification permission if needed
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
         await Notification.requestPermission();
     }
     
-    const newReminder: Reminder = {
-      id: `rem_${Date.now()}`,
+    const newTask: Task = {
+      id: `task_${Date.now()}`,
       content,
-      dueTime,
+      initialDueDate: dueDate,
+      nextDueDate: dueDate,
+      recurrence,
+      completed: false,
     };
-    setReminders(prev => [...prev, newReminder]);
+    setTasks(prev => [...prev, newTask].sort((a,b) => a.nextDueDate - b.nextDueDate));
     return true;
   }, []);
+  
+  const deleteTask = useCallback((taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+  }, []);
+  
+  const toggleTask = useCallback((taskId: string) => {
+      setTasks(prev => prev.map(task => {
+          if (task.id === taskId) {
+              return { ...task, completed: !task.completed };
+          }
+          return task;
+      }));
+  }, []);
 
-  return { addReminder };
+  return { tasks, addTask, deleteTask, toggleTask };
 };

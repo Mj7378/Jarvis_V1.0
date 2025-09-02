@@ -1,24 +1,22 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 
 // Services, Hooks, Utils
 import { aiOrchestrator } from './services/aiOrchestrator';
 import { HomeAssistantService } from './services/homeAssistantService';
-import { useChatHistory, useReminders } from './hooks/useChatHistory';
+import { useChatHistory, useTasks } from './hooks/useChatHistory';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveAsset, getAsset, deleteAsset, getOperatingSystem, getCustomApps, saveCustomApp, deleteCustomApp } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder, SmartHomeState, HaEntity, CustomAppDefinition, ConversationalResponse } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Task, SmartHomeState, HaEntity, CustomAppDefinition, ConversationalResponse, ChartVisualizationCommand, MultiToolUseCommand } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
 import VisionIntelligence from './components/VisionMode';
 import ActionModal, { ActionModalProps, NotificationToast } from './components/ActionModal';
-import DesignMode from './components/DesignMode';
-import SimulationMode from './components/SimulationMode';
+import GenerativeStudio from './components/GenerativeStudio';
 import ErrorModal from './components/ErrorModal';
 import BootingUp from './components/BootingUp';
 import PreBootScreen from './components/PreBootScreen';
@@ -30,11 +28,11 @@ import UserInput from './components/UserInput';
 import Suggestions from './components/Suggestions';
 import SecurityCameraModal from './components/SecurityCameraModal';
 import { HomeIcon, AppLauncherIcon, PlusIcon, CloseIcon, WolframAlphaIcon } from './components/Icons';
-import RealTimeVision from './components/RealTimeVision';
 import ControlCenter from './components/ControlCenter';
 import TacticalSidebar, { PanelType } from './components/TacticalSidebar';
 import CreativeBackground from './components/CreativeBackground';
 import OnboardingTour from './components/OnboardingTour';
+import TaskManager from './components/TaskManager';
 
 // --- App Launcher Component ---
 
@@ -184,7 +182,7 @@ const AppLauncher: React.FC<{
 
   useEffect(() => {
     loadCustomApps();
-  }, []);
+  }, [loadCustomApps]);
   
   const allApps: (AppDefinition | CustomAppDefinition)[] = [...APPS_REGISTRY, ...customApps];
   const filteredApps = allApps.filter(app => 
@@ -424,6 +422,7 @@ const App: React.FC = () => {
 
   // New panel-based UI state
   const [activePanels, setActivePanels] = useState<Set<PanelType>>(new Set());
+  const [generativeStudioConfig, setGenerativeStudioConfig] = useState<{ prompt: string; mode: 'image' | 'video' } | null>(null);
 
   // Set AI provider whenever theme settings change
   useEffect(() => {
@@ -447,6 +446,7 @@ const App: React.FC = () => {
           const newPanels = new Set(prev);
           if (newPanels.has(panel)) {
               newPanels.delete(panel);
+              if (panel === 'GENERATIVE_STUDIO') setGenerativeStudioConfig(null);
               sounds.playClose();
           } else {
               // Allow only one "major" panel at a time for simplicity
@@ -469,17 +469,17 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileHandlerRef = useRef<{ accept: string; handler: (file: File) => void } | null>(null);
   
-  // Reminder System
-  const handleReminderDue = useCallback((reminder: Reminder) => {
+  // Task & Reminder System
+  const handleTaskDue = useCallback((task: Task) => {
     sounds.playSuccess();
     setToasts(prev => [...prev, {
-        id: reminder.id,
+        id: task.id,
         title: 'J.A.R.V.I.S. Reminder',
-        message: reminder.content,
+        message: task.content,
     }]);
   }, [sounds]);
 
-  const { addReminder } = useReminders(handleReminderDue);
+  const { tasks, addTask, deleteTask, toggleTask } = useTasks(handleTaskDue);
 
   // Home Assistant Service Initializer
   useEffect(() => {
@@ -618,11 +618,34 @@ const App: React.FC = () => {
         }
   }, [findEntityId, addMessage, queueSpeech, themeSettings.voiceOutputEnabled]);
 
+  const handleOpenGenerativeStudio = useCallback((prompt: string, mode: 'image' | 'video') => {
+    setGenerativeStudioConfig({ prompt, mode });
+    togglePanel('GENERATIVE_STUDIO');
+  }, [togglePanel]);
+
   const handleAppControl = useCallback((action: string, value: any) => {
+    // Helper to explicitly close a panel if it's open
+    const closePanel = (panel: PanelType) => {
+        if(activePanels.has(panel)) {
+            togglePanel(panel);
+        }
+    };
+
+    // Helper to explicitly open a panel if it's closed
+    const openPanel = (panel: PanelType) => {
+        if(!activePanels.has(panel)) {
+            togglePanel(panel);
+        }
+    };
+
     switch(action) {
-        case 'open_settings': togglePanel('SETTINGS'); break;
-        case 'close_settings': togglePanel('SETTINGS'); break;
-        case 'vision_mode': togglePanel('VISION'); break;
+        case 'open_settings': openPanel('SETTINGS'); break;
+        case 'close_settings': closePanel('SETTINGS'); break;
+        case 'vision_mode': togglePanel('VISION'); break; // This is a toggle
+        case 'open_task_manager': openPanel('TASK_MANAGER'); break;
+        case 'close_task_manager': closePanel('TASK_MANAGER'); break;
+        case 'open_control_center': openPanel('CONTROL_CENTER'); break;
+        case 'close_control_center': closePanel('CONTROL_CENTER'); break;
         case 'clear_chat':
             clearChatHistory();
             sounds.playDeactivate();
@@ -633,9 +656,10 @@ const App: React.FC = () => {
             }]);
             break;
         case 'calibrate_voice': setIsCalibrationOpen(true); break;
-        case 'design_mode': togglePanel('DESIGN'); break;
-        case 'simulation_mode': togglePanel('SIMULATION'); break;
-        case 'show_app_launcher': togglePanel('APP_LAUNCHER'); break;
+        case 'design_mode': handleOpenGenerativeStudio('A futuristic concept car', 'image'); break;
+        case 'simulation_mode': handleOpenGenerativeStudio('A spaceship in a nebula', 'video'); break;
+        case 'show_app_launcher': openPanel('APP_LAUNCHER'); break;
+        case 'close_app_launcher': closePanel('APP_LAUNCHER'); break;
         case 'change_theme':
             const theme = FULL_THEMES.find(t => t.name.toLowerCase() === value.toLowerCase());
             if (theme) {
@@ -652,7 +676,7 @@ const App: React.FC = () => {
             setThemeSettings(p => ({ ...p, primaryColor: value }));
             break;
     }
-  }, [clearChatHistory, sounds, togglePanel]);
+  }, [clearChatHistory, sounds, togglePanel, handleOpenGenerativeStudio, activePanels]);
   
   const handleWolframQuery = useCallback(async (cmd: DeviceControlCommand) => {
     setToasts(prev => [...prev, {
@@ -712,7 +736,7 @@ const App: React.FC = () => {
             window.open(url, '_blank', 'noopener,noreferrer');
             break;
         case 'set_reminder':
-            addReminder(cmd.params.content, cmd.params.time);
+            addTask(cmd.params.content, cmd.params.time, cmd.params.recurrence);
             break;
         case 'shutdown':
             setSystemState('SHUTTING_DOWN');
@@ -727,9 +751,9 @@ const App: React.FC = () => {
             handleWolframQuery(cmd);
             break;
     }
-  }, [addReminder, handleAppControl, handleHomeAutomation, handleWolframQuery, sounds]);
+  }, [addTask, handleAppControl, handleHomeAutomation, handleWolframQuery, sounds]);
   
-  const executeCommandsSequentially = useCallback((commands: AICommand[]) => {
+  const executeCommandsSequentially = useCallback((commands: DeviceControlCommand[]) => {
       let index = 0;
       const executeNext = () => {
           if (index < commands.length) {
@@ -739,6 +763,28 @@ const App: React.FC = () => {
           }
       };
       executeNext();
+  }, [executeCommand]);
+
+  const executeToolChain = useCallback(async (steps: DeviceControlCommand[]) => {
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const stepNumber = i + 1;
+        
+        const stepDescription = step.spoken_response || `Executing step ${stepNumber}: ${step.command}`;
+
+        setToasts(prev => [...prev, {
+            id: `tool_step_${Date.now()}_${stepNumber}`,
+            title: `Step ${stepNumber}/${steps.length}`,
+            message: stepDescription,
+        }]);
+        
+        executeCommand(step);
+        
+        // Wait before executing the next step to allow user to see the toast.
+        if (stepNumber < steps.length) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+    }
   }, [executeCommand]);
 
   const processUserMessage = useCallback(async (
@@ -835,6 +881,35 @@ const App: React.FC = () => {
                       }
                       executeCommandsSequentially(commands);
                       commandProcessed = true;
+                  } else if (firstItem.action === 'multi_tool_use' && !Array.isArray(parsedJson)) {
+                        const multiToolCommand = parsedJson as MultiToolUseCommand;
+                        
+                        spokenResponse = multiToolCommand.spoken_response;
+                        spokenLang = multiToolCommand.lang;
+                        
+                        updateLastMessage({ content: spokenResponse });
+
+                        if (multiToolCommand.suggestions) {
+                            setCurrentSuggestions(multiToolCommand.suggestions);
+                        }
+                        
+                        executeToolChain(multiToolCommand.steps);
+                        commandProcessed = true;
+                  } else if (firstItem.action === 'chart_visualization' && !Array.isArray(parsedJson)) {
+                        const chartResponse = parsedJson as ChartVisualizationCommand;
+                        
+                        spokenResponse = chartResponse.spoken_response;
+                        spokenLang = chartResponse.lang;
+                        
+                        updateLastMessage({
+                            content: chartResponse.summary_text,
+                            chartData: chartResponse.chart_data,
+                        });
+
+                        if (chartResponse.suggestions) {
+                            setCurrentSuggestions(chartResponse.suggestions);
+                        }
+                        commandProcessed = true;
                   } else if (firstItem.action === 'conversational_response' && !Array.isArray(parsedJson)) {
                       const convoResponse = parsedJson as ConversationalResponse;
                       
@@ -920,7 +995,7 @@ const App: React.FC = () => {
         await startStreamingFlow(prompt, imagesForAi);
     }
 
-  }, [addMessage, appendToLastMessage, cancelSpeech, chatHistory, queueSpeech, themeSettings.voiceOutputEnabled, themeSettings.persona, updateLastMessage, removeLastMessage, executeCommandsSequentially, operatingSystem, pinnedImage]);
+  }, [addMessage, appendToLastMessage, cancelSpeech, chatHistory, queueSpeech, themeSettings.voiceOutputEnabled, themeSettings.persona, updateLastMessage, removeLastMessage, executeCommandsSequentially, operatingSystem, pinnedImage, executeToolChain]);
   
   useEffect(() => {
     if (appState === AppState.SPEAKING && !isSpeaking) {
@@ -1213,17 +1288,30 @@ const App: React.FC = () => {
                                 {activePanels.size > 0 && (
                                     <div className="panels-area">
                                         {activePanels.has('APP_LAUNCHER') && <AppLauncher onClose={() => togglePanel('APP_LAUNCHER')} onAppSelect={handleAppSelect} />}
-                                        {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} onActivateRealTimeFeature={() => togglePanel('REAL_TIME_VISION')} />}
-                                        {activePanels.has('REAL_TIME_VISION') && <RealTimeVision onClose={() => togglePanel('REAL_TIME_VISION')} onGestureRecognized={(g) => setToasts(p => [...p, { id: `g_${Date.now()}`, title: 'Gesture', message: `Recognized: ${g}` }])} />}
+                                        {activePanels.has('TASK_MANAGER') && <TaskManager tasks={tasks} onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask} onClose={() => togglePanel('TASK_MANAGER')} />}
+                                        {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} />}
                                         {activePanels.has('SETTINGS') && <SettingsModal isOpen={true} onClose={() => togglePanel('SETTINGS')} onShutdown={() => { togglePanel('SETTINGS'); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }} sounds={sounds} themeSettings={themeSettings} onThemeChange={setThemeSettings} onSetCustomBootVideo={handleSetCustomBootVideo} onRemoveCustomBootVideo={handleRemoveCustomBootVideo} onSetCustomShutdownVideo={handleSetCustomShutdownVideo} onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo} onCalibrateVoice={() => setIsCalibrationOpen(true)} onClearChat={handleClearChat} onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile} onDeleteVoiceProfile={handleDeleteVoiceProfile} onConnectHA={handleConnectHA} onDisconnectHA={handleDisconnectHA} haConnectionStatus={haConnectionStatus} />}
-                                        {activePanels.has('CONTROL_CENTER') && <ControlCenter onClose={() => togglePanel('CONTROL_CENTER')} onVisionMode={() => togglePanel('VISION')} onRealTimeVision={() => togglePanel('REAL_TIME_VISION')} onClearChat={handleClearChat} onGetWeather={() => processUserMessage("What's the weather like?")} onDesignMode={() => togglePanel('DESIGN')} onSimulationMode={() => togglePanel('SIMULATION')} onDirectHomeStateChange={handleDirectHomeStateChange} onOpenSettings={() => togglePanel('SETTINGS')} onShowCameraFeed={(loc) => setCameraFeed({ location: loc })} smartHomeState={smartHomeState} onOpenAppLauncher={() => togglePanel('APP_LAUNCHER')} />}
-                                        {activePanels.has('DESIGN') && <DesignMode prompt="A futuristic concept car" onCancel={() => togglePanel('DESIGN')} onComplete={(p, i) => { togglePanel('DESIGN'); addMessage({ role: 'model', content: `Image studio session result.`, imageUrl: i }); }} />}
-                                        {activePanels.has('SIMULATION') && <SimulationMode prompt="A spaceship in a nebula" onCancel={() => togglePanel('SIMULATION')} onComplete={(p) => { togglePanel('SIMULATION'); addMessage({ role: 'model', content: `Simulation complete for: "${p}"` }); }} />}
+                                        {activePanels.has('CONTROL_CENTER') && <ControlCenter onClose={() => togglePanel('CONTROL_CENTER')} onVisionMode={() => togglePanel('VISION')} onClearChat={handleClearChat} onGetWeather={() => processUserMessage("What's the weather like?")} onDesignMode={(p) => handleOpenGenerativeStudio(p, 'image')} onSimulationMode={(p) => handleOpenGenerativeStudio(p, 'video')} onDirectHomeStateChange={handleDirectHomeStateChange} onOpenSettings={() => togglePanel('SETTINGS')} onShowCameraFeed={(loc) => setCameraFeed({ location: loc })} smartHomeState={smartHomeState} onOpenAppLauncher={() => togglePanel('APP_LAUNCHER')} onOpenTaskManager={() => togglePanel('TASK_MANAGER')} />}
+                                        {activePanels.has('GENERATIVE_STUDIO') && generativeStudioConfig && (
+                                            <GenerativeStudio
+                                                initialPrompt={generativeStudioConfig.prompt}
+                                                initialMode={generativeStudioConfig.mode}
+                                                onCancel={() => togglePanel('GENERATIVE_STUDIO')}
+                                                onComplete={(prompt, type, dataUrl) => {
+                                                    togglePanel('GENERATIVE_STUDIO');
+                                                    if (type === 'image' && dataUrl) {
+                                                        addMessage({ role: 'model', content: `Generative Studio result.`, imageUrl: dataUrl });
+                                                    } else {
+                                                        addMessage({ role: 'model', content: `Simulation complete for: "${prompt}"` });
+                                                    }
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </div>
 
-                            <div className="user-input-area holographic-panel">
+                            <div className="user-input-area holographic-panel !overflow-visible">
                                 <Suggestions suggestions={currentSuggestions} onSuggestionClick={(s) => processUserMessage(s)} />
                                 <UserInput 
                                     onSendMessage={handleSendMessage}
@@ -1240,8 +1328,7 @@ const App: React.FC = () => {
                                     onDocumentClick={() => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload)}
                                     onAudioClick={() => handleFileUpload('audio/*', handleAudioUpload)}
                                     onLocationClick={handleLocationRequest}
-                                    onDesignModeClick={() => togglePanel('DESIGN')}
-                                    onSimulationModeClick={() => togglePanel('SIMULATION')}
+                                    onGenerativeStudioClick={() => handleOpenGenerativeStudio('A beautiful landscape', 'image')}
                                     wakeWord={themeSettings.wakeWord}
                                 />
                             </div>

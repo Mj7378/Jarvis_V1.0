@@ -1,16 +1,15 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { SmartHomeState, HaEntity } from '../types';
 import WeatherWidget from './WeatherWidget';
-import { CameraIcon, GenerateImageIcon, GenerateVideoIcon, SettingsIcon, LockClosedIcon, LockOpenIcon, FanIcon, SceneIcon, AirPurifierIcon, AppLauncherIcon, CloseIcon, DashboardIcon } from './Icons';
+import { CameraIcon, GenerateImageIcon, GenerateVideoIcon, SettingsIcon, LockClosedIcon, LockOpenIcon, FanIcon, SceneIcon, AirPurifierIcon, AppLauncherIcon, CloseIcon, DashboardIcon, TaskIcon } from './Icons';
 
 // --- PROPS INTERFACE ---
 export interface ControlCenterProps {
     onClose: () => void;
     onVisionMode: () => void;
-    onRealTimeVision: () => void;
     onClearChat: () => void;
     onGetWeather: () => void;
+    // FIX: Update prop types to accept a string argument for the prompt.
     onDesignMode: (prompt: string) => void;
     onSimulationMode: (prompt: string) => void;
     onDirectHomeStateChange: (params: { domain: string; service: string; entity_id: string; [key: string]: any }) => void;
@@ -18,6 +17,7 @@ export interface ControlCenterProps {
     onShowCameraFeed: (location: string) => void;
     smartHomeState: SmartHomeState;
     onOpenAppLauncher: () => void;
+    onOpenTaskManager: () => void;
 }
 
 
@@ -30,10 +30,11 @@ const WeatherModule: React.FC = () => (
 );
 
 
-const QuickActionsModule: React.FC<Pick<ControlCenterProps, 'onVisionMode' | 'onOpenSettings' | 'onOpenAppLauncher'>> = ({ onVisionMode, onOpenSettings, onOpenAppLauncher }) => {
+const QuickActionsModule: React.FC<Pick<ControlCenterProps, 'onVisionMode' | 'onOpenSettings' | 'onOpenAppLauncher' | 'onOpenTaskManager'>> = ({ onVisionMode, onOpenSettings, onOpenAppLauncher, onOpenTaskManager }) => {
     const actions = [
         { label: "Vision Mode", icon: <CameraIcon className="w-8 h-8" />, action: onVisionMode },
         { label: "App Launcher", icon: <AppLauncherIcon className="w-8 h-8" />, action: onOpenAppLauncher },
+        { label: "Task Manager", icon: <TaskIcon className="w-8 h-8" />, action: onOpenTaskManager },
         { label: "Settings", icon: <SettingsIcon className="w-8 h-8" />, action: onOpenSettings },
     ];
 
@@ -229,7 +230,9 @@ const ControlCenter: React.FC<ControlCenterProps> = (props) => {
                     onVisionMode={props.onVisionMode}
                     onOpenSettings={props.onOpenSettings}
                     onOpenAppLauncher={props.onOpenAppLauncher}
+                    onOpenTaskManager={props.onOpenTaskManager}
                 />
+                {/* FIX: Pass the props directly to the child component instead of creating new functions. */}
                 <GenerativeToolsModule 
                     onDesignMode={props.onDesignMode}
                     onSimulationMode={props.onSimulationMode}

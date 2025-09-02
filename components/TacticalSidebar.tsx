@@ -1,8 +1,7 @@
-
 import React from 'react';
-import { CameraIcon, SettingsIcon, DashboardIcon, GenerateImageIcon, GenerateVideoIcon, AppLauncherIcon } from './Icons';
+import { CameraIcon, SettingsIcon, DashboardIcon, GenerateImageIcon, AppLauncherIcon, TaskIcon } from './Icons';
 
-export type PanelType = 'CONTROL_CENTER' | 'VISION' | 'REAL_TIME_VISION' | 'DESIGN' | 'SIMULATION' | 'SETTINGS' | 'APP_LAUNCHER';
+export type PanelType = 'CONTROL_CENTER' | 'VISION' | 'GENERATIVE_STUDIO' | 'SETTINGS' | 'APP_LAUNCHER' | 'TASK_MANAGER';
 
 
 interface LeftSidebarDockProps {
@@ -37,8 +36,7 @@ const TacticalSidebar: React.FC<LeftSidebarDockProps> = ({ onTogglePanel, active
         { label: "Control Center", panel: 'CONTROL_CENTER', icon: <DashboardIcon className="w-7 h-7"/> },
         { label: "App Launcher", panel: 'APP_LAUNCHER', icon: <AppLauncherIcon className="w-7 h-7"/> },
         { label: "Vision Mode", panel: 'VISION', icon: <CameraIcon className="w-7 h-7" /> },
-        { label: "Image Studio", panel: 'DESIGN', icon: <GenerateImageIcon className="w-7 h-7" /> },
-        { label: "Simulation Mode", panel: 'SIMULATION', icon: <GenerateVideoIcon className="w-7 h-7" /> },
+        { label: "Generative Studio", panel: 'GENERATIVE_STUDIO', icon: <GenerateImageIcon className="w-7 h-7" /> },
     ];
     
     const systemActions: { label: string; panel: PanelType; icon: React.ReactNode }[] = [

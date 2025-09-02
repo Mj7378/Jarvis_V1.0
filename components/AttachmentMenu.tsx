@@ -1,7 +1,5 @@
-
-
 import React from 'react';
-import { CameraIcon, GenerateImageIcon, GenerateVideoIcon, GalleryIcon, DocumentIcon, AudioIcon, LocationIcon } from './Icons';
+import { CameraIcon, GenerateImageIcon, GalleryIcon, DocumentIcon, AudioIcon, LocationIcon } from './Icons';
 
 interface AttachmentMenuProps {
   onCameraClick: () => void;
@@ -9,8 +7,7 @@ interface AttachmentMenuProps {
   onDocumentClick: () => void;
   onAudioClick: () => void;
   onLocationClick: () => void;
-  onDesignModeClick: () => void;
-  onSimulationModeClick: () => void;
+  onGenerativeStudioClick: () => void;
   onClose: () => void;
 }
 
@@ -20,8 +17,7 @@ const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
     onDocumentClick,
     onAudioClick,
     onLocationClick,
-    onDesignModeClick, 
-    onSimulationModeClick,
+    onGenerativeStudioClick, 
     onClose
 }) => {
     
@@ -78,18 +74,11 @@ const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
             bg: 'bg-red-400/20'
         },
         {
-            label: 'Image Studio',
+            label: 'Generative Studio',
             icon: <GenerateImageIcon className="w-7 h-7" />,
-            action: () => handleAction(onDesignModeClick),
+            action: () => handleAction(onGenerativeStudioClick),
             color: 'text-sky-400',
             bg: 'bg-sky-400/20'
-        },
-        {
-            label: 'Simulation',
-            icon: <GenerateVideoIcon className="w-7 h-7" />,
-            action: () => handleAction(onSimulationModeClick),
-            color: 'text-green-400',
-            bg: 'bg-green-400/20'
         }
     ];
 

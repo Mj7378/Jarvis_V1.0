@@ -1,7 +1,22 @@
+
+
 export interface Source {
   uri: string;
   title?: string;
 }
+
+export interface ChartDataset {
+  label: string;
+  data: number[];
+}
+
+export interface ChartData {
+  type: 'bar'; // For now, only support bar charts
+  title: string;
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -9,6 +24,7 @@ export interface ChatMessage {
   imageUrl?: string;
   sources?: Source[];
   timestamp: string;
+  chartData?: ChartData;
 }
 
 export enum AppState {
@@ -34,8 +50,6 @@ export interface DeviceControlCommand {
     suggestions?: string[];
 }
 
-export type AICommand = DeviceControlCommand;
-
 export interface ConversationalResponse {
     action: 'conversational_response';
     text: string; // Full text with markdown for display
@@ -43,6 +57,26 @@ export interface ConversationalResponse {
     lang: string; // BCP-47 code
     suggestions?: string[];
 }
+
+export interface ChartVisualizationCommand {
+    action: 'chart_visualization';
+    spoken_response: string;
+    lang?: string;
+    chart_data: ChartData;
+    summary_text: string;
+    suggestions?: string[];
+}
+
+export interface MultiToolUseCommand {
+    action: 'multi_tool_use';
+    spoken_response: string; // A summary of the entire plan
+    lang?: string;
+    steps: DeviceControlCommand[]; // An array of commands to execute sequentially
+    suggestions?: string[];
+}
+
+export type AICommand = DeviceControlCommand | ChartVisualizationCommand | MultiToolUseCommand | ConversationalResponse;
+
 
 export interface AppError {
   code: string;
@@ -82,11 +116,15 @@ export interface ThemeSettings {
   homeAssistantToken: string;
 }
 
-export interface Reminder {
+export interface Task {
   id: string;
   content: string;
-  dueTime: number; // timestamp
+  initialDueDate: number; // The first time it's due
+  nextDueDate: number; // The next time it's due
+  recurrence: 'daily' | 'weekly' | 'weekdays' | 'weekends' | null;
+  completed: boolean;
 }
+
 
 export interface WeatherData {
   temperature: number;

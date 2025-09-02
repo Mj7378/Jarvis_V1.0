@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppState } from '../types';
-import { MicrophoneIcon, SendIcon, SmileyIcon, PaperclipIcon, StopIcon } from './Icons';
-import EmojiPicker from './EmojiPicker';
+import { MicrophoneIcon, SendIcon, PaperclipIcon, StopIcon } from './Icons';
 import AttachmentMenu from './AttachmentMenu';
 
 interface UserInputProps {
@@ -19,15 +18,13 @@ interface UserInputProps {
   onDocumentClick: () => void;
   onAudioClick: () => void;
   onLocationClick: () => void;
-  onDesignModeClick: () => void;
-  onSimulationModeClick: () => void;
+  onGenerativeStudioClick: () => void;
   wakeWord: string;
 }
 
 const UserInput: React.FC<UserInputProps> = (props) => {
   const { onSendMessage, onToggleListening, onCancel, appState, isListening, stagedImage, pinnedImage, onClearStagedImage, onClearPinnedImage, wakeWord } = props;
   const [textContent, setTextContent] = useState('');
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,25 +56,8 @@ const UserInput: React.FC<UserInputProps> = (props) => {
     if (stagedImage || prompt || pinnedImage) {
       onSendMessage(prompt || (stagedImage || pinnedImage ? 'Analyze this image' : ''));
       setTextContent('');
-      setShowEmojiPicker(false);
       setIsAttachmentMenuOpen(false);
     }
-  };
-  
-  const handleEmojiSelect = (emoji: string) => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-      
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newText = textContent.substring(0, start) + emoji + textContent.substring(end);
-      setTextContent(newText);
-      
-      // Focus and set cursor position after emoji
-      textarea.focus();
-      setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
-      }, 0);
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -87,14 +67,8 @@ const UserInput: React.FC<UserInputProps> = (props) => {
     }
   };
   
-  const toggleEmojiPicker = () => {
-      setShowEmojiPicker(p => !p);
-      setIsAttachmentMenuOpen(false);
-  }
-
   const toggleAttachmentMenu = () => {
       setIsAttachmentMenuOpen(p => !p);
-      setShowEmojiPicker(false);
   }
 
   const getStatusInfo = () => {
@@ -147,17 +121,6 @@ const UserInput: React.FC<UserInputProps> = (props) => {
             className="w-full flex items-end gap-2 p-1.5 bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-lg rounded-full shadow-[0_0_25px_rgba(var(--primary-color-rgb),0.15)] transition-all duration-300"
         >
           <div className="relative flex-shrink-0 flex items-center">
-              {/* Emoji Button */}
-              <button
-                  type="button"
-                  onClick={toggleEmojiPicker}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-primary-t-20 transition-colors"
-                  aria-label="Emoji"
-              >
-                <SmileyIcon className="w-6 h-6" />
-              </button>
-              {showEmojiPicker && <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />}
-
               {/* Attachment Button */}
               <button
                   type="button"

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, ChartData } from '../types';
 import { AppState } from '../types';
 import SourceCitations from './SourceCitations';
 import { DoubleCheckIcon } from './Icons';
@@ -44,6 +44,76 @@ const CopyButton: React.FC<{ textToCopy: string }> = ({ textToCopy }) => {
         </button>
     );
 };
+
+const ChartRenderer: React.FC<{ data: ChartData }> = ({ data }) => {
+    const PADDING = { top: 40, right: 20, bottom: 50, left: 50 };
+    const SVG_WIDTH = 500;
+    const SVG_HEIGHT = 300;
+    
+    const chartWidth = SVG_WIDTH - PADDING.left - PADDING.right;
+    const chartHeight = SVG_HEIGHT - PADDING.top - PADDING.bottom;
+
+    const maxValue = Math.max(0, ...data.datasets.flatMap(d => d.data));
+    const yScale = chartHeight / (maxValue > 0 ? maxValue : 1);
+    const barWidth = chartWidth / data.labels.length;
+
+    const yTicks = 5;
+    const yTickValues = Array.from({ length: yTicks + 1 }, (_, i) => {
+        const value = (maxValue / yTicks) * i;
+        if (value > 1000000) return `${(value / 1000000).toFixed(1)}M`;
+        if (value > 1000) return `${(value / 1000).toFixed(0)}K`;
+        return Math.round(value);
+    });
+
+    return (
+        <div className="my-2 bg-black/20 p-2 rounded-lg border border-primary-t-20/50">
+            <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="w-full h-auto" aria-labelledby="chart-title" role="img">
+                <title id="chart-title">{data.title}</title>
+                <text x={SVG_WIDTH / 2} y={PADDING.top / 2} textAnchor="middle" className="font-orbitron fill-current text-text-secondary text-base">{data.title}</text>
+                
+                {/* Y-Axis and Grid Lines */}
+                <g className="text-xs fill-current text-text-muted" transform={`translate(${PADDING.left}, ${PADDING.top})`}>
+                    {yTickValues.map((tick, i) => {
+                        const y = chartHeight - (i * (chartHeight / yTicks));
+                        return (
+                            <g key={i}>
+                                <text x={-8} y={y + 4} textAnchor="end">{tick}</text>
+                                <line x1="0" y1={y} x2={chartWidth} y2={y} className="stroke-current text-primary-t-20 opacity-50" strokeWidth="0.5" />
+                            </g>
+                        );
+                    })}
+                </g>
+
+                {/* Bars and X-Axis labels */}
+                <g transform={`translate(${PADDING.left}, ${PADDING.top})`}>
+                    {data.labels.map((label, index) => {
+                        const value = data.datasets[0].data[index] || 0;
+                        const barHeight = value * yScale;
+                        const x = index * barWidth;
+                        const y = chartHeight - barHeight;
+
+                        return (
+                            <g key={index} className="group">
+                                <rect 
+                                    x={x + barWidth * 0.1} 
+                                    y={y} 
+                                    width={barWidth * 0.8} 
+                                    height={barHeight} 
+                                    className="fill-current text-primary-t-80 group-hover:text-primary transition-all duration-200"
+                                >
+                                  <title>{`${label}: ${value}`}</title>
+                                </rect>
+                                <text x={x + barWidth * 0.5} y={y - 5} textAnchor="middle" className="text-xs fill-current text-text-primary opacity-0 group-hover:opacity-100 transition-opacity font-bold">{value}</text>
+                                <text x={x + barWidth * 0.5} y={chartHeight + 20} textAnchor="middle" className="text-xs fill-current text-text-muted">{label}</text>
+                            </g>
+                        );
+                    })}
+                </g>
+            </svg>
+        </div>
+    );
+};
+
 
 export const FormattedMessage: React.FC<{ text: string }> = React.memo(({ text }) => {
     const renderInline = (line: string) => {
@@ -198,6 +268,7 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
                     className="rounded-lg mb-1 max-h-48"
                   />
                 )}
+                {message.chartData && <ChartRenderer data={message.chartData} />}
                 <div className="whitespace-pre-wrap break-words min-h-[1.25rem]">
                   <FormattedMessage text={message.content} />
                    {isModel && appState === AppState.THINKING && index === history.length - 1 && message.content && (

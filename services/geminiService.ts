@@ -116,6 +116,23 @@ export async function getAiResponseStream(
   }
 }
 
+export async function getQuickDescription(imageBase64: string): Promise<string> {
+  try {
+    const imagePart = { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } };
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [imagePart, { text: 'Describe this scene in one short sentence. Be concise and direct.' }] }],
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+      }
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Quick description failed:", error);
+    return "Analysis temporarily unavailable.";
+  }
+}
+
 export async function getWolframSimulatedResponse(query: string): Promise<string> {
     try {
         const response = await ai.models.generateContent({
@@ -277,15 +294,24 @@ export async function editImage(prompt: string, imageBase64: string): Promise<st
     }
 }
 
-export async function generateVideo(prompt: string): Promise<any> {
+export async function generateVideo(prompt: string, imageBase64?: string): Promise<any> {
     try {
-        const operation = await ai.models.generateVideos({
+        const requestPayload: any = {
             model: 'veo-2.0-generate-001',
             prompt: prompt,
             config: {
                 numberOfVideos: 1
             }
-        });
+        };
+
+        if (imageBase64) {
+            requestPayload.image = {
+                imageBytes: imageBase64,
+                mimeType: 'image/jpeg', // The app always generates/uses jpeg
+            };
+        }
+
+        const operation = await ai.models.generateVideos(requestPayload);
         return operation;
     } catch (error) {
         throw handleGeminiError(error, "Video Generation");
