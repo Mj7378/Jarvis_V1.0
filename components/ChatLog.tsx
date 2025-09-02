@@ -185,7 +185,7 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
           return (
             <div key={index} className={`flex ${isModel ? 'justify-start' : 'justify-end'}`}>
               <div
-                className={`max-w-md lg:max-w-2xl p-2 px-3 rounded-2xl animate-fade-in-fast ${
+                className={`max-w-[85%] sm:max-w-md lg:max-w-2xl p-2 px-3 rounded-2xl animate-fade-in-fast ${
                   isModel
                     ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-text-primary rounded-bl-md shadow-lg shadow-black/20 border border-slate-700'
                     : 'bg-gradient-to-br from-amber-500 to-yellow-600 text-black rounded-br-md shadow-lg shadow-yellow-500/20'

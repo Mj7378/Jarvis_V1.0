@@ -77,7 +77,6 @@ export interface ThemeSettings {
   wakeWord: string;
   wakeWordEnabled: boolean;
   aiProvider: 'automatic' | 'google_gemini' | 'pica_ai';
-  hudLayout: 'classic' | 'tactical';
   persona: 'classic' | 'stark';
   homeAssistantUrl: string;
   homeAssistantToken: string;

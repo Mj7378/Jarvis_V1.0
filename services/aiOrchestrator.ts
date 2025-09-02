@@ -72,7 +72,7 @@ When a command involves interacting with the device or a system function, you MU
     *   \`play_music\`: \`{"action":"device_control", "command":"play_music", "app":"Music", "params":{"query":"AC/DC"}, "spoken_response":"You got it. Here's some AC/DC."}\`
     *   \`set_reminder\`: \`{"action":"device_control", "command":"set_reminder", "app":"Reminders", "params":{"content":"Check on the simulation", "time":"in 15 minutes"}, "spoken_response":"Okay, I'll remind you in 15 minutes."}\`
     *   \`shutdown\`: \`{"action":"device_control", "command":"shutdown", "app":"System", "params":{}, "spoken_response":"Powering down. Goodbye, Sir."}\`
-    *   \`app_control\`: \`{"action":"device_control", "command":"app_control", "app":"J.A.R.V.I.S.", "params":{"action":"vision_mode"}, "spoken_response":"Vision mode activated."}\`
+    *   \`app_control\`: For internal app functions (e.g., \`vision_mode\`, \`clear_chat\`). \`{"action":"device_control", "command":"app_control", "app":"J.A.R.V.I.S.", "params":{"action":"clear_chat"}, "spoken_response":"Chat history cleared."}\`
     *   \`wolfram_alpha_query\`: \`{"action":"device_control", "command":"wolfram_alpha_query", "app":"WolframAlpha", "params":{"query":"distance to the moon"}, "spoken_response":"The moon is, on average, about 384,400 kilometers away."}\`
     *   \`home_automation\`: \`{"action":"device_control", "command":"home_automation", "app":"Home", "params":{"domain":"light", "service":"turn_on", "target":{"area": "living room"}}, "spoken_response":"Turning on the lights in the living room."}\`
 
@@ -118,7 +118,7 @@ class AiOrchestratorService {
     public async getAiResponseStream(
       prompt: string, 
       history: ChatMessage[],
-      image?: { mimeType: string; data: string },
+      images?: { mimeType: string; data: string }[],
       os: string = 'Unknown',
       persona: 'classic' | 'stark' = 'stark',
     ): Promise<AsyncGenerator<GenerateContentResponse>> {
@@ -133,7 +133,7 @@ class AiOrchestratorService {
             case 'google_gemini':
             case 'automatic':
             default:
-                return geminiProvider.getAiResponseStream(prompt, history, 'gemini-2.5-flash', dynamicSystemInstruction, image);
+                return geminiProvider.getAiResponseStream(prompt, history, 'gemini-2.5-flash', dynamicSystemInstruction, images);
         }
     }
     

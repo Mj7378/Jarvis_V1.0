@@ -1,16 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppState } from '../types';
-import { MicrophoneIcon, SendIcon, SmileyIcon, PaperclipIcon } from './Icons';
+import { MicrophoneIcon, SendIcon, SmileyIcon, PaperclipIcon, StopIcon } from './Icons';
 import EmojiPicker from './EmojiPicker';
 import AttachmentMenu from './AttachmentMenu';
 
 interface UserInputProps {
   onSendMessage: (message: string) => void;
   onToggleListening: () => void;
+  onCancel: () => void;
   appState: AppState;
   isListening: boolean;
   stagedImage: { dataUrl: string } | null;
+  pinnedImage: { dataUrl: string } | null;
   onClearStagedImage: () => void;
+  onClearPinnedImage: () => void;
   onCameraClick: () => void;
   onGalleryClick: () => void;
   onDocumentClick: () => void;
@@ -22,12 +25,13 @@ interface UserInputProps {
 }
 
 const UserInput: React.FC<UserInputProps> = (props) => {
-  const { onSendMessage, onToggleListening, appState, isListening, stagedImage, onClearStagedImage, wakeWord } = props;
+  const { onSendMessage, onToggleListening, onCancel, appState, isListening, stagedImage, pinnedImage, onClearStagedImage, onClearPinnedImage, wakeWord } = props;
   const [textContent, setTextContent] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const isBusy = appState === AppState.THINKING || appState === AppState.SPEAKING;
   const showSendButton = textContent.trim().length > 0 || !!stagedImage;
 
   // Auto-sizing textarea logic
@@ -52,8 +56,8 @@ const UserInput: React.FC<UserInputProps> = (props) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const prompt = textContent.trim();
-    if (stagedImage || prompt) {
-      onSendMessage(prompt || 'Analyze this image');
+    if (stagedImage || prompt || pinnedImage) {
+      onSendMessage(prompt || (stagedImage || pinnedImage ? 'Analyze this image' : ''));
       setTextContent('');
       setShowEmojiPicker(false);
       setIsAttachmentMenuOpen(false);
@@ -82,14 +86,6 @@ const UserInput: React.FC<UserInputProps> = (props) => {
         handleSubmit(e);
     }
   };
-
-  const handleActionClick = () => {
-      if (showSendButton) {
-        // Form's onSubmit will trigger
-      } else {
-        onToggleListening();
-      }
-  };
   
   const toggleEmojiPicker = () => {
       setShowEmojiPicker(p => !p);
@@ -114,11 +110,24 @@ const UserInput: React.FC<UserInputProps> = (props) => {
   const statusInfo = getStatusInfo();
   // Show overlay only when app is busy and user hasn't started typing to interrupt
   const showStatusOverlay = statusInfo && textContent.trim().length === 0;
-  const isCommandListening = isListening && appState === AppState.LISTENING;
 
 
   return (
     <div className="px-2 pb-2 pt-1 relative">
+        {pinnedImage && (
+            <div className="absolute bottom-full right-14 mb-2 p-1 bg-panel border-2 border-blue-500 rounded-lg shadow-lg animate-pop-in">
+                <div className="absolute -top-2 -left-2 text-xs bg-blue-500 text-white font-bold px-1.5 py-0.5 rounded-full z-10">PINNED</div>
+                <img src={pinnedImage.dataUrl} alt="Pinned context" className="h-20 w-20 object-cover rounded" />
+                <button
+                    type="button"
+                    onClick={onClearPinnedImage}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold leading-none border-2 border-background transform hover:scale-110 active:scale-100 transition-transform"
+                    aria-label="Remove pinned image"
+                >
+                    &times;
+                </button>
+            </div>
+        )}
         {stagedImage && (
             <div className="absolute bottom-full left-14 mb-2 p-1 bg-panel border border-primary-t-20 rounded-lg shadow-lg animate-pop-in">
                 <img src={stagedImage.dataUrl} alt="Staged content" className="h-20 w-20 object-cover rounded" />
@@ -169,7 +178,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
                 onChange={(e) => setTextContent(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={appState === AppState.LISTENING || appState === AppState.AWAITING_WAKE_WORD}
-                placeholder={stagedImage ? "Describe the image..." : "Message J.A.R.V.I.S."}
+                placeholder={stagedImage || pinnedImage ? "Describe the image..." : "Message J.A.R.V.I.S."}
                 className="w-full bg-transparent border-none focus:ring-0 px-2 py-2 text-text-primary placeholder:text-text-muted disabled:opacity-60 transition-opacity resize-none overflow-y-auto styled-scrollbar"
                 aria-label="User command input"
                 rows={1}
@@ -184,23 +193,26 @@ const UserInput: React.FC<UserInputProps> = (props) => {
               )}
           </div>
           
-          {/* Action Button (Mic/Send) */}
+          {/* Action Button (Mic/Send/Stop) */}
           <button
-            type={showSendButton ? 'submit' : 'button'}
-            onClick={handleActionClick}
-            className={`flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300 w-11 h-11 text-white ${isCommandListening ? 'bg-red-500 animate-pulse-strong' : 'bg-primary'} hover:scale-110 active:scale-105`}
-            aria-label={showSendButton ? 'Send message' : (isListening ? 'Stop listening' : 'Start listening')}
+            type={showSendButton && !isBusy ? 'submit' : 'button'}
+            onClick={isBusy ? onCancel : (showSendButton ? undefined : onToggleListening)}
+            className={`flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300 w-11 h-11 text-white ${isBusy || isListening ? 'bg-red-500 animate-pulse-strong' : 'bg-primary'} hover:scale-110 active:scale-105`}
+            aria-label={isBusy ? 'Stop generation' : (showSendButton ? 'Send message' : (isListening ? 'Stop listening' : 'Start listening'))}
           >
             <div className="relative w-7 h-7 flex items-center justify-center overflow-hidden">
-              {/* Microphone Icon with Transition */}
-              <div className={`absolute transition-all duration-300 ${showSendButton ? 'opacity-0 transform scale-50 -rotate-45' : 'opacity-100 transform scale-100 rotate-0'}`}>
-                <MicrophoneIcon className="w-full h-full" />
-              </div>
-              
-              {/* Send Icon with Transition */}
-              <div className={`absolute transition-all duration-300 ${showSendButton ? 'opacity-100 transform scale-100 rotate-0' : 'opacity-0 transform scale-50 rotate-45'}`}>
-                 <SendIcon className="w-6 h-6" />
-              </div>
+                {isBusy ? (
+                     <StopIcon className="w-6 h-6" />
+                ) : (
+                    <>
+                        <div className={`absolute transition-all duration-300 ${showSendButton ? 'opacity-0 transform scale-50 -rotate-45' : 'opacity-100 transform scale-100 rotate-0'}`}>
+                            <MicrophoneIcon className="w-full h-full" />
+                        </div>
+                        <div className={`absolute transition-all duration-300 ${showSendButton ? 'opacity-100 transform scale-100 rotate-0' : 'opacity-0 transform scale-50 rotate-45'}`}>
+                            <SendIcon className="w-6 h-6" />
+                        </div>
+                    </>
+                )}
             </div>
           </button>
         </form>

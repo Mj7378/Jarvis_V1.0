@@ -49,7 +49,8 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 *   **🏠 Home Automation (Simulated):** Command J.A.R.V.I.S. to control smart lights, thermostats, locks, and security cameras. All commands are simulated with UI feedback, providing a complete smart-home control experience.
 
 ### 🎨 Futuristic HUD & Deep Customization
-*   **Reactive Interface:** A dynamic and visually stunning HUD built with React and Tailwind CSS that reacts to the AI's state (Idle, Thinking, Speaking).
+*   **Dynamic Panel-Based UI:** A stunning and flexible interface built with React and Tailwind CSS. Major functions like Vision Mode, Settings, and the Control Center open in a dedicated side-panel, resizing the main chat view without ever overlapping it. This creates a true, non-colliding command center experience.
+*   **Sleek Animations:** The interface features smooth, responsive animations for opening and closing panels, making the UI feel alive and high-tech.
 *   **Theme Editor:** In-depth settings allow you to customize the entire look and feel:
     *   **Colors:** Change the primary UI color and panel background colors with a color picker or choose from presets.
     *   **Dynamic Persona:** Switch between the classic, helpful J.A.R.V.I.S. and the witty, sarcastic "Stark Protocol" persona to tailor your conversational experience.
@@ -120,14 +121,13 @@ The core of the AI's functionality is defined by a detailed **system instruction
 
 The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the visual feedback for the user (e.g., `THINKING`, `LISTENING`, `SPEAKING`). The application is broken down into a series of modular components:
 
-*   `App.tsx`: The root component that manages all state, user input, and orchestrates communication with services and modals.
+*   `App.tsx`: The root component that manages all state, user input, and orchestrates communication with services and panels.
 *   `services/aiOrchestrator.ts`: A dedicated module for all interactions with the `@google/genai` SDK, containing the system prompt and API call logic.
 *   `hooks/`: Reusable hooks for managing chat history, sound effects, speech synthesis, and speech recognition.
 *   `components/`: A comprehensive library of UI components, including:
-    *   `CoreInterface.tsx`: The central animated orb that displays the AI's status.
     *   `ChatLog.tsx`: The scrollable chat history panel.
-    *   `SettingsModal.tsx`: The slide-out panel for all user-configurable settings.
-    *   **Mode Modals** (`VisionMode.tsx`, `ImageStudio.tsx`, etc.): Full-screen overlays for the application's advanced generative features.
+    *   `LeftSidebarDock.tsx`: The new icon-based sidebar for launching modules.
+    *   **Module Panels** (`VisionMode.tsx`, `DesignMode.tsx`, etc.): Self-contained panels for the application's advanced features that appear in a dedicated screen area.
 
 ---
 

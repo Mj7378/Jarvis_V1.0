@@ -121,7 +121,8 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
       const image = { mimeType: 'image/jpeg', data: base64 };
       
       try {
-        const stream = await aiOrchestrator.getAiResponseStream(prompt, [], image);
+        // Fix: The getAiResponseStream function expects an array of images.
+        const stream = await aiOrchestrator.getAiResponseStream(prompt, [], [image]);
         for await (const chunk of stream) {
             setAnalysisResult(prev => prev + chunk.text);
         }

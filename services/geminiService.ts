@@ -66,7 +66,7 @@ export async function getAiResponseStream(
   history: ChatMessage[],
   model: string,
   systemInstruction: string,
-  image?: { mimeType: string; data: string },
+  images?: { mimeType: string; data: string }[],
 ): Promise<AsyncGenerator<GenerateContentResponse>> {
   try {
     const contents: Content[] = history.map(msg => {
@@ -87,13 +87,15 @@ export async function getAiResponseStream(
     });
 
     const userParts: ({ text: string; } | { inlineData: { mimeType: string; data: string; }; })[] = [{ text: prompt }];
-    if (image) {
-      userParts.push({
-        inlineData: {
-          mimeType: image.mimeType,
-          data: image.data,
-        },
-      });
+    if (images && images.length > 0) {
+      for (const image of images) {
+          userParts.push({
+            inlineData: {
+              mimeType: image.mimeType,
+              data: image.data,
+            },
+          });
+      }
     }
     contents.push({ role: 'user', parts: userParts });
 

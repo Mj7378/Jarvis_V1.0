@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
     FilesetResolver,
@@ -16,7 +17,6 @@ const RealTimeVision: React.FC<RealTimeVisionProps> = ({ onClose, onGestureRecog
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const lastVideoTimeRef = useRef(-1);
-    // FIX: Initialize useRef with null to provide an initial value, satisfying TypeScript's requirement and fixing the "Expected 1 arguments, but got 0" error.
     const requestRef = useRef<number | null>(null);
 
     const [handLandmarker, setHandLandmarker] = useState<HandLandmarker | null>(null);

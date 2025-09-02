@@ -4,10 +4,9 @@ import Logo from './Logo';
 import WeatherWidget from './WeatherWidget';
 
 const Header: React.FC<{ 
+    onToggleControlCenter: () => void;
     onOpenSettings: () => void;
-    currentView: 'chat' | 'dashboard';
-    onSetView: (view: 'chat' | 'dashboard') => void;
-}> = ({ onOpenSettings, currentView, onSetView }) => {
+}> = ({ onToggleControlCenter, onOpenSettings }) => {
     const [time, setTime] = useState(new Date());
 
     useEffect(() => {
@@ -60,8 +59,8 @@ const Header: React.FC<{
             <div className="flex justify-end">
                 <div className="flex items-center h-full text-sm text-text-primary font-mono">
                     {/* Upgraded System Clock */}
-                    <div className="pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
-                        <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
+                    <div className="system-clock pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
+                        <div className="seconds-dial relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
                             <svg className="w-full h-full" viewBox="0 0 48 48">
                                 <circle cx="24" cy="24" r="20" className="stroke-primary-t-20" strokeWidth="2" fill="none" />
                                 <circle
@@ -77,38 +76,38 @@ const Header: React.FC<{
                                         strokeDasharray: circumference,
                                         strokeDashoffset: circumference - (parseInt(seconds, 10) / 60) * circumference,
                                         transition: 'stroke-dashoffset 0.3s linear',
-                                        filter: 'drop-shadow(0 0 3px var(--primary-color-hex))',
+                                        filter: 'drop-shadow(0 0 5px var(--primary-color-hex))',
                                     }}
                                 />
                             </svg>
-                            <div className="absolute inset-0 flex items-center justify-center font-mono text-primary text-base md:text-lg font-bold">
+                            <div className="seconds-text absolute inset-0 flex items-center justify-center font-mono text-primary text-base md:text-lg font-bold">
                                 {seconds}
                             </div>
                         </div>
                         <div className="text-right">
-                            <div className="font-mono text-lg sm:text-xl md:text-2xl text-text-primary tracking-wider flex items-baseline">
+                            <div className="time-display font-mono text-lg sm:text-xl md:text-2xl text-text-primary tracking-wider flex items-baseline">
                                 <span>{hours}</span>
                                 <span className="animate-pulse mx-px">:</span>
                                 <span>{minutes}</span>
-                                <span className="text-base ml-2">{ampm}</span>
+                                <span className="ampm-display text-base ml-2">{ampm}</span>
                             </div>
-                            <div className="font-sans text-xs text-text-muted tracking-widest mt-1 hidden sm:block">
+                            <div className="date-display font-sans text-xs text-text-muted tracking-widest mt-1 hidden sm:block">
                                 {dayOfWeek} | {formattedDate}
                             </div>
                         </div>
                     </div>
                     {/* Controls */}
-                    <div className="h-full flex items-center pr-4 md:pr-6 pl-4 md:pl-6 border-l-2 border-primary-t-20 gap-2 md:gap-4">
+                    <div className="header-controls h-full flex items-center pr-4 md:pr-6 pl-4 md:pl-6 border-l-2 border-primary-t-20 gap-2 md:gap-4">
                         <button
-                            onClick={() => onSetView(currentView === 'chat' ? 'dashboard' : 'chat')}
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50 transform hover:scale-110 active:scale-100"
-                            aria-label={currentView === 'chat' ? 'Open Control Center' : 'Open Chat'}
+                            onClick={onToggleControlCenter}
+                            className="header-control-button w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50 transform hover:scale-110 active:scale-100"
+                            aria-label={'Toggle Control Center'}
                         >
-                            {currentView === 'chat' ? <DashboardIcon className="w-6 h-6" /> : <ChatIcon className="w-6 h-6" />}
+                           <DashboardIcon className="w-6 h-6" />
                         </button>
                         <button
                             onClick={onOpenSettings}
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50 transform hover:scale-110 active:scale-100"
+                            className="header-control-button w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50 transform hover:scale-110 active:scale-100"
                             aria-label="Open Settings"
                         >
                             <SettingsIcon className="w-6 h-6" />

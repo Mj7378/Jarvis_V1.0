@@ -22,6 +22,12 @@ const IconBase: React.FC<{ children: React.ReactNode, className?: string, viewBo
     </svg>
 );
 
+export const StopIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 6h12v12H6z" />
+    </svg>
+);
+
 export const WolframAlphaIcon: React.FC<IconProps> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 256 256" fill="currentColor">
         <path d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm47.78 153.45-31.11-54.38-29.34 51.13a8 8 0 0 1-13.89-8l36.25-63.2-34.22-59.61a8 8 0 0 1 13.89-8L154.63 96l22.25-38.79a8 8 0 1 1 13.89 8l-29.34 51.12 31.11 54.38a8 8 0 0 1-13.89 8Z"/>
@@ -131,14 +137,6 @@ export const GenerateImageIcon: React.FC<IconProps> = ({ className }) => (
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
         <circle cx="8.5" cy="8.5" r="1.5" />
         <polyline points="21 15 16 10 5 21" />
-    </IconBase>
-);
-
-export const SelfHealIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <line x1="12" y1="8" x2="12" y2="16" />
-        <line x1="8" y1="12" x2="16" y2="12" />
     </IconBase>
 );
 

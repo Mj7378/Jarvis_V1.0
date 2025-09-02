@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { getAsset } from '../utils/db';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -177,7 +176,7 @@ const BootingUp: React.FC<BootingUpProps> = ({ onComplete, useCustomVideo, bootu
 
 
   return (
-    <div className="fixed inset-0 bg-jarvis-dark text-primary font-mono flex items-center justify-center p-8 overflow-hidden animate-fade-in-fast">
+    <div className="fixed inset-0 bg-transparent text-primary font-mono flex items-center justify-center p-8 overflow-hidden animate-fade-in-fast">
       {renderContent()}
     </div>
   );

@@ -12,9 +12,11 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
 
   const getStatusText = () => {
     switch (appState) {
-      case AppState.THINKING: return "Thinking";
-      case AppState.SPEAKING: return "Speaking";
+      case AppState.THINKING: return "Analyzing";
+      case AppState.SPEAKING: return "Synthesizing";
       case AppState.ERROR: return "Error";
+      case AppState.LISTENING: return "Listening";
+      case AppState.AWAITING_WAKE_WORD: return "Monitoring";
       default: return "Standby";
     }
   };
@@ -28,10 +30,16 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
     }
   };
   
+  const coreStateClasses = isThinking 
+      ? '[--glow-color:theme(colors.yellow.400)]' 
+      : isSpeaking 
+          ? '[--glow-color:theme(colors.primary)] animate-core-breathing' 
+          : '[--glow-color:theme(colors.primary)]';
+
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full">
         <div 
-            className="relative w-[40vmin] h-[40vmin] max-w-[18rem] max-h-[18rem] cursor-default group core-container"
+            className="relative w-[40vmin] h-[40vmin] max-w-[20rem] max-h-[20rem] cursor-default group core-container"
             role="img"
             aria-label="J.A.R.V.I.S. Core Interface"
         >
@@ -45,60 +53,32 @@ const CoreInterface: React.FC<CoreInterfaceProps> = ({ appState }) => {
                         </feMerge>
                     </filter>
                     <radialGradient id="core-grad">
-                        <stop offset="0%" stopColor="var(--glow-color)" stopOpacity="1"/>
-                        <stop offset="70%" stopColor="var(--glow-color)" stopOpacity="0.3"/>
+                        <stop offset="0%" stopColor="var(--glow-color)" stopOpacity="0.8"/>
+                        <stop offset="70%" stopColor="var(--glow-color)" stopOpacity="0.2"/>
                         <stop offset="100%" stopColor="var(--glow-color)" stopOpacity="0"/>
                     </radialGradient>
                 </defs>
                 
-                {/* Base Rings */}
-                <circle cx="100" cy="100" r="98" className="stroke-primary-t-20" strokeWidth="0.5" fill="none" />
-                <circle cx="100" cy="100" r="85" className="stroke-primary-t-20" strokeWidth="0.25" fill="none" />
-                
                 {/* Rotating Rings */}
-                <g className="core-ring" style={{ animationDuration: '22s' }}>
-                    <circle cx="100" cy="100" r="90" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1" fill="none" strokeDasharray="10 15" />
-                </g>
-                <g className="core-ring-rev" style={{ animationDuration: '18s' }}>
-                    <circle cx="100" cy="100" r="78" stroke="currentColor" strokeOpacity="0.4" strokeWidth="0.75" fill="none" strokeDasharray="2 8 10 8" />
-                </g>
-                 <g className="core-ring" style={{ animationDuration: '30s' }}>
-                    <circle cx="100" cy="100" r="65" stroke="currentColor" strokeOpacity="0.2" strokeWidth="0.5" fill="none" strokeDasharray="1 10" />
-                </g>
-
-                {/* State-dependent effects */}
-                {isThinking && (
-                    <g style={{ '--glow-color': '#fbbf24' } as React.CSSProperties}>
-                        <circle cx="100" cy="100" r="95" stroke="url(#core-grad)" strokeWidth="1.5" fill="none" className="animate-pulse-strong" />
-                         {/* Data stream effect */}
-                        <g>
-                           {[...Array(20)].map((_, i) => (
-                               <circle key={i} cx="100" cy="100" r={45 + (i % 4) * 12} 
-                                   stroke="var(--glow-color)" strokeWidth="1" fill="none" strokeDasharray="1 15" 
-                                   strokeDashoffset={i * 20}
-                                   className="core-ring-fast"
-                                   style={{ animationDuration: `${2 + (i%5)}s`, opacity: 0.1 + (i%3)*0.1 }}
-                                />
-                           ))}
-                        </g>
+                <g className={`transition-transform duration-500 ${isThinking ? 'scale-105' : 'scale-100'}`}>
+                    <g className="animate-spin" style={{ animationDuration: isThinking ? '4s' : '22s' }}>
+                        <circle cx="100" cy="100" r="95" stroke="var(--primary)" strokeOpacity="0.3" strokeWidth="0.5" fill="none" strokeDasharray="2 10" />
                     </g>
-                )}
-                {isSpeaking && (
-                     <g style={{ '--glow-color': '#ffffff'} as React.CSSProperties}>
-                        <circle cx="100" cy="100" r="95" stroke="url(#core-grad)" strokeWidth="2" fill="none" className="animate-pulse-strong" style={{animationDuration: '1.5s'}}/>
+                    <g className="animate-spin" style={{ animationDirection: 'reverse', animationDuration: isThinking ? '3s' : '18s' }}>
+                        <circle cx="100" cy="100" r="80" stroke="var(--primary)" strokeOpacity="0.4" strokeWidth="0.75" fill="none" strokeDasharray="5 15" />
                     </g>
-                )}
-
+                    <g className="animate-spin" style={{ animationDuration: isThinking ? '6s' : '30s' }}>
+                        <circle cx="100" cy="100" r="65" stroke="var(--primary)" strokeOpacity="0.2" strokeWidth="0.5" fill="none" strokeDasharray="1 15" />
+                    </g>
+                </g>
+                
                  {/* Central Element */}
                 <g 
-                   className={(isThinking || isSpeaking) ? "animate-pulse-strong" : ""} 
-                   style={{ 
-                       '--glow-color': isThinking ? '#fbbf24' : isSpeaking ? '#ffffff' : 'var(--primary-color-hex)' 
-                   } as React.CSSProperties}
+                   className={coreStateClasses}
                    filter="url(#core-glow)"
                 >
-                    <circle cx="100" cy="100" r="50" fill="url(#core-grad)" fillOpacity="0.5" />
-                    <circle cx="100" cy="100" r="50" stroke="currentColor" strokeOpacity="0.8" strokeWidth="0.75" fill="none" />
+                    <circle cx="100" cy="100" r="55" fill="url(#core-grad)" fillOpacity="0.7" />
+                    <circle cx="100" cy="100" r="55" stroke="var(--glow-color)" strokeOpacity="0.8" strokeWidth="0.75" fill="none" />
                     <g transform="translate(75 75) scale(0.25)">
                        <GeminiIcon className="w-full h-full text-primary opacity-75 group-hover:opacity-100 transition-opacity" />
                     </g>

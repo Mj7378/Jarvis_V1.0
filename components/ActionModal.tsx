@@ -121,7 +121,7 @@ interface NotificationToastProps {
   duration?: number;
 }
 
-export const NotificationToast: React.FC<NotificationToastProps> = ({ id, title, message, icon, onClose, duration = 10000 }) => {
+export const NotificationToast: React.FC<NotificationToastProps> = ({ id, title, message, icon, onClose, duration = 5000 }) => {
   const [isExiting, setIsExiting] = useState(false);
 
   const handleClose = useCallback(() => {
