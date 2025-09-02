@@ -60,6 +60,7 @@
               'border-trace': 'border-trace 1s ease-out forwards',
               'pop-in': 'pop-in 0.15s ease-out forwards',
               'pop-in-top-right': 'pop-in-top-right 0.15s ease-out forwards',
+              'pop-out-top-right': 'pop-out-top-right 0.3s ease-in forwards',
               'pop-in-center': 'pop-in-center 0.2s ease-out forwards',
               'plot-dot': 'plot-dot 0.3s ease-out forwards',
               'trace-path': 'trace-path 0.5s ease-in-out forwards',
@@ -118,6 +119,10 @@
               'pop-in-top-right': {
                 '0%': { opacity: '0', transform: 'translateY(-10px) scale(0.95)' },
                 '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+              },
+              'pop-out-top-right': {
+                '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                '100%': { opacity: '0', transform: 'translateY(-20px) scale(0.95)' },
               },
               'pop-in-center': {
                 '0%': { opacity: '0', transform: 'scale(0.95)' },
@@ -200,6 +205,12 @@
             linear-gradient(90deg, transparent 49.5%, rgba(var(--primary-color-rgb), 0.1) 50%, transparent 50.5%);
         background-size: 40px 69px;
         font-size: clamp(14px, 1.5vw + 0.5rem, 16px);
+        animation: background-pan 120s linear infinite;
+      }
+      
+      @keyframes background-pan {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 160px 276px; }
       }
 
       @keyframes glimmer {
@@ -330,8 +341,8 @@
       }
 
       @keyframes view-fade-in {
-        from { opacity: 0; transform: scale(0.98); }
-        to { opacity: 1; transform: scale(1); }
+        from { opacity: 0; transform: translateY(15px) scale(0.99); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
       }
       
       /* --- Responsive Component Styles --- */

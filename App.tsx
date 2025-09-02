@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 
@@ -11,7 +12,7 @@ import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveAsset, getAsset, deleteAsset, getOperatingSystem, getCustomApps, saveCustomApp, deleteCustomApp } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder, SmartHomeState, HaEntity, CustomAppDefinition } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Reminder, SmartHomeState, HaEntity, CustomAppDefinition, ConversationalResponse } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
@@ -32,7 +33,7 @@ import Suggestions from './components/Suggestions';
 import SecurityCameraModal from './components/SecurityCameraModal';
 import { HomeIcon, AppLauncherIcon, PlusIcon, CloseIcon, WolframAlphaIcon } from './components/Icons';
 import RealTimeVision from './components/RealTimeVision';
-import ControlCenter from './components/ControlCenter';
+import ControlCenter, { ControlCenterProps } from './components/ControlCenter';
 import TacticalSidebar from './components/TacticalSidebar';
 
 // --- App Launcher Component ---
@@ -388,6 +389,7 @@ const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const { chatHistory, addMessage, appendToLastMessage, updateLastMessage, removeLastMessage, clearChatHistory } = useChatHistory();
   const [currentError, setCurrentError] = useState<AppError | null>(null);
+  // FIX: Initialize useRef with null. Calling useRef with a generic type but no arguments can cause errors in some TypeScript/React versions.
   const abortControllerRef = useRef<AbortController | null>(null);
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const [currentView, setCurrentView] = useState<'chat' | 'dashboard'>('chat');
@@ -483,7 +485,7 @@ const App: React.FC = () => {
     return () => {
         haServiceRef.current?.disconnect();
     };
-  // eslint-disable-next-line react-hooks-exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only on mount
 
   // Apply theme settings to the document
@@ -520,19 +522,15 @@ const App: React.FC = () => {
         const hasBootVideo = !!bootVideo;
         const hasShutdownVideo = !!shutdownVideo;
 
-        setThemeSettings(prev => {
-            const newSettings = { ...prev };
-            newSettings.hasCustomBootVideo = hasBootVideo;
-            newSettings.hasCustomShutdownVideo = hasShutdownVideo;
-
-            // If user setting is 'video' but no video is found (e.g., cleared cache),
-            // reset the setting to holographic to maintain a consistent state.
-            if (prev.bootupAnimation === 'video' && !hasBootVideo) {
-                newSettings.bootupAnimation = 'holographic';
-            }
-            
-            return newSettings;
-        });
+        // This effect synchronizes the `has...Video` flags with the actual presence
+        // of the video file in storage. The user's choice of `bootupAnimation` is
+        // intentionally preserved, even if the file is deleted. The BootingUp
+        // component will handle the fallback gracefully.
+        setThemeSettings(prev => ({
+            ...prev,
+            hasCustomBootVideo: hasBootVideo,
+            hasCustomShutdownVideo: hasShutdownVideo,
+        }));
     };
     checkMediaAssets();
   }, []);
@@ -661,7 +659,7 @@ const App: React.FC = () => {
 
         if (themeSettings.voiceOutputEnabled && cmd.spoken_response) {
             setAppState(AppState.SPEAKING);
-            queueSpeech(cmd.spoken_response);
+            queueSpeech(cmd.spoken_response, cmd.lang);
         }
     } catch (e: any) {
         console.error("Wolfram Alpha simulation failed:", e);
@@ -754,6 +752,7 @@ const App: React.FC = () => {
 
     let fullResponse = '';
     let spokenResponse = '';
+    let spokenLang: string | undefined;
     let sources: Source[] = [];
     let lastChunk: GenerateContentResponse | undefined;
 
@@ -823,41 +822,50 @@ const App: React.FC = () => {
     if (jsonString) {
         try {
             const parsedJson = JSON.parse(jsonString);
-            const commandArray = (Array.isArray(parsedJson) ? parsedJson : [parsedJson]) as AICommand[];
-            
-            if (commandArray.length > 0 && typeof commandArray[0] === 'object' && commandArray[0] !== null) {
-                const firstCommand = commandArray[0];
-                spokenResponse = firstCommand.spoken_response;
-                updateLastMessage({ content: spokenResponse });
-                if (firstCommand.suggestions) {
-                    setCurrentSuggestions(firstCommand.suggestions);
-                }
+            const commandArray = Array.isArray(parsedJson) ? parsedJson : [parsedJson];
+            const firstItem = commandArray[0];
 
-                executeCommandsSequentially(commandArray);
-                commandProcessed = true;
+            if (firstItem && typeof firstItem === 'object' && firstItem !== null && firstItem.action) {
+                if (firstItem.action === 'device_control') {
+                    const commands = commandArray as DeviceControlCommand[];
+                    spokenResponse = commands[0].spoken_response;
+                    spokenLang = commands[0].lang;
+                    
+                    updateLastMessage({ content: spokenResponse });
+                    
+                    if (commands[0].suggestions) {
+                        setCurrentSuggestions(commands[0].suggestions);
+                    }
+                    executeCommandsSequentially(commands);
+                    commandProcessed = true;
+                } else if (firstItem.action === 'conversational_response' && !Array.isArray(parsedJson)) {
+                    const convoResponse = parsedJson as ConversationalResponse;
+                    
+                    spokenResponse = convoResponse.spoken_text;
+                    spokenLang = convoResponse.lang;
+                    
+                    updateLastMessage({ content: convoResponse.text });
+
+                    if (convoResponse.suggestions) {
+                        setCurrentSuggestions(convoResponse.suggestions);
+                    }
+                    commandProcessed = true;
+                }
             }
         } catch (e) {
             console.warn("JSON parsing error, falling back to text.", e, "Raw response:", fullResponse);
-            // Fallback to text processing by leaving commandProcessed = false
         }
     }
     
     if (!commandProcessed) {
-        const suggestionMatch = fullResponse.match(/> \*Suggestions:\* (.*)/);
-        if (suggestionMatch && suggestionMatch[1]) {
-            const suggestionsText = suggestionMatch[1];
-            setCurrentSuggestions(suggestionsText.split('|').map(s => s.trim().replace(/"/g, '')));
-            const cleanResponse = fullResponse.replace(suggestionMatch[0], '').trim();
-            updateLastMessage({ content: cleanResponse });
-            spokenResponse = stripMarkdown(cleanResponse);
-        } else {
-            spokenResponse = stripMarkdown(fullResponse);
-        }
+        // Fallback for non-JSON or malformed JSON responses
+        spokenResponse = stripMarkdown(fullResponse);
+        updateLastMessage({ content: fullResponse });
     }
 
     if (themeSettings.voiceOutputEnabled && spokenResponse) {
         setAppState(AppState.SPEAKING);
-        queueSpeech(spokenResponse);
+        queueSpeech(spokenResponse, spokenLang);
     } else {
         setAppState(AppState.IDLE);
     }
@@ -918,7 +926,8 @@ const App: React.FC = () => {
       }
   }, [appState, processUserMessage]);
   
-  const onTranscriptChangeHandlerRef = useRef<(transcript: string) => void>();
+  // FIX: Initialize useRef with null. Calling useRef with a generic type but no arguments can cause errors in some TypeScript/React versions.
+  const onTranscriptChangeHandlerRef = useRef<((transcript: string) => void) | null>(null);
   
   const { isListening, startListening, stopListening } = useSpeechRecognition({
       continuous: appState === AppState.AWAITING_WAKE_WORD,
@@ -1132,6 +1141,41 @@ const App: React.FC = () => {
     });
     setIsAppLauncherOpen(false); // Close after selection
   };
+  
+  // --- Dashboard Auto-Return Logic ---
+  const dashboardTimeoutRef = useRef<number | null>(null);
+  const currentViewRef = useRef(currentView);
+  currentViewRef.current = currentView;
+  
+  const startDashboardTimeout = useCallback(() => {
+    if (dashboardTimeoutRef.current) {
+        clearTimeout(dashboardTimeoutRef.current);
+    }
+    dashboardTimeoutRef.current = window.setTimeout(() => {
+        if (currentViewRef.current === 'dashboard') {
+            setCurrentView('chat');
+            sounds.playClose();
+        }
+    }, 5000); // 5 seconds of inactivity
+  }, [sounds]);
+
+  const clearDashboardTimeout = useCallback(() => {
+    if (dashboardTimeoutRef.current) {
+        clearTimeout(dashboardTimeoutRef.current);
+        dashboardTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentView === 'dashboard') {
+        startDashboardTimeout();
+    } else {
+        clearDashboardTimeout();
+    }
+    return () => {
+        clearDashboardTimeout();
+    };
+  }, [currentView, startDashboardTimeout, clearDashboardTimeout]);
 
 
   const userInputProps = {
@@ -1151,7 +1195,7 @@ const App: React.FC = () => {
     wakeWord: themeSettings.wakeWord,
   };
 
-  const controlCenterProps = {
+  const controlCenterProps: ControlCenterProps = {
     onRunDiagnostics: () => setIsDiagnosticsMode(true),
     onVisionMode: () => setIsVisionIntelligenceOpen(true),
     onRealTimeVision: () => setIsRealTimeVisionOpen(true),
@@ -1164,6 +1208,8 @@ const App: React.FC = () => {
     onShowCameraFeed: (location: string) => setCameraFeed({ location }),
     onOpenAppLauncher: () => setIsAppLauncherOpen(true),
     smartHomeState: smartHomeState,
+    onMouseEnter: clearDashboardTimeout,
+    onMouseLeave: startDashboardTimeout,
   };
 
   switch (systemState) {
@@ -1291,7 +1337,6 @@ const App: React.FC = () => {
                         isOpen={isSettingsOpen}
                         onClose={() => setIsSettingsOpen(false)}
                         onShutdown={() => { setIsSettingsOpen(false); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }}
-                        isBusy={appState !== AppState.IDLE}
                         sounds={sounds}
                         themeSettings={themeSettings}
                         onThemeChange={setThemeSettings}
@@ -1300,11 +1345,6 @@ const App: React.FC = () => {
                         onSetCustomShutdownVideo={handleSetCustomShutdownVideo}
                         onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo}
                         onCalibrateVoice={() => setIsCalibrationOpen(true)}
-                        onCameraClick={() => {setIsSettingsOpen(false); setIsVisionIntelligenceOpen(true)}} 
-                        onWeather={() => {setIsSettingsOpen(false); processUserMessage("What's the weather like?")}} 
-                        onSelfHeal={() => {setIsSettingsOpen(false); setIsDiagnosticsMode(true)}} 
-                        onDesignMode={() => {setIsSettingsOpen(false); setDesignModePrompt("A futuristic city skyline")}} 
-                        onSimulationMode={() => {setIsSettingsOpen(false); setSimulationModePrompt("A cinematic view of Earth from space")}}
                         onClearChat={handleClearChat}
                         onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile}
                         onDeleteVoiceProfile={handleDeleteVoiceProfile}

@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RightSidebar, RightSidebarProps } from './RightSidebar';
-import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon } from './Icons';
+import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
@@ -105,7 +106,7 @@ const AIEngineSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' |
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { 
-        isOpen, onClose, onShutdown, sounds,
+        isOpen, onClose, onShutdown, sounds, onClearChat,
     } = props;
 
     const [isHovering, setIsHovering] = useState(false);
@@ -211,6 +212,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                             onToggle={() => handleToggleSection("Smart Home Integration")}
                         >
                             <HomeAssistantSettingsPanel {...props} />
+                        </CollapsibleSection>
+                        <CollapsibleSection
+                            title="Conversation"
+                            icon={<ConversationIcon className="w-5 h-5 text-primary" />}
+                            isOpen={openSection === "Conversation"}
+                            onToggle={() => handleToggleSection("Conversation")}
+                        >
+                            <button
+                                onClick={onClearChat}
+                                className="w-full flex items-center justify-center gap-3 p-2 rounded-md text-yellow-400 border border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-300 transition-all duration-300 group"
+                            >
+                                <TrashIcon className="w-5 h-5" />
+                                <span className="font-orbitron tracking-wider text-sm">Clear History</span>
+                            </button>
                         </CollapsibleSection>
                     </div>
                 </div>

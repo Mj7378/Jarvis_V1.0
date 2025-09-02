@@ -1,15 +1,10 @@
+
 import React, { useRef, useState, useEffect } from 'react';
-import { SystemControlsIcon, QuickActionsIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon, ConversationIcon, TrashIcon, DashboardIcon } from './Icons';
+import { PaletteIcon, CheckIcon, GeminiIcon, ChevronIcon, DashboardIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { ThemeSettings } from '../types';
 
 export interface RightSidebarProps {
-    onCameraClick: () => void;
-    isBusy: boolean;
-    onWeather: () => void;
-    onSelfHeal: () => void;
-    onDesignMode: () => void;
-    onSimulationMode: () => void;
     onCalibrateVoice: () => void;
     sounds: ReturnType<typeof useSoundEffects>;
     themeSettings: ThemeSettings;
@@ -20,7 +15,6 @@ export interface RightSidebarProps {
     onRemoveCustomShutdownVideo: () => void;
     onSectionVisibilityChange: (isVisible: boolean) => void;
     isHovering: boolean;
-    onClearChat: () => void;
     onDeleteVoiceProfile: (profileId: string) => void;
     onChangeActiveVoiceProfile: (profileId: string) => void;
 }
@@ -114,7 +108,7 @@ const VoiceSettingsPanelContent: React.FC<Pick<RightSidebarProps, 'themeSettings
                                 className="p-2 text-text-muted hover:text-red-400 rounded-md disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text-muted transition-colors"
                                 aria-label={`Delete profile ${profile.name}`}
                             >
-                                <TrashIcon className="w-4 h-4 flex-shrink-0" />
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
                         </div>
                     ))}
@@ -523,9 +517,6 @@ const CollapsibleSection: React.FC<{ title: string; icon: React.ReactNode; child
 
 export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
     const { 
-        isBusy, 
-        onCameraClick, onWeather, onSelfHeal,
-        onDesignMode, onSimulationMode, onClearChat,
         onSectionVisibilityChange, isHovering
     } = props;
 
@@ -562,91 +553,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
         );
     };
     
-    const systemControls = [
-        { name: 'Camera', icon: '📷', action: onCameraClick, disabled: isBusy },
-        { name: 'Weather', icon: '🌦️', action: onWeather, disabled: isBusy },
-        { name: 'Self Heal', icon: <SelfHealIcon className="w-6 h-6 inline-block" />, action: onSelfHeal, disabled: isBusy },
-    ];
-    
-    const quickActions = [
-        { name: 'Image Studio', icon: <GenerateImageIcon className="w-4 h-4 inline-block" />, action: onDesignMode },
-        { name: 'Simulation Mode', icon: <GenerateVideoIcon className="w-4 h-4 inline-block" />, action: onSimulationMode },
-    ];
-    
     return (
         <aside 
             className="flex flex-col space-y-2"
         >
-            <CollapsibleSection
-                title="System Controls"
-                icon={<SystemControlsIcon className="w-5 h-5 text-primary" />}
-                isOpen={openSection === "System Controls"}
-                onToggle={() => handleToggleSection("System Controls")}
-            >
-                <div className="grid grid-cols-2 gap-2">
-                    {systemControls.map(control => (
-                         <button key={control.name} onClick={control.action} disabled={control.disabled} className="text-center p-2 bg-slate-800/50 rounded-md border border-slate-700/50 hover:bg-slate-700/50 hover:border-primary-t-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex flex-col items-center justify-center h-20 transform hover:scale-105 active:scale-100">
-                            <span className="text-2xl">{control.icon}</span>
-                            <p className="text-xs mt-1 text-slate-300">{control.name}</p>
-                        </button>
-                    ))}
-                </div>
-            </CollapsibleSection>
-            
-            <CollapsibleSection
-                title="Quick Actions"
-                icon={<QuickActionsIcon className="w-5 h-5 text-primary" />}
-                isOpen={openSection === "Quick Actions"}
-                onToggle={() => handleToggleSection("Quick Actions")}
-            >
-                <div className="space-y-1">
-                    {quickActions.map(action => (
-                        <button 
-                            key={action.name} 
-                            onClick={action.action}
-                            disabled={isBusy}
-                            className="w-full text-left flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700/50 text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-transform duration-200 transform hover:scale-[1.03] active:scale-100"
-                        >
-                            <span className="text-lg w-5 text-center">{action.icon}</span>
-                            <span>{action.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </CollapsibleSection>
-            
-            <CollapsibleSection
-                title="Conversation"
-                icon={<ConversationIcon className="w-5 h-5 text-primary" />}
-                isOpen={openSection === "Conversation"}
-                onToggle={() => handleToggleSection("Conversation")}
-            >
-                <button
-                    onClick={onClearChat}
-                    className="w-full flex items-center justify-center gap-3 p-2 rounded-md text-yellow-400 border border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-300 transition-all duration-300 group"
-                >
-                    <TrashIcon className="w-5 h-5" />
-                    <span className="font-orbitron tracking-wider text-sm">Clear History</span>
-                </button>
-            </CollapsibleSection>
-            
-            <CollapsibleSection
-                title="AI Core"
-                icon={<GeminiIcon className="w-5 h-5 text-primary" />}
-                isOpen={openSection === "AI Core"}
-                onToggle={() => handleToggleSection("AI Core")}
-            >
-                <AICoreSettingsPanel {...props} />
-            </CollapsibleSection>
-
-            <CollapsibleSection
-                title="Voice & Audio"
-                icon={<svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>}
-                isOpen={openSection === "Voice & Audio"}
-                onToggle={() => handleToggleSection("Voice & Audio")}
-            >
-                <VoiceSettingsPanelContent {...props} />
-            </CollapsibleSection>
-
             <CollapsibleSection
                 title="Theme & Appearance"
                 icon={<PaletteIcon className="w-5 h-5 text-primary" />}
@@ -657,12 +567,30 @@ export const RightSidebar: React.FC<RightSidebarProps> = (props) => {
             </CollapsibleSection>
             
             <CollapsibleSection
+                title="Voice & Audio"
+                icon={<svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>}
+                isOpen={openSection === "Voice & Audio"}
+                onToggle={() => handleToggleSection("Voice & Audio")}
+            >
+                <VoiceSettingsPanelContent {...props} />
+            </CollapsibleSection>
+            
+            <CollapsibleSection
                 title="HUD Layout"
                 icon={<DashboardIcon className="w-5 h-5 text-primary" />}
                 isOpen={openSection === "HUD Layout"}
                 onToggle={() => handleToggleSection("HUD Layout")}
             >
                 <LayoutSettingsPanelContent {...props} />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+                title="AI Core"
+                icon={<GeminiIcon className="w-5 h-5 text-primary" />}
+                isOpen={openSection === "AI Core"}
+                onToggle={() => handleToggleSection("AI Core")}
+            >
+                <AICoreSettingsPanel {...props} />
             </CollapsibleSection>
         </aside>
     );

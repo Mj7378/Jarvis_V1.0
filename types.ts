@@ -36,6 +36,14 @@ export interface DeviceControlCommand {
 
 export type AICommand = DeviceControlCommand;
 
+export interface ConversationalResponse {
+    action: 'conversational_response';
+    text: string; // Full text with markdown for display
+    spoken_text: string; // Clean text for TTS
+    lang: string; // BCP-47 code
+    suggestions?: string[];
+}
+
 export interface AppError {
   code: string;
   title: string;

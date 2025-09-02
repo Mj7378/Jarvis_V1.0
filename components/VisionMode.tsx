@@ -5,7 +5,7 @@ import { aiOrchestrator } from '../services/aiOrchestrator';
 import { FormattedMessage } from './ChatLog'; // Re-use the message formatter
 import {
     CloseIcon, MicrophoneIcon, ObjectDetectionIcon, TextRecognitionIcon,
-    FaceRecognitionIcon, GestureControlIcon, EyeTrackingIcon, VQAIcon, CameraIcon
+    FaceRecognitionIcon, GestureControlIcon, EyeTrackingIcon, VQAIcon, CameraIcon, SwitchCameraIcon
 } from './Icons';
 
 interface VisionIntelligenceProps {
@@ -25,6 +25,7 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('vqa');
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<string>('');
@@ -42,12 +43,23 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
   
   const { isListening, startListening, stopListening } = useSpeechRecognition({ onEnd: handleTranscript });
 
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+  };
+
   useEffect(() => {
     let mediaStream: MediaStream | null = null;
+    
+    // Stop any existing stream before getting a new one
+    if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+    }
+
     const startCamera = async () => {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+          video: { facingMode: facingMode },
         });
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -69,7 +81,7 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
       if(longPressTimer.current) clearTimeout(longPressTimer.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [facingMode]);
 
   const prompts = useMemo(() => ({
       vqa: 'Analyze this image.',
@@ -183,7 +195,7 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center animate-fade-in-fast">
-      <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-50" />
+      <video ref={videoRef} autoPlay playsInline className={`absolute inset-0 w-full h-full object-cover opacity-50 ${facingMode === 'user' ? 'transform scale-x-[-1]' : ''}`} />
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
       <canvas ref={canvasRef} className="hidden" />
 
@@ -196,6 +208,13 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
               <SidebarButton label="Object Detection" mode="object" icon={<ObjectDetectionIcon className="w-6 h-6"/>} />
               <SidebarButton label="Text Reader (OCR)" mode="text" icon={<TextRecognitionIcon className="w-6 h-6"/>} />
               <SidebarButton label="Face Analysis" mode="face" icon={<FaceRecognitionIcon className="w-6 h-6"/>} />
+              <button
+                  onClick={toggleCamera}
+                  className="flex items-center w-full p-3 gap-3 rounded-lg transition-all duration-200 text-left text-text-primary hover:bg-primary-t-20"
+              >
+                  <SwitchCameraIcon className="w-6 h-6"/>
+                  <span className="font-orbitron text-sm">Switch Camera</span>
+              </button>
               <div className="!mt-auto pt-4 border-t border-primary-t-20 space-y-2">
                  <h3 className="text-xs font-orbitron text-text-muted px-2">REAL-TIME SYSTEMS</h3>
                  <RealTimeFeatureButton label="Identity Scan" feature="Face Recognition" icon={<FaceRecognitionIcon className="w-6 h-6"/>} />
@@ -231,7 +250,7 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
               {(captureState === 'analyzing' || captureState === 'result' || captureState === 'error') && (
                   <div className="w-full h-full max-h-[80vh] grid grid-cols-2 gap-4 animate-fade-in-fast">
                       <div className="bg-panel rounded-lg border border-primary-t-20 flex items-center justify-center overflow-hidden">
-                          {capturedImage && <img src={capturedImage} alt="Captured frame" className="max-w-full max-h-full object-contain" />}
+                          {capturedImage && <img src={capturedImage} alt="Captured frame" className={`max-w-full max-h-full object-contain ${facingMode === 'user' ? 'transform scale-x-[-1]' : ''}`} />}
                       </div>
                       <div className="bg-panel rounded-lg border border-primary-t-20 flex flex-col">
                           <h3 className="font-orbitron text-primary p-3 border-b border-primary-t-20 truncate">{currentPrompt}</h3>

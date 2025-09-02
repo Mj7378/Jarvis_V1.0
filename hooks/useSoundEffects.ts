@@ -1,4 +1,5 @@
 
+
 import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 
 const playWebAudioSound = (config: {
@@ -87,7 +88,7 @@ export const useSpeechSynthesis = (profile = { rate: 1.2, pitch: 1.0 }) => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const voices = useRef<SpeechSynthesisVoice[]>([]);
     const synthRef = useRef(window.speechSynthesis);
-    const speechQueueRef = useRef<string[]>([]);
+    const speechQueueRef = useRef<{ text: string, lang?: string }[]>([]);
     const isBusyRef = useRef(false);
 
     // Effect for setting up and tearing down the synthesis engine listeners
@@ -140,25 +141,47 @@ export const useSpeechSynthesis = (profile = { rate: 1.2, pitch: 1.0 }) => {
         isBusyRef.current = true;
         setIsSpeaking(true);
 
-        const text = speechQueueRef.current.shift();
-        if (!text) {
+        const item = speechQueueRef.current.shift();
+        if (!item) {
              isBusyRef.current = false;
              setIsSpeaking(false);
              return;
         }
         
+        const { text, lang } = item;
         const utterance = new SpeechSynthesisUtterance(text);
         
-        const jarvisVoice = 
-            voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Google') && v.name.includes('Male')) ||
-            voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) ||
-            voices.current.find(v => v.name.includes('Microsoft David')) ||
-            voices.current.find(v => v.lang.startsWith('en-GB')) ||
-            voices.current.find(v => v.lang === 'en-US' && v.name.includes('Google') && v.name.includes('Male')) ||
-            voices.current.find(v => v.lang.startsWith('en') && v.name.includes('David')) ||
-            voices.current.find(v => v.lang.startsWith('en'));
+        let selectedVoice: SpeechSynthesisVoice | null = null;
         
-        utterance.voice = jarvisVoice || null;
+        if (lang) {
+            // Find a voice that matches the language. Prioritize Google voices for quality.
+            const langPrefix = lang.split('-')[0];
+            selectedVoice = 
+                voices.current.find(v => v.lang === lang && v.name.includes('Google') && v.name.includes('Male')) ||
+                voices.current.find(v => v.lang === lang && v.name.includes('Google')) ||
+                voices.current.find(v => v.lang.startsWith(langPrefix) && v.name.includes('Google')) ||
+                voices.current.find(v => v.lang === lang) ||
+                voices.current.find(v => v.lang.startsWith(langPrefix));
+        }
+
+        // Fallback to Jarvis default voice if no specific language voice is found or if no lang is provided
+        if (!selectedVoice) {
+            selectedVoice = 
+                voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Google') && v.name.includes('Male')) ||
+                voices.current.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) ||
+                voices.current.find(v => v.name.includes('Microsoft David')) ||
+                voices.current.find(v => v.lang.startsWith('en-GB')) ||
+                voices.current.find(v => v.lang === 'en-US' && v.name.includes('Google') && v.name.includes('Male')) ||
+                voices.current.find(v => v.lang.startsWith('en') && v.name.includes('David')) ||
+                voices.current.find(v => v.lang.startsWith('en'));
+        }
+        
+        utterance.voice = selectedVoice || null;
+        if (selectedVoice) {
+            // Explicitly set utterance lang for better compatibility
+            utterance.lang = selectedVoice.lang;
+        }
+        
         utterance.rate = profile.rate;
         utterance.pitch = profile.pitch;
 
@@ -192,9 +215,9 @@ export const useSpeechSynthesis = (profile = { rate: 1.2, pitch: 1.0 }) => {
         synth.speak(utterance);
     }, [profile]);
 
-    const queueSpeech = useCallback((text: string) => {
+    const queueSpeech = useCallback((text: string, lang?: string) => {
         if (!text.trim()) return;
-        speechQueueRef.current.push(text);
+        speechQueueRef.current.push({ text, lang });
         processQueue();
     }, [processQueue]);
 

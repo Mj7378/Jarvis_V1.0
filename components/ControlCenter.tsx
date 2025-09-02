@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { SmartHomeState, HaEntity } from '../types';
 import WeatherWidget from './WeatherWidget';
 import { CameraIcon, SelfHealIcon, GenerateImageIcon, GenerateVideoIcon, SettingsIcon, LockClosedIcon, LockOpenIcon, FanIcon, SceneIcon, AirPurifierIcon, AppLauncherIcon } from './Icons';
 
 // --- PROPS INTERFACE ---
-interface ControlCenterProps {
+export interface ControlCenterProps {
     onRunDiagnostics: () => void;
     onVisionMode: () => void;
     onRealTimeVision: () => void;
@@ -17,6 +18,8 @@ interface ControlCenterProps {
     onShowCameraFeed: (location: string) => void;
     smartHomeState: SmartHomeState;
     onOpenAppLauncher: () => void;
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
 }
 
 
@@ -194,9 +197,13 @@ const SmartHomeDashboard: React.FC<Pick<ControlCenterProps, 'onDirectHomeStateCh
 
 // --- MAIN COMPONENT ---
 
-const ControlCenter: React.FC<Omit<ControlCenterProps, 'onProcessCommand'>> = (props) => {
+const ControlCenter: React.FC<ControlCenterProps> = (props) => {
     return (
-        <div className="control-center-container styled-scrollbar view-container">
+        <div 
+            className="control-center-container styled-scrollbar view-container"
+            onMouseEnter={props.onMouseEnter}
+            onMouseLeave={props.onMouseLeave}
+        >
             <WeatherModule />
             <QuickActionsModule 
                 onRunDiagnostics={props.onRunDiagnostics}
