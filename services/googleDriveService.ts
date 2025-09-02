@@ -1,11 +1,7 @@
 // NOTE TO USER: To enable this feature, you must create a Google Cloud Platform project,
 // enable the Google Drive API, and create OAuth 2.0 credentials for a Web Application.
-// The Client ID from those credentials must be set as the GOOGLE_CLIENT_ID environment variable.
-if (!process.env.GOOGLE_CLIENT_ID) {
-  console.warn("GOOGLE_CLIENT_ID environment variable not set. Google Drive sync will be disabled.");
-}
+// The Client ID from those credentials must be set in the app's settings panel.
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const API_KEY = process.env.API_KEY; // Needed for gapi discovery
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 const DATA_FILE_NAME = 'jarvis_data.json';
@@ -22,7 +18,12 @@ export interface DriveUser {
 
 // --- Initialization ---
 
-export const initGoogleClient = (onGapiLoad: () => void) => {
+export const initGoogleClient = (clientId: string, onGapiLoad: () => void) => {
+    if (!clientId) {
+        console.warn("Attempted to initialize Google Client without a Client ID.");
+        return;
+    }
+
     // Load GAPI for Drive API calls
     const scriptGapi = document.createElement('script');
     scriptGapi.src = 'https://apis.google.com/js/api.js';
@@ -47,7 +48,7 @@ export const initGoogleClient = (onGapiLoad: () => void) => {
     scriptGis.defer = true;
     scriptGis.onload = () => {
         tokenClient = window.google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID!,
+            client_id: clientId,
             scope: SCOPES,
             callback: '', // Callback is set dynamically
         });
@@ -62,8 +63,8 @@ export const initGoogleClient = (onGapiLoad: () => void) => {
 
 export const signIn = (): Promise<any> => { // Using 'any' for google.accounts.oauth2.TokenResponse
     return new Promise((resolve, reject) => {
-        if (!tokenClient || !CLIENT_ID) {
-            return reject(new Error("Google Client not initialized or Client ID is missing."));
+        if (!tokenClient) {
+            return reject(new Error("Google Client not initialized. Please set the Client ID in settings."));
         }
         tokenClient.callback = (resp: any) => {
             if (resp.error) {

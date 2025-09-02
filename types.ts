@@ -114,6 +114,8 @@ export interface ThemeSettings {
   persona: 'classic' | 'stark';
   homeAssistantUrl: string;
   homeAssistantToken: string;
+  googleClientId: string;
+  dropboxClientId: string;
 }
 
 export interface Task {

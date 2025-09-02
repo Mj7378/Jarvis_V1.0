@@ -91,21 +91,21 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 This project is designed to run directly in the browser without a build step.
 
 1.  **Set up Environment Variables:**
-    The application requires several secret keys to be configured as environment variables. You must ensure these variables are available in the environment where you serve the application.
-    *   `API_KEY`: Your Google Gemini API key.
-    *   `GOOGLE_CLIENT_ID`: (Optional) Your Google Cloud OAuth 2.0 Client ID for enabling Google Drive sync.
-    *   `DROPBOX_CLIENT_ID`: (Optional) Your Dropbox App Client ID for enabling Dropbox sync.
+    The application requires your Google Gemini API key to be configured as an environment variable. You must ensure this variable is available in the environment where you serve the application.
+    *   `API_KEY`: Your Google Gemini API key. This is the only variable required for the core functionality.
 
 2.  **(Optional) Configure OAuth for Cloud Sync:**
-    To use the Google Drive or Dropbox sync features, you must configure their respective OAuth consent screens.
+    To use the Google Drive or Dropbox sync features, you must first obtain OAuth Client IDs.
     *   **For Google Drive:**
         *   In your Google Cloud Console, under APIs & Services > Credentials, create an "OAuth 2.0 Client ID".
         *   Select "Web application" as the application type.
         *   Add the URL where you are hosting the application (e.g., `http://localhost:3000`) to both "Authorized JavaScript origins" and "Authorized redirect URIs".
+        *   Copy the generated "Client ID".
     *   **For Dropbox:**
         *   In your Dropbox App Console, create a new app.
         *   Choose "Scoped access" and select the `files.content.write` and `account_info.read` permissions.
         *   Under the "Settings" tab, add the URL where you are hosting the application (e.g., `http://localhost:3000`) to the "Redirect URIs" section.
+        *   Copy the "Client ID" (also called App Key).
 
 3.  **Serve the files:**
     Use any simple static file server to serve the project's root directory.
@@ -117,7 +117,13 @@ This project is designed to run directly in the browser without a build step.
 4.  **Open in Browser:**
     Navigate to the local server's address (e.g., `http://localhost:3000`).
 
-5.  **Grant Permissions:**
+5.  **(Optional) Enter Client IDs in Settings:**
+    *   Open the J.A.R.V.I.S. application.
+    *   Navigate to **Settings > Cloud Sync**.
+    *   Paste your generated Google Client ID and/or Dropbox Client ID into the respective input fields. The settings are saved automatically.
+    *   You can now connect to your desired cloud service.
+
+6.  **Grant Permissions:**
     Upon first use of certain features, the application will request permission to use your **camera** (for Vision Mode) and **microphone** (for voice commands). You must grant these permissions for full functionality.
 
 ---
@@ -150,7 +156,7 @@ The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the
 
 *   **API Key Not Valid Error:** This means the `API_KEY` environment variable is either not set or incorrect. Please double-check your setup from the [Getting Started](#getting-started) section.
 *   **Cloud Sync Not Connecting:**
-    *   Ensure you have set the `GOOGLE_CLIENT_ID` and/or `DROPBOX_CLIENT_ID` environment variables.
+    *   Go to **Settings > Cloud Sync** and ensure you have correctly pasted your Client ID for the service you want to use.
     *   Verify that you have correctly configured the "Authorized JavaScript origins" (for Google) and "Redirect URIs" (for both) in your cloud project settings to match the URL where you are running the application.
     *   Check your browser's console for any OAuth-related errors.
     *   Your browser might be blocking the authentication pop-up. Disable your pop-up blocker for this site and try again.

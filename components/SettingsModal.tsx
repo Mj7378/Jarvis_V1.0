@@ -287,8 +287,9 @@ const AIEngineSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' |
     );
 };
 
-const CloudSyncPanel: React.FC<Pick<SettingsModalProps, 'isDriveReady' | 'isSyncing' | 'driveUser' | 'onConnectDrive' | 'onDisconnectDrive' | 'dropboxUser' | 'onConnectDropbox' | 'onDisconnectDropbox'>> =
-({ isDriveReady, isSyncing, driveUser, onConnectDrive, onDisconnectDrive, dropboxUser, onConnectDropbox, onDisconnectDropbox }) => {
+
+const CloudSyncPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'isDriveReady' | 'isSyncing' | 'driveUser' | 'onConnectDrive' | 'onDisconnectDrive' | 'dropboxUser' | 'onConnectDropbox' | 'onDisconnectDropbox'>> =
+({ themeSettings, onThemeChange, isDriveReady, isSyncing, driveUser, onConnectDrive, onDisconnectDrive, dropboxUser, onConnectDropbox, onDisconnectDropbox }) => {
 
     const connectedUser = driveUser || dropboxUser;
     const connectedService = driveUser ? 'drive' : (dropboxUser ? 'dropbox' : null);
@@ -325,41 +326,65 @@ const CloudSyncPanel: React.FC<Pick<SettingsModalProps, 'isDriveReady' | 'isSync
     // Not connected view
     return (
         <div className="space-y-4">
-            <p className="text-sm text-text-muted">Connect a cloud provider to sync your chat history, tasks, and settings.</p>
-            <div className="space-y-2">
-                {/* Google Drive */}
-                <button
-                    onClick={onConnectDrive}
-                    disabled={!isDriveReady || isSyncing || !process.env.GOOGLE_CLIENT_ID}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-primary-t-20 hover:bg-primary-t-20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                >
+            <p className="text-sm text-text-muted">Connect a cloud provider to sync your chat history, tasks, and settings. Refer to the README for instructions on getting a Client ID.</p>
+            
+            {/* Google Drive Section */}
+            <div className="space-y-2 p-3 rounded-lg border border-primary-t-20 bg-panel/50">
+                <div className="flex items-center gap-3">
                     <DriveIcon className="w-8 h-8 text-sky-400" />
                     <div className="text-left">
                         <p className="font-bold">Google Drive</p>
                         <p className="text-xs text-text-muted">Recommended for seamless integration.</p>
                     </div>
-                    <div className="ml-auto">
-                        {isSyncing && <svg className="w-5 h-5 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
-                    </div>
-                </button>
-                {/* Dropbox */}
+                </div>
+                <div>
+                    <label htmlFor="google-client-id" className="text-xs text-text-muted mb-1 block">Google Client ID:</label>
+                    <input 
+                        id="google-client-id" 
+                        type="text" 
+                        value={themeSettings.googleClientId}
+                        placeholder="Paste your Google Client ID here" 
+                        className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                        onChange={e => onThemeChange(p => ({ ...p, googleClientId: e.target.value }))}
+                    />
+                </div>
                 <button
-                    onClick={onConnectDropbox}
-                    disabled={isSyncing || !process.env.DROPBOX_CLIENT_ID}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-primary-t-20 hover:bg-primary-t-20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    onClick={onConnectDrive}
+                    disabled={!themeSettings.googleClientId || !isDriveReady || isSyncing}
+                    className="w-full p-2 text-sm bg-primary-t-50 hover:bg-primary-t-80 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                    Connect to Google Drive
+                </button>
+            </div>
+
+            {/* Dropbox Section */}
+            <div className="space-y-2 p-3 rounded-lg border border-primary-t-20 bg-panel/50">
+                <div className="flex items-center gap-3">
                     <DropboxIcon className="w-8 h-8 text-blue-400" />
                     <div className="text-left">
                         <p className="font-bold">Dropbox</p>
                         <p className="text-xs text-text-muted">Sync with your Dropbox account.</p>
                     </div>
+                </div>
+                <div>
+                    <label htmlFor="dropbox-client-id" className="text-xs text-text-muted mb-1 block">Dropbox Client ID (App Key):</label>
+                    <input 
+                        id="dropbox-client-id" 
+                        type="text" 
+                        value={themeSettings.dropboxClientId}
+                        placeholder="Paste your Dropbox App Key here" 
+                        className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                        onChange={e => onThemeChange(p => ({ ...p, dropboxClientId: e.target.value }))}
+                    />
+                </div>
+                <button
+                    onClick={onConnectDropbox}
+                    disabled={!themeSettings.dropboxClientId || isSyncing}
+                    className="w-full p-2 text-sm bg-primary-t-50 hover:bg-primary-t-80 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Connect to Dropbox
                 </button>
             </div>
-            {(!process.env.GOOGLE_CLIENT_ID || !process.env.DROPBOX_CLIENT_ID) && 
-                <p className="text-xs text-yellow-500 text-center">
-                    Admin: One or more cloud provider Client IDs are not set.
-                </p>
-            }
         </div>
     );
 };

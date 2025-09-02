@@ -1,11 +1,5 @@
 import { SyncedData, DropboxUser } from '../types';
 
-if (!process.env.DROPBOX_CLIENT_ID) {
-  console.warn("DROPBOX_CLIENT_ID environment variable not set. Dropbox sync will be disabled.");
-}
-
-const CLIENT_ID = process.env.DROPBOX_CLIENT_ID;
-// Use the current URL without any hash parameters for a clean redirect
 const REDIRECT_URI = window.location.href.split('#')[0];
 const DATA_FILE_PATH = '/jarvis_data.json';
 
@@ -14,11 +8,11 @@ const DATA_FILE_PATH = '/jarvis_data.json';
 /**
  * Initiates the Dropbox OAuth flow by opening a popup window.
  */
-export const authorize = () => {
-    if (!CLIENT_ID) {
-        throw new Error("Dropbox Client ID is not configured.");
+export const authorize = (clientId: string) => {
+    if (!clientId) {
+        throw new Error("Dropbox Client ID is not configured. Please set it in the settings.");
     }
-    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
     const width = 600, height = 700;
     const left = (window.screen.width / 2) - (width / 2);
     const top = (window.screen.height / 2) - (height / 2);

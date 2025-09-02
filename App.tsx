@@ -375,6 +375,8 @@ const DEFAULT_THEME: ThemeSettings = {
   persona: 'stark',
   homeAssistantUrl: '',
   homeAssistantToken: '',
+  googleClientId: '',
+  dropboxClientId: '',
 };
 
 const FULL_THEMES = [
@@ -440,7 +442,8 @@ const App: React.FC = () => {
         const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
         if (saved) {
             const parsed = JSON.parse(saved);
-            if (parsed.voiceProfiles && parsed.activeVoiceProfileId) return { ...DEFAULT_THEME, ...parsed };
+            // Ensure new settings fields from updates are included
+            return { ...DEFAULT_THEME, ...parsed };
         }
     } catch (e) { console.error(e); }
     return DEFAULT_THEME;
@@ -522,6 +525,23 @@ const App: React.FC = () => {
 
 
   // --- Effects ---
+
+  // Startup configuration check
+  useEffect(() => {
+    // This check runs once on mount to ensure the core API key is configured.
+    if (!process.env.API_KEY) {
+        setCurrentError({
+            code: 'MISSING_API_KEY',
+            title: 'Configuration Error',
+            message: 'The Google Gemini API key is missing.',
+            details: 'The application cannot function without a valid API key. This is a configuration issue that must be resolved by the application administrator.',
+            action: 'Please refer to the README.md file for instructions on setting the required API_KEY environment variable.'
+        });
+        // We need to move the system state to ACTIVE to ensure the main UI (and thus the modal) renders.
+        // But we skip booting to get to the error state quickly.
+        setSystemState('ACTIVE'); 
+    }
+  }, []);
 
   // Set AI provider whenever theme settings change
   useEffect(() => { aiOrchestrator.setProvider(themeSettings.aiProvider); }, [themeSettings.aiProvider]);
@@ -659,15 +679,15 @@ const App: React.FC = () => {
   
   // --- Cloud Sync Effects ---
   useEffect(() => {
-    // Initialize Google Drive client
-    if (process.env.GOOGLE_CLIENT_ID) {
-        driveService.initGoogleClient(() => setIsDriveReady(true));
+    // Initialize Google Drive client if Client ID is provided
+    if (themeSettings.googleClientId) {
+      driveService.initGoogleClient(themeSettings.googleClientId, () => setIsDriveReady(true));
     }
     // This effect runs on mount and checks if the window is a Dropbox OAuth callback.
     if (window.location.hash.includes('access_token') && window.opener) {
         dropboxService.handleOAuthRedirect();
     }
-  }, []);
+  }, [themeSettings.googleClientId]);
 
   // Restore Dropbox session on page load if a token exists
   useEffect(() => {
@@ -753,7 +773,7 @@ const App: React.FC = () => {
   };
   
   const handleConnectDropbox = () => {
-    if (driveUser || dropboxUser || !process.env.DROPBOX_CLIENT_ID) return;
+    if (driveUser || dropboxUser || !themeSettings.dropboxClientId) return;
 
     const handleAuthMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
@@ -792,7 +812,7 @@ const App: React.FC = () => {
 
     window.addEventListener('message', handleAuthMessage);
     try {
-        dropboxService.authorize();
+        dropboxService.authorize(themeSettings.dropboxClientId);
     } catch (e: any) {
         // If the popup is blocked, the message listener will never fire. Clean it up.
         window.removeEventListener('message', handleAuthMessage);
