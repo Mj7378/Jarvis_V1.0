@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth Redirect</title>
+    <script>
+        // This page is used as a redirect target for OAuth flows.
+        // It's responsible for capturing tokens from the URL
+        // and passing them back to the main application window.
+        window.onload = () => {
+            if (window.location.hash) {
+                // For implicit grants (token in hash)
+                window.opener.postMessage({ type: 'oauth-token', hash: window.location.hash }, window.location.origin);
+            } else if (window.location.search) {
+                // For authorization code grants (code in search params)
+                window.opener.postMessage({ type: 'oauth-code', search: window.location.search }, window.location.origin);
+            }
+            window.close();
+        };
+    </script>
+</head>
+<body style="background-color: #0d1117; color: #e6f1ff; font-family: sans-serif; text-align: center; padding-top: 50px;">
+    <p>Authenticating... Please wait.</p>
+</body>
+</html>

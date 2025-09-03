@@ -1,17 +1,17 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
+import { AnimatePresence } from 'framer-motion';
 
 // Services, Hooks, Utils
 import { aiOrchestrator } from './services/aiOrchestrator';
 import { HomeAssistantService } from './services/homeAssistantService';
-import * as driveService from './services/googleDriveService';
-import * as dropboxService from './services/dropboxService';
 import { useSoundEffects, useSpeechSynthesis } from './hooks/useSoundEffects';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { saveAsset, getAsset, deleteAsset, getOperatingSystem, getCustomApps, saveCustomApp, deleteCustomApp, parseTimeString } from './utils/db';
 
 // Types
-import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Task, SmartHomeState, HaEntity, CustomAppDefinition, ConversationalResponse, ChartVisualizationCommand, MultiToolUseCommand, DriveUser, DropboxUser, SyncedData } from './types';
+import { ChatMessage, AppState, AICommand, DeviceControlCommand, AppError, ThemeSettings, VoiceProfile, Source, Task, SmartHomeState, HaEntity, CustomAppDefinition, ConversationalResponse, ChartVisualizationCommand, MultiToolUseCommand, PanelType } from './types';
 
 // Components
 import ChatLog from './components/ChatLog';
@@ -28,26 +28,13 @@ import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import UserInput from './components/UserInput';
 import Suggestions from './components/Suggestions';
 import SecurityCameraModal from './components/SecurityCameraModal';
-import { HomeIcon, AppLauncherIcon, PlusIcon, CloseIcon, WolframAlphaIcon, DriveIcon, DropboxIcon } from './components/Icons';
+import { HomeIcon, AppLauncherIcon, PlusIcon, CloseIcon, WolframAlphaIcon, DriveIcon } from './components/Icons';
 import ControlCenter from './components/ControlCenter';
-import TacticalSidebar, { PanelType } from './components/TacticalSidebar';
+import TacticalSidebar from './components/TacticalSidebar';
 import CreativeBackground from './components/CreativeBackground';
 import TaskManager from './components/TaskManager';
-
-
-// --- A simple debounce hook ---
-const useDebounce = <T,>(value: T, delay: number): T => {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value);
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]);
-    return debouncedValue;
-};
+import StorageWizard from './components/StorageWizard';
+import SentinelDashboard from './components/SentinelDashboard';
 
 
 // --- App Launcher Component ---
@@ -289,10 +276,27 @@ const AppLauncher: React.FC<{
   );
 };
 
+const ChatFocusView: React.FC<{
+    history: ChatMessage[];
+    appState: AppState;
+    suggestions: string[];
+    onSendMessage: (prompt: string) => void;
+    userInputProps: Omit<React.ComponentProps<typeof UserInput>, 'onSendMessage'>;
+}> = ({ history, appState, suggestions, onSendMessage, userInputProps }) => (
+    <div className="full-chat-view holographic-panel">
+        <ChatLog history={history} appState={appState} />
+        <div className="mt-auto pt-2">
+             <Suggestions suggestions={suggestions} onSuggestionClick={onSendMessage} />
+             <UserInput onSendMessage={onSendMessage} {...userInputProps} />
+        </div>
+    </div>
+);
+
 
 // System Lifecycle States
 type SystemState = 'PRE_BOOT' | 'BOOTING' | 'ACTIVE' | 'SHUTTING_DOWN' | 'SNAP_DISINTEGRATION';
 type HaConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error' | 'authenticating';
+type AppView = 'DASHBOARD' | 'CHAT_FOCUS';
 
 // Helper function to remove markdown for clean speech.
 const stripMarkdown = (text: string): string => {
@@ -340,11 +344,11 @@ const getGreeting = (): ChatMessage => {
   const currentHour = new Date().getHours();
   let content: string;
   if (currentHour < 12) {
-    content = "Good morning, sir. I am JARVIS. How may I assist you today?";
+    content = "Good morning, sir. All systems are nominal. The Sentinel Dashboard is online.";
   } else if (currentHour < 18) {
-    content = "Good afternoon, sir. I am JARVIS. How may I assist you today?";
+    content = "Good afternoon, sir. All systems are nominal. The Sentinel Dashboard is online.";
   } else {
-    content = "Good evening, sir. I am JARVIS. How may I assist you today?";
+    content = "Good evening, sir. All systems are nominal. The Sentinel Dashboard is online.";
   }
   return {
     role: 'model',
@@ -375,8 +379,6 @@ const DEFAULT_THEME: ThemeSettings = {
   persona: 'stark',
   homeAssistantUrl: '',
   homeAssistantToken: '',
-  googleClientId: '',
-  dropboxClientId: '',
 };
 
 const FULL_THEMES = [
@@ -404,11 +406,11 @@ type ToastNotification = {
 const CHAT_HISTORY_STORAGE_KEY = 'jarvis_chat_history';
 const TASKS_STORAGE_KEY = 'jarvis_tasks';
 const SETTINGS_STORAGE_KEY = 'jarvis_theme_settings';
-const DROPBOX_TOKEN_KEY = 'jarvis_dropbox_token';
 
 const App: React.FC = () => {
   // System Lifecycle
   const [systemState, setSystemState] = useState<SystemState>('PRE_BOOT');
+  const [currentView, setCurrentView] = useState<AppView>('DASHBOARD');
 
   // Core App State
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
@@ -462,16 +464,6 @@ const App: React.FC = () => {
   const [activePanels, setActivePanels] = useState<Set<PanelType>>(new Set());
   const [generativeStudioConfig, setGenerativeStudioConfig] = useState<{ prompt: string; mode: 'image' | 'video' } | null>(null);
 
-  // --- Cloud Sync State ---
-  const [isDriveReady, setIsDriveReady] = useState(false);
-  const [driveUser, setDriveUser] = useState<DriveUser | null>(null);
-  const [dropboxUser, setDropboxUser] = useState<DropboxUser | null>(null);
-  const [dropboxToken, setDropboxToken] = useState<string | null>(() => localStorage.getItem(DROPBOX_TOKEN_KEY));
-  const [isSyncing, setIsSyncing] = useState(false);
-  
-  // Combine data for syncing and debounce it to prevent rapid writes
-  const syncableData: SyncedData = { chatHistory, tasks, themeSettings };
-  const debouncedSyncableData = useDebounce(syncableData, 2000); // 2 second debounce
   
 
   // --- Core Action Callbacks (replaces hook methods) ---
@@ -569,6 +561,11 @@ const App: React.FC = () => {
           return newPanels;
       });
   }, [sounds]);
+
+  const toggleView = (view: AppView) => {
+    sounds.playClick();
+    setCurrentView(view);
+  };
 
   // Modals & Popups
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -677,170 +674,6 @@ const App: React.FC = () => {
   // App state change sound effects
   useEffect(() => { if (appState === AppState.ERROR) sounds.playError(); }, [appState, sounds]);
   
-  // --- Cloud Sync Effects ---
-  useEffect(() => {
-    // Initialize Google Drive client if Client ID is provided
-    if (themeSettings.googleClientId) {
-      driveService.initGoogleClient(themeSettings.googleClientId, () => setIsDriveReady(true));
-    }
-    // This effect runs on mount and checks if the window is a Dropbox OAuth callback.
-    if (window.location.hash.includes('access_token') && window.opener) {
-        dropboxService.handleOAuthRedirect();
-    }
-  }, [themeSettings.googleClientId]);
-
-  // Restore Dropbox session on page load if a token exists
-  useEffect(() => {
-      const restoreSession = async () => {
-          if (dropboxToken && !dropboxUser) {
-              setIsSyncing(true);
-              try {
-                  const profile = await dropboxService.getUserProfile(dropboxToken);
-                  setDropboxUser(profile);
-              } catch (e: any) {
-                  if (e.message === 'DROPBOX_TOKEN_EXPIRED') {
-                      console.log("Dropbox token expired.");
-                      localStorage.removeItem(DROPBOX_TOKEN_KEY);
-                      setDropboxToken(null);
-                  } else {
-                      console.error("Failed to restore Dropbox session", e);
-                  }
-              } finally {
-                  setIsSyncing(false);
-              }
-          }
-      };
-      restoreSession();
-  }, [dropboxToken, dropboxUser]);
-
-  // Debounced effect to save data to the active cloud provider
-  useEffect(() => {
-    const saveData = async () => {
-        if (isSyncing) return;
-
-        if (driveUser && isDriveReady) {
-            setIsSyncing(true);
-            try {
-                await driveService.saveSyncedData(debouncedSyncableData);
-            } catch (e) { console.error("Drive save failed:", e); }
-            finally { setIsSyncing(false); }
-        } else if (dropboxUser && dropboxToken) {
-            setIsSyncing(true);
-            try {
-                await dropboxService.saveSyncedData(dropboxToken, debouncedSyncableData);
-            } catch (e) { console.error("Dropbox save failed:", e); }
-            finally { setIsSyncing(false); }
-        }
-    };
-    saveData();
-  }, [debouncedSyncableData, driveUser, isDriveReady, dropboxUser, dropboxToken, isSyncing]);
-
-
-  const handleConnectDrive = async () => {
-    if (!isDriveReady || driveUser || dropboxUser) return;
-    setIsSyncing(true);
-    try {
-        await driveService.signIn();
-        const [profile, syncedData] = await Promise.all([driveService.getUserProfile(), driveService.getSyncedData()]);
-        setDriveUser(profile);
-
-        if (syncedData) {
-            const { chatHistory: cloudChat, tasks: cloudTasks, themeSettings: cloudSettings } = syncedData as SyncedData;
-            setChatHistory(cloudChat);
-            setTasks(cloudTasks);
-            setThemeSettings(cloudSettings);
-            setToasts(p => [...p, { id: `d_load_${Date.now()}`, title: 'Sync Complete', message: `Welcome back, ${profile.name}. Your data has been loaded.`, icon: <DriveIcon className="w-6 h-6 text-green-400" />}]);
-        } else {
-            await driveService.saveSyncedData(syncableData);
-            setToasts(p => [...p, { id: `d_init_${Date.now()}`, title: 'Sync Enabled', message: `J.A.R.V.I.S. is now connected to your Google Drive.`, icon: <DriveIcon className="w-6 h-6 text-green-400" />}]);
-        }
-    } catch (error: any) {
-        console.error("Google Drive sign-in error:", error);
-        if (error.error !== "popup_closed_by_user" && error.error !== "immediate_failed") {
-            setCurrentError({ code: 'DRIVE_AUTH_ERROR', title: 'Google Drive Error', message: 'Could not connect. Please try again.', details: error.details || error.error });
-        }
-        driveService.signOut();
-        setDriveUser(null);
-    } finally {
-        setIsSyncing(false);
-    }
-  };
-  
-  const handleDisconnectDrive = () => {
-    driveService.signOut();
-    setDriveUser(null);
-    setToasts(p => [...p, { id: `d_off_${Date.now()}`, title: 'Sync Disabled', message: 'Disconnected from Google Drive.' }]);
-  };
-  
-  const handleConnectDropbox = () => {
-    if (driveUser || dropboxUser || !themeSettings.dropboxClientId) return;
-
-    const handleAuthMessage = async (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        const { type, accessToken, error } = event.data;
-
-        if (type === 'dropbox-auth-token') {
-            window.removeEventListener('message', handleAuthMessage); // Clean up immediately
-
-            if (accessToken) {
-                setIsSyncing(true);
-                try {
-                    localStorage.setItem(DROPBOX_TOKEN_KEY, accessToken);
-                    setDropboxToken(accessToken);
-                    const [profile, syncedData] = await Promise.all([dropboxService.getUserProfile(accessToken), dropboxService.getSyncedData(accessToken)]);
-                    setDropboxUser(profile);
-                    if (syncedData) {
-                        setChatHistory(syncedData.chatHistory);
-                        setTasks(syncedData.tasks);
-                        setThemeSettings(syncedData.themeSettings);
-                        setToasts(p => [...p, { id: `db_load_${Date.now()}`, title: 'Sync Complete', message: `Welcome, ${profile.name}. Your Dropbox data is loaded.`, icon: <DropboxIcon className="w-6 h-6 text-blue-400" />}]);
-                    } else {
-                        await dropboxService.saveSyncedData(accessToken, syncableData);
-                        setToasts(p => [...p, { id: `db_init_${Date.now()}`, title: 'Sync Enabled', message: `J.A.R.V.I.S. is now connected to Dropbox.`, icon: <DropboxIcon className="w-6 h-6 text-blue-400" />}]);
-                    }
-                } catch (e: any) {
-                     setCurrentError({ code: 'DROPBOX_AUTH_ERROR', title: 'Dropbox Error', message: 'Could not connect. Please try again.', details: e.message });
-                     handleDisconnectDropbox(); // Ensure clean state on error
-                } finally {
-                    setIsSyncing(false);
-                }
-            } else if (error) {
-                console.error("Dropbox auth error:", error);
-            }
-        }
-    };
-
-    window.addEventListener('message', handleAuthMessage);
-    try {
-        dropboxService.authorize(themeSettings.dropboxClientId);
-    } catch (e: any) {
-        // If the popup is blocked, the message listener will never fire. Clean it up.
-        window.removeEventListener('message', handleAuthMessage);
-        
-        if (e.message === "POPUP_BLOCKED") {
-            setCurrentError({
-                code: 'POPUP_BLOCKED',
-                title: 'Popup Blocked',
-                message: "The authentication popup was blocked. Please disable your popup blocker for this site and try again.",
-                details: "window.open() failed, likely due to a browser popup blocker."
-            });
-        } else {
-            // Handle other potential errors from authorize, like Client ID not configured.
-            setCurrentError({ code: 'DROPBOX_INIT_ERROR', title: 'Dropbox Error', message: 'Could not start the connection process.', details: e.message });
-        }
-    }
-  };
-
-  const handleDisconnectDropbox = () => {
-      if (dropboxToken) {
-        dropboxService.revokeToken(dropboxToken);
-      }
-      localStorage.removeItem(DROPBOX_TOKEN_KEY);
-      setDropboxToken(null);
-      setDropboxUser(null);
-      setToasts(p => [...p, { id: `db_off_${Date.now()}`, title: 'Sync Disabled', message: 'Disconnected from Dropbox.' }]);
-  };
-
 
   // --- Command Execution Logic ---
   
@@ -890,6 +723,42 @@ const App: React.FC = () => {
     setGenerativeStudioConfig({ prompt, mode });
     togglePanel('GENERATIVE_STUDIO');
   }, [togglePanel]);
+  
+  const handleFileUpload = (accept: string, handler: (file: File) => void) => {
+    fileHandlerRef.current = { accept, handler };
+    fileInputRef.current?.click();
+  };
+
+  const handleDocumentUpload = (file: File) => {
+      readFileAsText(file).then(text => handleSendMessage(`Please analyze this document: \n\n${text}`));
+  };
+  
+  const handleAudioUpload = async (file: File) => {
+      try {
+        const base64 = await readFileAsBase64(file);
+        const transcription = await aiOrchestrator.transcribeAudio(base64, file.type);
+        handleSendMessage(transcription);
+      } catch (err) {
+        setCurrentError({ code: 'AUDIO_TRANSCRIPTION_FAILED', title: 'Transcription Failed', message: 'Could not transcribe the provided audio file.' });
+        setAppState(AppState.ERROR);
+      }
+  };
+
+  const handleGalleryUpload = (file: File) => {
+      Promise.all([readFileAsBase64(file), readFileAsDataURL(file)]).then(([base64, dataUrl]) => {
+          setStagedImage({ mimeType: file.type, data: base64, dataUrl: dataUrl });
+      });
+  };
+  
+  const handleLocationRequest = () => {
+    navigator.geolocation.getCurrentPosition(
+        (position) => handleSendMessage(`My current location is latitude ${position.coords.latitude}, longitude ${position.coords.longitude}. What's nearby?`),
+        () => {
+            setCurrentError({ code: 'LOCATION_ERROR', title: 'Location Error', message: "Could not retrieve your location. Please grant permission."});
+            setAppState(AppState.ERROR);
+        }
+    );
+  };
 
   const handleAppControl = useCallback((action: string, value: any) => {
     const closePanel = (panel: PanelType) => { if(activePanels.has(panel)) { togglePanel(panel); } };
@@ -912,6 +781,8 @@ const App: React.FC = () => {
         case 'simulation_mode': handleOpenGenerativeStudio('A spaceship in a nebula', 'video'); break;
         case 'show_app_launcher': openPanel('APP_LAUNCHER'); break;
         case 'close_app_launcher': closePanel('APP_LAUNCHER'); break;
+        case 'show_dashboard': setCurrentView('DASHBOARD'); break;
+        case 'focus_chat': setCurrentView('CHAT_FOCUS'); break;
         case 'change_theme':
             const theme = FULL_THEMES.find(t => t.name.toLowerCase() === value.toLowerCase());
             if (theme) setThemeSettings(p => ({ ...p, ...theme }));
@@ -919,8 +790,12 @@ const App: React.FC = () => {
         case 'toggle_voice': setThemeSettings(p => ({ ...p, voiceOutputEnabled: value === 'on' })); break;
         case 'toggle_sounds': setThemeSettings(p => ({ ...p, uiSoundsEnabled: value === 'on' })); break;
         case 'set_primary_color': setThemeSettings(p => ({ ...p, primaryColor: value })); break;
+        case 'upload_document': handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload); break;
+        case 'upload_image': handleFileUpload('image/*', handleGalleryUpload); break;
+        case 'upload_audio': handleFileUpload('audio/*', handleAudioUpload); break;
+        case 'request_location': handleLocationRequest(); break;
     }
-  }, [clearChatHistory, sounds, togglePanel, handleOpenGenerativeStudio, activePanels]);
+  }, [clearChatHistory, sounds, togglePanel, handleOpenGenerativeStudio, activePanels, handleFileUpload, handleDocumentUpload, handleGalleryUpload, handleAudioUpload, handleLocationRequest]);
   
   const handleWolframQuery = useCallback(async (cmd: DeviceControlCommand) => {
     setToasts(prev => [...prev, { id: `wolfram_${Date.now()}`, title: 'Computational Engine', message: `Querying Wolfram Alpha for: "${cmd.params.query}"`, icon: <WolframAlphaIcon className="w-6 h-6 text-[#F96932]" /> }]);
@@ -1118,6 +993,9 @@ const App: React.FC = () => {
   }, [isSpeaking, appState]);
   
   const handleSendMessage = (prompt: string) => {
+    if (currentView === 'DASHBOARD') {
+        setCurrentView('CHAT_FOCUS');
+    }
     processUserMessage(prompt, stagedImage ?? undefined);
     if (stagedImage) setPinnedImage(stagedImage);
     setStagedImage(null);
@@ -1144,16 +1022,18 @@ const App: React.FC = () => {
   const handleRecognitionEnd = useCallback((transcript: string) => {
       if (appState === AppState.AWAITING_WAKE_WORD) return;
       if (appState === AppState.LISTENING) {
-        if (transcript) processUserMessage(transcript);
+        if (transcript) handleSendMessage(transcript);
         else setAppState(AppState.IDLE); 
       }
-  }, [appState, processUserMessage]);
+  }, [appState, handleSendMessage]);
   
   const onTranscriptChangeHandlerRef = useRef<((transcript: string) => void) | null>(null);
   
   const { isListening, startListening, stopListening } = useSpeechRecognition({
-      continuous: appState === AppState.AWAITING_WAKE_WORD,
+      continuous: appState === AppState.AWAITING_WAKE_WORD || appState === AppState.LISTENING,
       interimResults: true,
+      endOnSilence: appState === AppState.LISTENING,
+      silenceTimeout: 1200,
       onEnd: handleRecognitionEnd,
       onTranscriptChange: (transcript) => onTranscriptChangeHandlerRef.current?.(transcript),
   });
@@ -1191,46 +1071,10 @@ const App: React.FC = () => {
       }
   };
   
-  const handleFileUpload = (accept: string, handler: (file: File) => void) => {
-    fileHandlerRef.current = { accept, handler };
-    fileInputRef.current?.click();
-  };
-
   const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && fileHandlerRef.current) fileHandlerRef.current.handler(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleDocumentUpload = (file: File) => {
-      readFileAsText(file).then(text => processUserMessage(`Please analyze this document: \n\n${text}`));
-  };
-  
-  const handleAudioUpload = async (file: File) => {
-      try {
-        const base64 = await readFileAsBase64(file);
-        const transcription = await aiOrchestrator.transcribeAudio(base64, file.type);
-        processUserMessage(transcription);
-      } catch (err) {
-        setCurrentError({ code: 'AUDIO_TRANSCRIPTION_FAILED', title: 'Transcription Failed', message: 'Could not transcribe the provided audio file.' });
-        setAppState(AppState.ERROR);
-      }
-  };
-
-  const handleGalleryUpload = (file: File) => {
-      Promise.all([readFileAsBase64(file), readFileAsDataURL(file)]).then(([base64, dataUrl]) => {
-          setStagedImage({ mimeType: file.type, data: base64, dataUrl: dataUrl });
-      });
-  };
-  
-  const handleLocationRequest = () => {
-    navigator.geolocation.getCurrentPosition(
-        (position) => processUserMessage(`My current location is latitude ${position.coords.latitude}, longitude ${position.coords.longitude}. What's nearby?`),
-        () => {
-            setCurrentError({ code: 'LOCATION_ERROR', title: 'Location Error', message: "Could not retrieve your location. Please grant permission."});
-            setAppState(AppState.ERROR);
-        }
-    );
   };
   
   const handleSetCustomBootVideo = (file: File) => saveAsset('bootVideo', file).then(() => setThemeSettings(p => ({ ...p, hasCustomBootVideo: true, bootupAnimation: 'video' })));
@@ -1275,40 +1119,63 @@ const App: React.FC = () => {
         case 'SHUTTING_DOWN': return <Shutdown useCustomVideo={themeSettings.hasCustomShutdownVideo} onComplete={() => setSystemState('SNAP_DISINTEGRATION')} />;
         case 'SNAP_DISINTEGRATION': return <div className="system-terminating w-full h-screen bg-background" />;
         case 'ACTIVE':
+            const userInputProps = {
+                onToggleListening: toggleListening, onCancel: handleCancel, appState, isListening, stagedImage, pinnedImage, 
+                onClearStagedImage: () => setStagedImage(null), 
+                onClearPinnedImage: () => setPinnedImage(null), 
+                onCameraClick: () => togglePanel('VISION'), 
+                onGalleryClick: () => handleFileUpload('image/*', handleGalleryUpload), 
+                onDocumentClick: () => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload), 
+                onAudioClick: () => handleFileUpload('audio/*', handleAudioUpload), 
+                onLocationClick: handleLocationRequest, 
+                onGenerativeStudioClick: () => handleOpenGenerativeStudio('A beautiful landscape', 'image'), 
+                wakeWord: themeSettings.wakeWord
+            };
             return (
                 <div className={`w-full h-screen transition-colors duration-500 ${themeSettings.themeMode}`}>
-                    <div className="hud-grid-container">
+                    <div className={`hud-grid-container ${activePanels.size > 0 ? 'panels-open' : ''}`}>
                         <Header onOpenSettings={() => togglePanel('SETTINGS')} onToggleControlCenter={() => togglePanel('CONTROL_CENTER')} />
-                        <TacticalSidebar onTogglePanel={togglePanel} activePanels={activePanels} />
+                        <TacticalSidebar onTogglePanel={togglePanel} activePanels={activePanels} onToggleView={toggleView} currentView={currentView} />
                         
                         <main className="hud-main-content">
-                            <div className={`hud-center-stage ${activePanels.size > 0 ? 'panels-open' : ''}`}>
-                                <div className="chat-log-area holographic-panel">
-                                    <ChatLog history={chatHistory} appState={appState} />
-                                </div>
-                                {activePanels.size > 0 && (
-                                    <div className="panels-area">
-                                        {activePanels.has('APP_LAUNCHER') && <AppLauncher onClose={() => togglePanel('APP_LAUNCHER')} onAppSelect={handleAppSelect} />}
-                                        {activePanels.has('TASK_MANAGER') && <TaskManager tasks={tasks} onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask} onClose={() => togglePanel('TASK_MANAGER')} />}
-                                        {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} />}
-                                        {activePanels.has('SETTINGS') && <SettingsModal isOpen={true} onClose={() => togglePanel('SETTINGS')} onShutdown={() => { togglePanel('SETTINGS'); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }} sounds={sounds} themeSettings={themeSettings} onThemeChange={setThemeSettings} onSetCustomBootVideo={handleSetCustomBootVideo} onRemoveCustomBootVideo={handleRemoveCustomBootVideo} onSetCustomShutdownVideo={handleSetCustomShutdownVideo} onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo} onCalibrateVoice={() => setIsCalibrationOpen(true)} onClearChat={handleClearChat} onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile} onDeleteVoiceProfile={handleDeleteVoiceProfile} onConnectHA={handleConnectHA} onDisconnectHA={handleDisconnectHA} haConnectionStatus={haConnectionStatus} isDriveReady={isDriveReady} isSyncing={isSyncing} driveUser={driveUser} onConnectDrive={handleConnectDrive} onDisconnectDrive={handleDisconnectDrive} dropboxUser={dropboxUser} onConnectDropbox={handleConnectDropbox} onDisconnectDropbox={handleDisconnectDropbox} />}
-                                        {activePanels.has('CONTROL_CENTER') && <ControlCenter onClose={() => togglePanel('CONTROL_CENTER')} onVisionMode={() => togglePanel('VISION')} onClearChat={handleClearChat} onGetWeather={() => processUserMessage("What's the weather like?")} onDesignMode={(p) => handleOpenGenerativeStudio(p, 'image')} onSimulationMode={(p) => handleOpenGenerativeStudio(p, 'video')} onDirectHomeStateChange={handleDirectHomeStateChange} onOpenSettings={() => togglePanel('SETTINGS')} onShowCameraFeed={(loc) => setCameraFeed({ location: loc })} smartHomeState={smartHomeState} onOpenAppLauncher={() => togglePanel('APP_LAUNCHER')} onOpenTaskManager={() => togglePanel('TASK_MANAGER')} />}
-                                        {activePanels.has('GENERATIVE_STUDIO') && generativeStudioConfig && (
-                                            <GenerativeStudio initialPrompt={generativeStudioConfig.prompt} initialMode={generativeStudioConfig.mode} onCancel={() => togglePanel('GENERATIVE_STUDIO')} onComplete={(prompt, type, dataUrl) => {
-                                                    togglePanel('GENERATIVE_STUDIO');
-                                                    if (type === 'image' && dataUrl) addMessage({ role: 'model', content: `Generative Studio result.`, imageUrl: dataUrl });
-                                                    else addMessage({ role: 'model', content: `Simulation complete for: "${prompt}"` });
-                                                }} />
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="user-input-area holographic-panel !overflow-visible">
-                                <Suggestions suggestions={currentSuggestions} onSuggestionClick={(s) => processUserMessage(s)} />
-                                <UserInput onSendMessage={handleSendMessage} onToggleListening={toggleListening} onCancel={handleCancel} appState={appState} isListening={isListening} stagedImage={stagedImage ? { dataUrl: stagedImage.dataUrl } : null} pinnedImage={pinnedImage ? { dataUrl: pinnedImage.dataUrl } : null} onClearStagedImage={() => setStagedImage(null)} onClearPinnedImage={() => setPinnedImage(null)} onCameraClick={() => togglePanel('VISION')} onGalleryClick={() => handleFileUpload('image/*', handleGalleryUpload)} onDocumentClick={() => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload)} onAudioClick={() => handleFileUpload('audio/*', handleAudioUpload)} onLocationClick={handleLocationRequest} onGenerativeStudioClick={() => handleOpenGenerativeStudio('A beautiful landscape', 'image')} wakeWord={themeSettings.wakeWord} />
-                            </div>
+                            {currentView === 'DASHBOARD' ? (
+                                <SentinelDashboard 
+                                    tasks={tasks} 
+                                    operatingSystem={operatingSystem}
+                                    chatHistory={chatHistory}
+                                    appState={appState}
+                                    suggestions={currentSuggestions}
+                                    onSendMessage={handleSendMessage}
+                                    userInputProps={userInputProps}
+                                />
+                            ) : (
+                                <ChatFocusView 
+                                    history={chatHistory} 
+                                    appState={appState} 
+                                    suggestions={currentSuggestions} 
+                                    onSendMessage={handleSendMessage} 
+                                    userInputProps={userInputProps} 
+                                />
+                            )}
                         </main>
+
+                        {activePanels.size > 0 && (
+                            <aside className="panels-area">
+                                {activePanels.has('APP_LAUNCHER') && <AppLauncher onClose={() => togglePanel('APP_LAUNCHER')} onAppSelect={handleAppSelect} />}
+                                {activePanels.has('TASK_MANAGER') && <TaskManager tasks={tasks} onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask} onClose={() => togglePanel('TASK_MANAGER')} />}
+                                {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} />}
+                                {activePanels.has('SETTINGS') && <SettingsModal isOpen={true} onClose={() => togglePanel('SETTINGS')} onShutdown={() => { togglePanel('SETTINGS'); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }} sounds={sounds} themeSettings={themeSettings} onThemeChange={setThemeSettings} onSetCustomBootVideo={handleSetCustomBootVideo} onRemoveCustomBootVideo={handleRemoveCustomBootVideo} onSetCustomShutdownVideo={handleSetCustomShutdownVideo} onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo} onCalibrateVoice={() => setIsCalibrationOpen(true)} onClearChat={handleClearChat} onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile} onDeleteVoiceProfile={handleDeleteVoiceProfile} onConnectHA={handleConnectHA} onDisconnectHA={handleDisconnectHA} haConnectionStatus={haConnectionStatus} />}
+                                {activePanels.has('CONTROL_CENTER') && <ControlCenter onClose={() => togglePanel('CONTROL_CENTER')} onVisionMode={() => togglePanel('VISION')} onClearChat={handleClearChat} onGetWeather={() => processUserMessage("What's the weather like?")} onDesignMode={(p) => handleOpenGenerativeStudio(p, 'image')} onSimulationMode={(p) => handleOpenGenerativeStudio(p, 'video')} onDirectHomeStateChange={handleDirectHomeStateChange} onOpenSettings={() => togglePanel('SETTINGS')} onShowCameraFeed={(loc) => setCameraFeed({ location: loc })} smartHomeState={smartHomeState} onOpenAppLauncher={() => togglePanel('APP_LAUNCHER')} onOpenTaskManager={() => togglePanel('TASK_MANAGER')} />}
+                                {activePanels.has('STORAGE_WIZARD') && <StorageWizard onClose={() => togglePanel('STORAGE_WIZARD')} />}
+                                {activePanels.has('GENERATIVE_STUDIO') && generativeStudioConfig && (
+                                    <GenerativeStudio initialPrompt={generativeStudioConfig.prompt} initialMode={generativeStudioConfig.mode} onCancel={() => togglePanel('GENERATIVE_STUDIO')} onComplete={(prompt, type, dataUrl) => {
+                                            togglePanel('GENERATIVE_STUDIO');
+                                            if (type === 'image' && dataUrl) addMessage({ role: 'model', content: `Generative Studio result.`, imageUrl: dataUrl });
+                                            else addMessage({ role: 'model', content: `Simulation complete for: "${prompt}"` });
+                                        }} />
+                                )}
+                            </aside>
+                        )}
                     </div>
                     
                     {cameraFeed && <SecurityCameraModal location={cameraFeed.location} onClose={() => setCameraFeed(null)} />}
@@ -1317,7 +1184,9 @@ const App: React.FC = () => {
                     <ErrorModal isOpen={!!currentError} onClose={() => { setCurrentError(null); setAppState(AppState.IDLE); }} error={currentError} />
                     
                     <div className="fixed top-4 right-4 z-[60] space-y-3 pointer-events-none">
-                        {toasts.map(toast => <NotificationToast key={toast.id} {...toast} onClose={(id) => setToasts(p => p.filter(t => t.id !== id))} />)}
+                        <AnimatePresence>
+                            {toasts.map(toast => <NotificationToast key={toast.id} {...toast} onClose={(id) => setToasts(p => p.filter(t => t.id !== id))} />)}
+                        </AnimatePresence>
                     </div>
 
                     <input type="file" ref={fileInputRef} onChange={onFileSelected} className="hidden" accept={fileHandlerRef.current?.accept} />

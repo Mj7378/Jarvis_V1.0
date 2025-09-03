@@ -84,7 +84,6 @@ J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment 
 
 1.  A modern web browser (Chrome recommended for best Web API compatibility).
 2.  A valid Google Gemini API key.
-3.  (Optional) Google Cloud and Dropbox accounts for enabling cloud sync.
 
 ### Installation & Running
 
@@ -92,38 +91,19 @@ This project is designed to run directly in the browser without a build step.
 
 1.  **Set up Environment Variables:**
     The application requires your Google Gemini API key to be configured as an environment variable. You must ensure this variable is available in the environment where you serve the application.
-    *   `API_KEY`: Your Google Gemini API key. This is the only variable required for the core functionality.
+    *   `API_KEY`: Your Google Gemini API key.
 
-2.  **(Optional) Configure OAuth for Cloud Sync:**
-    To use the Google Drive or Dropbox sync features, you must first obtain OAuth Client IDs.
-    *   **For Google Drive:**
-        *   In your Google Cloud Console, under APIs & Services > Credentials, create an "OAuth 2.0 Client ID".
-        *   Select "Web application" as the application type.
-        *   Add the URL where you are hosting the application (e.g., `http://localhost:3000`) to both "Authorized JavaScript origins" and "Authorized redirect URIs".
-        *   Copy the generated "Client ID".
-    *   **For Dropbox:**
-        *   In your Dropbox App Console, create a new app.
-        *   Choose "Scoped access" and select the `files.content.write` and `account_info.read` permissions.
-        *   Under the "Settings" tab, add the URL where you are hosting the application (e.g., `http://localhost:3000`) to the "Redirect URIs" section.
-        *   Copy the "Client ID" (also called App Key).
-
-3.  **Serve the files:**
+2.  **Serve the files:**
     Use any simple static file server to serve the project's root directory.
     ```bash
     # If you have Node.js installed, you can use the `serve` package
     npx serve
     ```
 
-4.  **Open in Browser:**
+3.  **Open in Browser:**
     Navigate to the local server's address (e.g., `http://localhost:3000`).
 
-5.  **(Optional) Enter Client IDs in Settings:**
-    *   Open the J.A.R.V.I.S. application.
-    *   Navigate to **Settings > Cloud Sync**.
-    *   Paste your generated Google Client ID and/or Dropbox Client ID into the respective input fields. The settings are saved automatically.
-    *   You can now connect to your desired cloud service.
-
-6.  **Grant Permissions:**
+4.  **Grant Permissions:**
     Upon first use of certain features, the application will request permission to use your **camera** (for Vision Mode) and **microphone** (for voice commands). You must grant these permissions for full functionality.
 
 ---
@@ -144,7 +124,7 @@ The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the
 
 *   `App.tsx`: The root component that manages all state, user input, and orchestrates communication with services and panels.
 *   `services/aiOrchestrator.ts`: A dedicated module for all interactions with the `@google/genai` SDK, containing the system prompt and API call logic.
-*   `hooks/`: Reusable hooks for managing chat history, sound effects, speech synthesis, and speech recognition.
+*   `hooks/`: Reusable hooks for managing sound effects, speech synthesis, and speech recognition.
 *   `components/`: A comprehensive library of UI components, including:
     *   `ChatLog.tsx`: The scrollable chat history panel.
     *   `TacticalSidebar.tsx`: The icon-based sidebar for launching modules.
@@ -155,14 +135,33 @@ The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the
 ## 🔧 Troubleshooting
 
 *   **API Key Not Valid Error:** This means the `API_KEY` environment variable is either not set or incorrect. Please double-check your setup from the [Getting Started](#getting-started) section.
-*   **Cloud Sync Not Connecting:**
-    *   Go to **Settings > Cloud Sync** and ensure you have correctly pasted your Client ID for the service you want to use.
-    *   Verify that you have correctly configured the "Authorized JavaScript origins" (for Google) and "Redirect URIs" (for both) in your cloud project settings to match the URL where you are running the application.
-    *   Check your browser's console for any OAuth-related errors.
-    *   Your browser might be blocking the authentication pop-up. Disable your pop-up blocker for this site and try again.
 *   **Quota Exceeded Error:** You have made too many requests to the Gemini API in a short period. Please check your Google AI Platform quotas and billing status.
 *   **Microphone/Camera Not Working:**
     *   Ensure you have granted the necessary permissions when the browser prompted you.
     *   If you denied them by accident, you'll need to go into your browser's site settings for this page and manually allow camera and microphone access.
     *   The Web Speech API for voice recognition is not supported in all browsers. For the best experience, use a modern version of Google Chrome.
 *   **Custom Boot Video Fails to Load:** The video might be in an unsupported format, or there could be an issue with your browser's IndexedDB storage. Try using a standard `.mp4` file or clearing the site's storage data and re-uploading.
+
+---
+
+## 🗺️ Future Roadmap
+
+This section outlines potential future development paths for the J.A.R.V.I.S. project, ensuring architectural decisions made today facilitate long-term goals.
+
+### Mobile Application (React Native)
+
+To bring the J.A.R.V.I.S. experience to mobile devices, a native application is the logical next step. The current architecture has been designed with this in mind.
+
+*   **Shared Core Logic:** The application's core intelligence—including the AI interaction logic in `aiOrchestrator.ts`, system prompts, and utility functions—is written in platform-agnostic TypeScript. This logic can be extracted into a shared library or module.
+*   **Decoupled UI Layers:**
+    *   **Web (Current):** The existing React application serves as the UI layer for web browsers.
+    *   **Mobile (Future):** A new UI layer will be built using **React Native**. This will allow for a truly native look, feel, and performance on both iOS and Android.
+*   **Native Module Integration:** A React Native version would leverage native device capabilities. This is where libraries such as `react-native-app-auth` would be used to handle secure, native authentication flows, providing a more seamless user experience than web-based OAuth redirects.
+
+### Cloud Storage Integration (Dropbox, Google Drive)
+
+To enhance data persistence and cross-platform access, direct integration with cloud storage providers is planned. This will enable J.A.R.V.I.S. to access and analyze user-provided documents from their cloud accounts securely.
+
+*   **Secure Authentication:** Implement robust OAuth 2.0 flows for both Google Drive and Dropbox, allowing users to securely connect their accounts.
+*   **File Management:** Users will be able to browse, select, upload, and download files from their cloud storage directly within the J.A.R.V.I.S. interface.
+*   **AI Analysis:** The core AI will be able to analyze documents and other files directly from the user's cloud storage, expanding its contextual understanding and utility.

@@ -1,7 +1,49 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppState } from '../types';
-import { MicrophoneIcon, SendIcon, PaperclipIcon, StopIcon } from './Icons';
+import { MicrophoneIcon, SendIcon, PaperclipIcon, StopIcon, SmileyIcon } from './Icons';
 import AttachmentMenu from './AttachmentMenu';
+
+// --- EMOJI PICKER COMPONENT (Self-contained) ---
+const EMOJI_LIST = [
+  '😀', '😂', '😍', '🤔', '👍', '🙏', '🔥', '🚀', '🎉', '❤️',
+  '😊', '😎', '😢', '😠', '💡', '💯', '🙌', '💻', '🤖', '✨'
+];
+
+const EmojiPicker: React.FC<{
+  onEmojiSelect: (emoji: string) => void;
+  onClose: () => void;
+}> = ({ onEmojiSelect, onClose }) => {
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  return (
+    <div ref={pickerRef} className="absolute bottom-full left-10 mb-2 z-10 animate-pop-in">
+      <div className="w-64 p-2 bg-panel border border-primary-t-20 rounded-xl shadow-lg">
+        <div className="grid grid-cols-5 gap-1">
+          {EMOJI_LIST.map(emoji => (
+            <button
+              key={emoji}
+              onClick={() => onEmojiSelect(emoji)}
+              className="text-2xl rounded-lg hover:bg-primary-t-20 transition-colors duration-200 p-1"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 interface UserInputProps {
   onSendMessage: (message: string) => void;
@@ -26,6 +68,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
   const { onSendMessage, onToggleListening, onCancel, appState, isListening, stagedImage, pinnedImage, onClearStagedImage, onClearPinnedImage, wakeWord } = props;
   const [textContent, setTextContent] = useState('');
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isBusy = appState === AppState.THINKING || appState === AppState.SPEAKING;
@@ -66,9 +109,21 @@ const UserInput: React.FC<UserInputProps> = (props) => {
         handleSubmit(e);
     }
   };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setTextContent(prev => prev + emoji);
+    setIsEmojiPickerOpen(false);
+    textareaRef.current?.focus();
+  };
   
   const toggleAttachmentMenu = () => {
+      setIsEmojiPickerOpen(false);
       setIsAttachmentMenuOpen(p => !p);
+  }
+
+  const toggleEmojiPicker = () => {
+    setIsAttachmentMenuOpen(false);
+    setIsEmojiPickerOpen(p => !p);
   }
 
   const getStatusInfo = () => {
@@ -131,6 +186,17 @@ const UserInput: React.FC<UserInputProps> = (props) => {
                 <PaperclipIcon className="w-6 h-6" />
               </button>
               {isAttachmentMenuOpen && <AttachmentMenu {...props} onClose={() => setIsAttachmentMenuOpen(false)} />}
+              
+               {/* Emoji Picker Button */}
+              <button
+                  type="button"
+                  onClick={toggleEmojiPicker}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-primary-t-20 transition-colors"
+                  aria-label="Add emoji"
+              >
+                <SmileyIcon className="w-6 h-6" />
+              </button>
+              {isEmojiPickerOpen && <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setIsEmojiPickerOpen(false)} />}
           </div>
           
           {/* Text Input Area Container */}

@@ -231,13 +231,12 @@ export const DriveIcon: React.FC<IconProps> = ({ className }) => (
 
 export const DropboxIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-        <path d="M3.1 7.2l4.4-3.3 4.4 3.3-4.4 3.3-4.4-3.3zm13.4 0l4.4-3.3-4.4-3.3-4.4 3.3 4.4 3.3zM7.5 10.5l4.4-3.3 4.4 3.3-4.4 3.3-4.4-3.3zm-.1 1.1l-4.4 3.3 4.4 3.3 4.4-3.3-4.4-3.3zm8.9 0l4.4 3.3-4.4 3.3-4.4-3.3 4.4 3.3z"/>
+        <path d="m6.2 5.6-4.4 3 4.4 3 4.4-3-4.4-3zm7.2 0-4.4 3 4.4 3 4.4-3-4.4-3zm-2.2 4-4.4 3 4.4 3 4.4-3-4.4-3zm-5 4-4.4 3 4.4 3 4.4-3-4.4-3zm7.2 0-4.4 3 4.4 3 4.4-3-4.4-3z"/>
     </svg>
 );
 
 
-{/* FIX: Add missing icons for EmojiPicker */}
-{/* --- EmojiPicker Icons --- */}
+{/* --- Emoji Picker Icons --- */}
 export const SmileyIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
         <circle cx="12" cy="12" r="10" />
@@ -246,57 +245,6 @@ export const SmileyIcon: React.FC<IconProps> = ({ className }) => (
         <line x1="15" y1="9" x2="15.01" y2="9" />
     </IconBase>
 );
-
-export const LeafIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M2 18c4.4-4.4 8.8-8.8 14-14" />
-        <path d="M12 20a8 8 0 0 0 8-8" />
-        <path d="M4 12a8 8 0 0 0 8 8" />
-    </IconBase>
-);
-
-export const FoodIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M4 11v-2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
-        <path d="M18 11v6a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-6" />
-        <path d="M4 15h16" />
-    </IconBase>
-);
-
-export const ActivityIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </IconBase>
-);
-
-export const TravelIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4.5 21 3c-1.5-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5.1.9.5 1.1L8 11l-4.5 4.5v.5C3.5 17.5 5 18 6.5 18H8l4-4 4 4h1.5c1.5 0 3-.5 3.5-2.5v-.5l-1.7-1.3z" />
-    </IconBase>
-);
-
-export const ObjectIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-        <line x1="12" y1="22.08" x2="12" y2="12" />
-    </IconBase>
-);
-
-export const SymbolIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <circle cx="12" cy="12" r="4" />
-        <path d="M16 12v1a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
-    </IconBase>
-);
-
-export const FlagIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-        <line x1="4" y1="22" x2="4" y2="15" />
-    </IconBase>
-);
-
 
 // --- Vision Intelligence Icons ---
 export const SwitchCameraIcon: React.FC<IconProps> = ({ className }) => (
@@ -345,35 +293,70 @@ export const FaceRecognitionIcon: React.FC<IconProps> = ({ className }) => (
         <path d="M12 22v-2" />
     </IconBase>
 );
-
-export const EyeTrackingIcon: React.FC<IconProps> = ({ className }) => (
+// START: ADDED ICONS
+export const HomeIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-        <circle cx="12" cy="12" r="3" />
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
     </IconBase>
 );
 
-export const GestureControlIcon: React.FC<IconProps> = ({ className }) => (
+export const DashboardIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M9 11.3l-2-2-2 2" />
-        <path d="M5 9.3V7.5c0-1.4 1.1-2.5 2.5-2.5h1c1.4 0 2.5 1.1 2.5 2.5v1.8" />
-        <path d="M13.5 9.3c1.4 0 2.5 1.1 2.5 2.5v4.5c0 1.4-1.1 2.5-2.5 2.5h-1c-1.4 0-2.5-1.1-2.5-2.5" />
-        <path d="M19 13.3V7.5c0-1.4-1.1-2.5-2.5-2.5h-1c-1.4 0-2.5 1.1-2.5 2.5v5.8" />
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
     </IconBase>
 );
 
-// --- Weather Icons ---
+export const ChatIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </IconBase>
+);
+
+export const GalleryIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <rect x="7" y="3" width="14" height="14" rx="2" ry="2" />
+        <path d="M3 7v11a2 2 0 002 2h11" />
+    </IconBase>
+);
+
+export const DocumentIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
+    </IconBase>
+);
+
+export const AudioIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M12 19.5V4.5M8 17.5V6.5M4 14.5V9.5M16 17.5V6.5M20 14.5V9.5" />
+    </IconBase>
+);
+
+export const LocationIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+    </IconBase>
+);
+
 export const SunIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <circle cx="12" cy="12" r="5"></circle>
-        <line x1="12" y1="1" x2="12" y2="3"></line>
-        <line x1="12" y1="21" x2="12" y2="23"></line>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-        <line x1="1" y1="12" x2="3" y2="12"></line>
-        <line x1="21" y1="12" x2="23" y2="12"></line>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        <circle cx="12" cy="12" r="5" />
+        <line x1="12" y1="1" x2="12" y2="3" />
+        <line x1="12" y1="21" x2="12" y2="23" />
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+        <line x1="1" y1="12" x2="3" y2="12" />
+        <line x1="21" y1="12" x2="23" y2="12" />
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
     </IconBase>
 );
 
@@ -385,115 +368,75 @@ export const CloudIcon: React.FC<IconProps> = ({ className }) => (
 
 export const RainIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
-        <path d="M12 14v6" />
-        <path d="M16 14v6" />
-        <path d="M8 14v6" />
+        <path d="M16 13.3A5.5 5.5 0 0 0 6.7 8 5.5 5.5 0 0 0 6 19h10a4 4 0 0 0 0-8c-.3 0-.6.1-.9.1" />
+        <path d="M8 17.3v.7" />
+        <path d="M12 18.3v.7" />
+        <path d="M16 17.3v.7" />
     </IconBase>
 );
 
 export const SnowIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M12 2v20" />
-        <path d="M19 17l-7-7-7 7" />
-        <path d="M5 7l7 7 7-7" />
+        <path d="M20 17.58A5 5 0 0 0 15.05 15h-10A5.002 5.002 0 0 0 5 20" />
+        <path d="M8 15h.01" />
+        <path d="M8.2 11.41l.01.01" />
+        <path d="M12 12h.01" />
+        <path d="M15.8 11.41l.01.01" />
+        <path d="M16 15h.01" />
+        <path d="M11.2 8.59l.01.01" />
+        <path d="M12.8 8.59l.01.01" />
     </IconBase>
 );
 
-export const CloudyIcon: React.FC<IconProps> = ({ className }) => ( 
+export const CloudyIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-       <path d="M17.5 19H9a7 7 0 1 1 6.33-10.9" />
-       <path d="M15 11a4 4 0 1 1 0 8" />
+        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
     </IconBase>
 );
 
-// --- Attachment Icons ---
-export const GalleryIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <circle cx="8.5" cy="8.5" r="1.5" />
-        <polyline points="21 15 16 10 5 21" />
-    </IconBase>
-);
-export const DocumentIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-    </IconBase>
-);
-export const AudioIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M12 22a2 2 0 0 0 2-2V4a2 2 0 0 0-4 0v16a2 2 0 0 0 2 2z" />
-        <path d="M6 14a2 2 0 0 0 2-2V4a2 2 0 0 0-4 0v8a2 2 0 0 0 2 2z" />
-        <path d="M18 14a2 2 0 0 0 2-2V4a2 2 0 0 0-4 0v8a2 2 0 0 0 2 2z" />
-    </IconBase>
-);
-export const LocationIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-        <circle cx="12" cy="10" r="3" />
-    </IconBase>
-);
-export const HomeIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-    </IconBase>
-);
-
-export const DashboardIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
-    </IconBase>
-);
-
-export const ChatIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </IconBase>
-);
-
-// --- Smart Home Icons ---
 export const LockClosedIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </IconBase>
 );
+
 export const LockOpenIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
         <path d="M7 11V7a5 5 0 0 1 9.9-1" />
     </IconBase>
 );
+
 export const FanIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5z"/>
-        <path d="M16.24 16.24C14.07 18.41 11.13 19.13 8.87 18.33" />
-        <path d="M7.76 7.76C9.93 5.59 12.87 4.87 15.13 5.67" />
-        <path d="M18.33 15.13c.8-2.26.08-5.2-2.09-7.37" />
-        <path d="M5.67 8.87c-.8 2.26-.08 5.2 2.09 7.37" />
+        <path d="M12 12h8" />
+        <path d="M12 12l6.2 6.2" />
+        <path d="M12 12v8" />
+        <path d="M12 12l-6.2 6.2" />
+        <path d="M12 12H4" />
+        <path d="M12 12l-6.2-6.2" />
+        <path d="M12 12V4" />
+        <path d="M12 12l6.2-6.2" />
+        <circle cx="12" cy="12" r="2" />
     </IconBase>
 );
-export const AirPurifierIcon: React.FC<IconProps> = ({ className }) => (
-    <IconBase className={className}>
-        <rect x="4" y="4" width="16" height="16" rx="2" />
-        <path d="M8 10h8" />
-        <path d="M8 14h8" />
-        <path d="M12 18v2" />
-        <path d="M12 2v2" />
-    </IconBase>
-);
+
 export const SceneIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
         <path d="M3 10h18" />
-        <path d="M3 16h18" />
         <path d="M10 3v18" />
     </IconBase>
 );
+
+export const AirPurifierIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M12 4h-1a2 2 0 0 0-2 2v1a2 2 0 0 0-2 2v1c0 2.2 1.8 4 4 4h1"/>
+        <path d="M12 4h1a2 2 0 0 1 2 2v1a2 2 0 0 1 2 2v1c0 2.2-1.8 4-4 4h-1"/>
+        <path d="M4 20h16"/>
+        <path d="M7 16l-3-3"/>
+        <path d="M17 16l3-3"/>
+    </IconBase>
+);
+// END: ADDED ICONS

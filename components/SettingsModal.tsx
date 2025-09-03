@@ -1,9 +1,9 @@
 
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon, DriveIcon, DropboxIcon } from './Icons';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon, DriveIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
-import type { ThemeSettings, DriveUser, DropboxUser } from '../types';
+import type { ThemeSettings } from '../types';
 
 
 interface SettingsModalProps {
@@ -24,14 +24,6 @@ interface SettingsModalProps {
     onCalibrateVoice: () => void;
     onChangeActiveVoiceProfile: (profileId: string) => void;
     onDeleteVoiceProfile: (profileId: string) => void;
-    isDriveReady: boolean;
-    isSyncing: boolean;
-    driveUser: DriveUser | null;
-    onConnectDrive: () => void;
-    onDisconnectDrive: () => void;
-    dropboxUser: DropboxUser | null;
-    onConnectDropbox: () => void;
-    onDisconnectDropbox: () => void;
 }
 
 
@@ -288,108 +280,6 @@ const AIEngineSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' |
 };
 
 
-const CloudSyncPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange' | 'isDriveReady' | 'isSyncing' | 'driveUser' | 'onConnectDrive' | 'onDisconnectDrive' | 'dropboxUser' | 'onConnectDropbox' | 'onDisconnectDropbox'>> =
-({ themeSettings, onThemeChange, isDriveReady, isSyncing, driveUser, onConnectDrive, onDisconnectDrive, dropboxUser, onConnectDropbox, onDisconnectDropbox }) => {
-
-    const connectedUser = driveUser || dropboxUser;
-    const connectedService = driveUser ? 'drive' : (dropboxUser ? 'dropbox' : null);
-
-    // Show connected view if either Google Drive or Dropbox user exists
-    if (connectedUser && connectedService) {
-        return (
-            <div className="space-y-4">
-                <p className="text-sm text-text-muted">Your session is synced and backed up via {connectedService === 'drive' ? 'Google Drive' : 'Dropbox'}.</p>
-                <div className="p-3 bg-panel/50 rounded-lg border border-primary-t-20 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <img src={connectedUser.imageUrl} alt="User" className="w-10 h-10 rounded-full" />
-                        <div>
-                            <p className="font-bold">{connectedUser.name}</p>
-                            <p className="text-xs text-text-muted">{connectedUser.email}</p>
-                        </div>
-                    </div>
-                    {connectedService === 'drive' ? (
-                        <DriveIcon className="w-8 h-8 text-sky-400" />
-                    ) : (
-                        <DropboxIcon className="w-8 h-8 text-blue-400" />
-                    )}
-                </div>
-                <button
-                    onClick={connectedService === 'drive' ? onDisconnectDrive : onDisconnectDropbox}
-                    className="w-full p-2 text-sm bg-red-800/50 rounded-md border border-red-600/50 hover:bg-red-700/80"
-                >
-                    Disconnect
-                </button>
-            </div>
-        );
-    }
-    
-    // Not connected view
-    return (
-        <div className="space-y-4">
-            <p className="text-sm text-text-muted">Connect a cloud provider to sync your chat history, tasks, and settings. Refer to the README for instructions on getting a Client ID.</p>
-            
-            {/* Google Drive Section */}
-            <div className="space-y-2 p-3 rounded-lg border border-primary-t-20 bg-panel/50">
-                <div className="flex items-center gap-3">
-                    <DriveIcon className="w-8 h-8 text-sky-400" />
-                    <div className="text-left">
-                        <p className="font-bold">Google Drive</p>
-                        <p className="text-xs text-text-muted">Recommended for seamless integration.</p>
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="google-client-id" className="text-xs text-text-muted mb-1 block">Google Client ID:</label>
-                    <input 
-                        id="google-client-id" 
-                        type="text" 
-                        value={themeSettings.googleClientId}
-                        placeholder="Paste your Google Client ID here" 
-                        className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
-                        onChange={e => onThemeChange(p => ({ ...p, googleClientId: e.target.value }))}
-                    />
-                </div>
-                <button
-                    onClick={onConnectDrive}
-                    disabled={!themeSettings.googleClientId || !isDriveReady || isSyncing}
-                    className="w-full p-2 text-sm bg-primary-t-50 hover:bg-primary-t-80 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Connect to Google Drive
-                </button>
-            </div>
-
-            {/* Dropbox Section */}
-            <div className="space-y-2 p-3 rounded-lg border border-primary-t-20 bg-panel/50">
-                <div className="flex items-center gap-3">
-                    <DropboxIcon className="w-8 h-8 text-blue-400" />
-                    <div className="text-left">
-                        <p className="font-bold">Dropbox</p>
-                        <p className="text-xs text-text-muted">Sync with your Dropbox account.</p>
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="dropbox-client-id" className="text-xs text-text-muted mb-1 block">Dropbox Client ID (App Key):</label>
-                    <input 
-                        id="dropbox-client-id" 
-                        type="text" 
-                        value={themeSettings.dropboxClientId}
-                        placeholder="Paste your Dropbox App Key here" 
-                        className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
-                        onChange={e => onThemeChange(p => ({ ...p, dropboxClientId: e.target.value }))}
-                    />
-                </div>
-                <button
-                    onClick={onConnectDropbox}
-                    disabled={!themeSettings.dropboxClientId || isSyncing}
-                    className="w-full p-2 text-sm bg-primary-t-50 hover:bg-primary-t-80 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Connect to Dropbox
-                </button>
-            </div>
-        </div>
-    );
-};
-
-
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { 
         isOpen, onClose, onShutdown, sounds, onClearChat,
@@ -462,9 +352,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     </CollapsibleSection>
                     <CollapsibleSection title="Smart Home" icon={<HomeIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Smart Home"} onToggle={() => handleToggleSection("Smart Home")}>
                         <HomeAssistantSettingsPanel {...props} />
-                    </CollapsibleSection>
-                    <CollapsibleSection title="Cloud Sync" icon={<DriveIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Cloud Sync"} onToggle={() => handleToggleSection("Cloud Sync")}>
-                        <CloudSyncPanel {...props} />
                     </CollapsibleSection>
                     <CollapsibleSection title="Conversation" icon={<ConversationIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Conversation"} onToggle={() => handleToggleSection("Conversation")}>
                         <button onClick={onClearChat} className="w-full flex items-center justify-center gap-3 p-2 rounded-md text-yellow-400 border border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-300 transition-all duration-300 group">

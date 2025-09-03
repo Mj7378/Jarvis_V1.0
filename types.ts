@@ -1,5 +1,6 @@
 
 
+
 export interface Source {
   uri: string;
   title?: string;
@@ -114,8 +115,6 @@ export interface ThemeSettings {
   persona: 'classic' | 'stark';
   homeAssistantUrl: string;
   homeAssistantToken: string;
-  googleClientId: string;
-  dropboxClientId: string;
 }
 
 export interface Task {
@@ -174,26 +173,14 @@ export interface CustomAppDefinition {
   textColor: string;
 }
 
-// Google Drive Sync Types
-export interface DriveUser {
-  name: string;
-  email: string;
-  imageUrl: string;
-}
-
-// Dropbox Sync Types
-export interface DropboxUser {
-  name: string;
-  email: string;
-  imageUrl: string;
-}
-
-export interface SyncedData {
-  chatHistory: ChatMessage[];
-  tasks: Task[];
-  themeSettings: ThemeSettings;
-}
-
+export type PanelType = 
+    | 'CONTROL_CENTER' 
+    | 'VISION' 
+    | 'GENERATIVE_STUDIO' 
+    | 'SETTINGS' 
+    | 'APP_LAUNCHER' 
+    | 'TASK_MANAGER'
+    | 'STORAGE_WIZARD';
 
 declare global {
   interface Window {

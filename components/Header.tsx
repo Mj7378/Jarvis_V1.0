@@ -17,12 +17,8 @@ const Header: React.FC<{
         };
     }, []);
     
-    // Set the timezone to India Standard Time
-    const timeZone = 'Asia/Kolkata';
-
-    // Get formatted time parts from IST
+    // Get formatted time parts from user's local timezone
     const timeString = time.toLocaleTimeString('en-US', {
-        timeZone,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
@@ -33,7 +29,6 @@ const Header: React.FC<{
     const [hours, minutes, seconds] = timePart.split(':');
 
     const formattedDate = time.toLocaleDateString('en-GB', {
-        timeZone,
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -41,7 +36,7 @@ const Header: React.FC<{
 
     const [day, month, year] = formattedDate.split('/');
 
-    const dayOfWeek = time.toLocaleDateString('en-US', { timeZone, weekday: 'short' }).toUpperCase();
+    const dayOfWeek = time.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
 
     return (
         <header className="hud-header flex items-center justify-between relative">

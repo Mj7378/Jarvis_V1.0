@@ -8,19 +8,36 @@ export const useSpeechRecognition = (options: {
     interimResults?: boolean; 
     onEnd?: (transcript: string) => void;
     onTranscriptChange?: (transcript: string) => void;
+    endOnSilence?: boolean;
+    silenceTimeout?: number;
 } = {}) => {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
     const [error, setError] = useState('');
     const recognitionRef = useRef<any>(null);
     const isManuallyStopped = useRef(false);
+    const silenceTimerRef = useRef<number | null>(null);
 
-    // Refs to hold the latest transcript and onEnd callback to avoid stale closures
+    // Refs to hold the latest transcript and callbacks to avoid stale closures
     const transcriptRef = useRef('');
     const onEndRef = useRef(options.onEnd);
     const onTranscriptChangeRef = useRef(options.onTranscriptChange);
+    const optionsRef = useRef(options);
     onEndRef.current = options.onEnd;
     onTranscriptChangeRef.current = options.onTranscriptChange;
+    optionsRef.current = options;
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current && isListening) {
+            if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = null;
+            }
+            isManuallyStopped.current = true;
+            recognitionRef.current.stop();
+            // onend will fire and set isListening to false
+        }
+    }, [isListening]);
 
     useEffect(() => {
         if (!SpeechRecognition) {
@@ -31,6 +48,19 @@ export const useSpeechRecognition = (options: {
         const recognition = new SpeechRecognition();
         
         recognition.onresult = (event: any) => {
+            const currentOptions = optionsRef.current;
+            if (currentOptions.endOnSilence) {
+                if (silenceTimerRef.current) {
+                    clearTimeout(silenceTimerRef.current);
+                }
+                silenceTimerRef.current = window.setTimeout(() => {
+                    // Manually stopping will trigger onend and process the transcript
+                    if (recognitionRef.current) {
+                        recognitionRef.current.stop();
+                    }
+                }, currentOptions.silenceTimeout || 1500);
+            }
+
             const fullTranscript = Array.from(event.results)
                 .map((result: any) => result[0])
                 .map((result) => result.transcript)
@@ -75,6 +105,9 @@ export const useSpeechRecognition = (options: {
 
         return () => {
             isManuallyStopped.current = true;
+            if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+            }
             if (recognitionRef.current) {
                 recognitionRef.current.stop();
             }
@@ -84,8 +117,13 @@ export const useSpeechRecognition = (options: {
     const startListening = useCallback(() => {
         if (recognitionRef.current && !isListening) {
             try {
-                recognitionRef.current.continuous = options.continuous || false;
-                recognitionRef.current.interimResults = options.interimResults || false;
+                const currentOptions = optionsRef.current;
+                recognitionRef.current.continuous = currentOptions.continuous || false;
+                recognitionRef.current.interimResults = currentOptions.interimResults || false;
+
+                if (currentOptions.endOnSilence && silenceTimerRef.current) {
+                    clearTimeout(silenceTimerRef.current);
+                }
 
                 setError('');
                 setTranscript('');
@@ -99,14 +137,6 @@ export const useSpeechRecognition = (options: {
                 setIsListening(false);
             }
         }
-    }, [isListening, options.continuous, options.interimResults]);
-
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current && isListening) {
-            isManuallyStopped.current = true;
-            recognitionRef.current.stop();
-            // onend will fire and set isListening to false
-        }
     }, [isListening]);
 
     return {
@@ -116,9 +146,9 @@ export const useSpeechRecognition = (options: {
         startListening,
         stopListening,
         hasRecognitionSupport: !!SpeechRecognition,
-        clearTranscript: () => {
+        clearTranscript: useCallback(() => {
             setTranscript('');
             transcriptRef.current = '';
-        },
+        }, []),
     };
 };

@@ -2,7 +2,10 @@
   "name": "Jarvis_V1.0",
   "description": "A sophisticated, voice and text-enabled AI assistant inspired by Iron Man's J.A.R.V.I.S. This web application leverages the full power of the Google Gemini API for intelligent, real-time conversation and features a deeply customizable, futuristic Heads-Up Display (HUD).\n\nThis project is a showcase of how to build a complex, feature-rich AI application using modern web technologies, advanced Gemini models, and a focus on immersive user experience.",
   "requestFramePermissions": [
+    "microphone",
     "camera",
-    "microphone"
+    "display-capture",
+    "geolocation",
+    "clipboard-read"
   ]
 }

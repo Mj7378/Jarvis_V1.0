@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { CloseIcon } from './Icons';
 
 export interface InputConfig {
@@ -122,13 +123,8 @@ interface NotificationToastProps {
 }
 
 export const NotificationToast: React.FC<NotificationToastProps> = ({ id, title, message, icon, onClose, duration = 5000 }) => {
-  const [isExiting, setIsExiting] = useState(false);
-
   const handleClose = useCallback(() => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose(id);
-    }, 300); // Match animation duration
+    onClose(id);
   }, [id, onClose]);
 
   useEffect(() => {
@@ -138,7 +134,14 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ id, title,
 
 
   return (
-    <div className={`holographic-panel w-full max-w-sm !p-3 pointer-events-auto ${isExiting ? 'animate-pop-out-top-right' : 'animate-pop-in-top-right'}`}>
+    <motion.div
+        layout
+        initial={{ opacity: 0, x: 50, scale: 0.9 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        exit={{ opacity: 0, x: 50, scale: 0.9, transition: { duration: 0.2 } }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="holographic-panel w-full max-w-sm !p-3 pointer-events-auto"
+    >
         <div className="flex items-start gap-3">
             <div className="mt-1 flex-shrink-0">
                 {icon || <svg className="w-6 h-6 text-primary animate-pulse-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
@@ -153,6 +156,6 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ id, title,
                 </button>
             </div>
         </div>
-    </div>
+    </motion.div>
   );
 };
