@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 import { AnimatePresence } from 'framer-motion';
@@ -379,6 +380,9 @@ const DEFAULT_THEME: ThemeSettings = {
   persona: 'stark',
   homeAssistantUrl: '',
   homeAssistantToken: '',
+  dropboxClientId: '',
+  googleApiKey: '',
+  googleClientId: '',
 };
 
 const FULL_THEMES = [
@@ -407,6 +411,24 @@ const CHAT_HISTORY_STORAGE_KEY = 'jarvis_chat_history';
 const TASKS_STORAGE_KEY = 'jarvis_tasks';
 const SETTINGS_STORAGE_KEY = 'jarvis_theme_settings';
 
+const useMediaQuery = (query: string): boolean => {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(query);
+    const listener = (event: MediaQueryListEvent) => {
+      setMatches(event.matches);
+    };
+
+    mediaQueryList.addEventListener('change', listener);
+    return () => {
+      mediaQueryList.removeEventListener('change', listener);
+    };
+  }, [query]);
+
+  return matches;
+};
+
 const App: React.FC = () => {
   // System Lifecycle
   const [systemState, setSystemState] = useState<SystemState>('PRE_BOOT');
@@ -418,6 +440,7 @@ const App: React.FC = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const [operatingSystem, setOperatingSystem] = useState<string>('Unknown');
+  const [isAgentConnected, setIsAgentConnected] = useState(false);
   
   // --- Centralized State Management (Replaces useChatHistory and useTasks hooks) ---
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
@@ -591,8 +614,9 @@ const App: React.FC = () => {
     const notifiedThisSession = new Set<string>();
     const interval = setInterval(() => {
       const now = Date.now();
-      setTasks(prevTasks => {
-        const updatedTasks = [...prevTasks];
+      setTasks(prev => {
+        // FIX: Correctly reference the previous state 'prev' from the setTasks callback.
+        const updatedTasks = [...prev];
         let wasChanged = false;
         updatedTasks.forEach((task, index) => {
             if (task.recurrence && task.completed && now >= new Date(task.nextDueDate).getTime()) {
@@ -615,7 +639,8 @@ const App: React.FC = () => {
               notifiedThisSession.add(task.id);
           }
         });
-        return wasChanged ? updatedTasks : prevTasks;
+        // FIX: Correctly reference the previous state 'prev' from the setTasks callback.
+        return wasChanged ? updatedTasks : prev;
       });
     }, 10000);
     return () => clearInterval(interval);
@@ -795,7 +820,7 @@ const App: React.FC = () => {
         case 'upload_audio': handleFileUpload('audio/*', handleAudioUpload); break;
         case 'request_location': handleLocationRequest(); break;
     }
-  }, [clearChatHistory, sounds, togglePanel, handleOpenGenerativeStudio, activePanels, handleFileUpload, handleDocumentUpload, handleGalleryUpload, handleAudioUpload, handleLocationRequest]);
+  }, [clearChatHistory, sounds, togglePanel, handleOpenGenerativeStudio, activePanels]);
   
   const handleWolframQuery = useCallback(async (cmd: DeviceControlCommand) => {
     setToasts(prev => [...prev, { id: `wolfram_${Date.now()}`, title: 'Computational Engine', message: `Querying Wolfram Alpha for: "${cmd.params.query}"`, icon: <WolframAlphaIcon className="w-6 h-6 text-[#F96932]" /> }]);
@@ -842,8 +867,19 @@ const App: React.FC = () => {
         case 'app_control': handleAppControl(cmd.params.action, cmd.params.value); break;
         case 'home_automation': handleHomeAutomation(cmd); break;
         case 'wolfram_alpha_query': handleWolframQuery(cmd); break;
+        // Native commands - Placeholder for Sentinel Agent integration
+        case 'native_app_control':
+        case 'file_system_access':
+        case 'hardware_control':
+            if (isAgentConnected) {
+                // In a real implementation, this would send the command via WebSocket
+                console.log('RELAYING TO SENTINEL AGENT:', cmd);
+            } else {
+                addMessage({ role: 'model', content: "I can't do that without the J.A.R.V.I.S. Sentinel Agent running on your machine." });
+            }
+            break;
     }
-  }, [addTask, handleAppControl, handleHomeAutomation, handleWolframQuery, sounds]);
+  }, [addTask, handleAppControl, handleHomeAutomation, handleWolframQuery, sounds, isAgentConnected, addMessage]);
   
   const executeCommandsSequentially = useCallback((commands: DeviceControlCommand[]) => {
       commands.forEach((cmd, i) => setTimeout(() => executeCommand(cmd), i * 750));
@@ -1112,6 +1148,37 @@ const App: React.FC = () => {
     togglePanel('APP_LAUNCHER');
   };
   
+  const isMobileOrTablet = useMediaQuery('(max-width: 1024px)');
+
+  const closeAllPanels = useCallback(() => {
+    if (activePanels.size > 0) {
+        sounds.playClose();
+        setActivePanels(new Set());
+    }
+  }, [activePanels, sounds]);
+
+  // Click-away to close panels on desktop
+  useEffect(() => {
+    // This effect is for desktop only; mobile has a dedicated overlay
+    if (activePanels.size === 0 || isMobileOrTablet) {
+      return;
+    }
+
+    const mainContentEl = document.querySelector('.hud-main-content');
+    if (!mainContentEl) return;
+    
+    const handleMainContentClick = () => {
+      closeAllPanels();
+    };
+
+    // Use mousedown to feel more responsive, and it fires before blur events.
+    mainContentEl.addEventListener('mousedown', handleMainContentClick);
+
+    return () => {
+      mainContentEl.removeEventListener('mousedown', handleMainContentClick);
+    };
+  }, [activePanels, closeAllPanels, isMobileOrTablet]);
+
   const renderCurrentState = () => {
       switch (systemState) {
         case 'PRE_BOOT': return <PreBootScreen onInitiate={() => { sounds.playActivate(); setSystemState('BOOTING'); }} />;
@@ -1133,6 +1200,13 @@ const App: React.FC = () => {
             };
             return (
                 <div className={`w-full h-screen transition-colors duration-500 ${themeSettings.themeMode}`}>
+                    {isMobileOrTablet && activePanels.size > 0 && (
+                        <div
+                            className="fixed inset-0 bg-black/50 z-[49] animate-fade-in-fast"
+                            onClick={closeAllPanels}
+                            aria-hidden="true"
+                        />
+                    )}
                     <div className={`hud-grid-container ${activePanels.size > 0 ? 'panels-open' : ''}`}>
                         <Header onOpenSettings={() => togglePanel('SETTINGS')} onToggleControlCenter={() => togglePanel('CONTROL_CENTER')} />
                         <TacticalSidebar onTogglePanel={togglePanel} activePanels={activePanels} onToggleView={toggleView} currentView={currentView} />
@@ -1166,7 +1240,7 @@ const App: React.FC = () => {
                                 {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} />}
                                 {activePanels.has('SETTINGS') && <SettingsModal isOpen={true} onClose={() => togglePanel('SETTINGS')} onShutdown={() => { togglePanel('SETTINGS'); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }} sounds={sounds} themeSettings={themeSettings} onThemeChange={setThemeSettings} onSetCustomBootVideo={handleSetCustomBootVideo} onRemoveCustomBootVideo={handleRemoveCustomBootVideo} onSetCustomShutdownVideo={handleSetCustomShutdownVideo} onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo} onCalibrateVoice={() => setIsCalibrationOpen(true)} onClearChat={handleClearChat} onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile} onDeleteVoiceProfile={handleDeleteVoiceProfile} onConnectHA={handleConnectHA} onDisconnectHA={handleDisconnectHA} haConnectionStatus={haConnectionStatus} />}
                                 {activePanels.has('CONTROL_CENTER') && <ControlCenter onClose={() => togglePanel('CONTROL_CENTER')} onVisionMode={() => togglePanel('VISION')} onClearChat={handleClearChat} onGetWeather={() => processUserMessage("What's the weather like?")} onDesignMode={(p) => handleOpenGenerativeStudio(p, 'image')} onSimulationMode={(p) => handleOpenGenerativeStudio(p, 'video')} onDirectHomeStateChange={handleDirectHomeStateChange} onOpenSettings={() => togglePanel('SETTINGS')} onShowCameraFeed={(loc) => setCameraFeed({ location: loc })} smartHomeState={smartHomeState} onOpenAppLauncher={() => togglePanel('APP_LAUNCHER')} onOpenTaskManager={() => togglePanel('TASK_MANAGER')} />}
-                                {activePanels.has('STORAGE_WIZARD') && <StorageWizard onClose={() => togglePanel('STORAGE_WIZARD')} />}
+                                {activePanels.has('STORAGE_WIZARD') && <StorageWizard onClose={() => togglePanel('STORAGE_WIZARD')} themeSettings={themeSettings} />}
                                 {activePanels.has('GENERATIVE_STUDIO') && generativeStudioConfig && (
                                     <GenerativeStudio initialPrompt={generativeStudioConfig.prompt} initialMode={generativeStudioConfig.mode} onCancel={() => togglePanel('GENERATIVE_STUDIO')} onComplete={(prompt, type, dataUrl) => {
                                             togglePanel('GENERATIVE_STUDIO');

@@ -173,7 +173,7 @@ const UserInput: React.FC<UserInputProps> = (props) => {
 
         <form 
             onSubmit={handleSubmit} 
-            className="w-full flex items-end gap-2 p-1.5 bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-lg rounded-full shadow-[0_0_25px_rgba(var(--primary-color-rgb),0.15)] transition-all duration-300"
+            className="w-full flex items-end gap-2 p-1.5 bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-lg rounded-full border border-primary-t-20 shadow-[0_0_25px_rgba(var(--primary-color-rgb),0.25)] transition-all duration-300"
         >
           <div className="relative flex-shrink-0 flex items-center">
               {/* Attachment Button */}

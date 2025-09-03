@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Folder, File as FileIcon, Upload, Eye, Download } from "lucide-react";
 import { DriveIcon, CloseIcon, DropboxIcon } from './Icons';
+import type { ThemeSettings } from '../types';
 
 // Helper functions for localStorage
 const saveToken = (key: string, token: string) => localStorage.setItem(key, token);
@@ -18,9 +19,10 @@ interface CloudFile {
 
 interface StorageWizardProps {
     onClose: () => void;
+    themeSettings: ThemeSettings;
 }
 
-const StorageWizard: React.FC<StorageWizardProps> = ({ onClose }) => {
+const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings }) => {
   const [dropboxToken, setDropboxToken] = useState<string | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [files, setFiles] = useState<CloudFile[]>([]);
@@ -39,29 +41,34 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose }) => {
 
   const connectDropbox = async () => {
     setError(null);
+    if (!themeSettings.dropboxClientId) {
+        setError("Dropbox Client ID is not configured in settings.");
+        return;
+    }
     try {
         const { DropboxAuth } = await import("dropbox");
-        // NOTE: A valid redirect URI must be configured in your Dropbox App Console.
-        const auth = new DropboxAuth({ clientId: "YOUR_DROPBOX_CLIENT_ID_HERE" }); // Placeholder
+        const auth = new DropboxAuth({ clientId: themeSettings.dropboxClientId });
         const url = await auth.getAuthenticationUrl(window.location.origin + "/redirect.html", undefined, 'token');
-        // FIX: The dropbox SDK returns a String object, which needs to be converted to a primitive string for window.open.
         window.open(url.toString(), "dropboxAuth", "width=800,height=600");
     } catch (e) {
-        setError("Dropbox Client ID not configured. This is a developer setting.");
+        setError("An error occurred with Dropbox authentication. Check the console for details.");
         console.error(e);
     }
   };
 
   const connectGoogle = async () => {
     setError(null);
+    if (!themeSettings.googleApiKey || !themeSettings.googleClientId) {
+        setError("Google API Key or Client ID is not configured in settings.");
+        return;
+    }
     try {
-        // FIX: Correctly import the named 'gapi' export from gapi-script.
         const { gapi } = await import("gapi-script");
         gapi.load("client:auth2", () => {
             gapi.client
             .init({
-                apiKey: "YOUR_GOOGLE_API_KEY_HERE", // Placeholder
-                clientId: "YOUR_GOOGLE_CLIENT_ID_HERE", // Placeholder
+                apiKey: themeSettings.googleApiKey,
+                clientId: themeSettings.googleClientId,
                 scope: "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file",
                 discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
             })
@@ -81,7 +88,7 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose }) => {
             });
         });
     } catch(e) {
-        setError("Google API Key/Client ID not configured. This is a developer setting.");
+        setError("An error occurred with Google authentication. Check the console for details.");
         console.error(e);
     }
   };

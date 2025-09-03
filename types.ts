@@ -40,7 +40,7 @@ export enum AppState {
 
 export interface DeviceControlCommand {
     action: 'device_control';
-    command: 'open_url' | 'search' | 'navigate' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown' | 'app_control' | 'home_automation' | 'wolfram_alpha_query';
+    command: 'open_url' | 'search' | 'navigate' | 'internal_fulfillment' | 'play_music' | 'set_reminder' | 'set_alarm' | 'shutdown' | 'app_control' | 'home_automation' | 'wolfram_alpha_query' | 'native_app_control' | 'file_system_access' | 'hardware_control';
     app: string;
     params: any & {
         action?: string;
@@ -115,6 +115,9 @@ export interface ThemeSettings {
   persona: 'classic' | 'stark';
   homeAssistantUrl: string;
   homeAssistantToken: string;
+  dropboxClientId: string;
+  googleApiKey: string;
+  googleClientId: string;
 }
 
 export interface Task {

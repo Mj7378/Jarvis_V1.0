@@ -279,6 +279,54 @@ const AIEngineSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' |
     );
 };
 
+const IntegrationsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onThemeChange'>> = 
+({ themeSettings, onThemeChange }) => {
+    const handleSettingChange = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
+        onThemeChange(prev => ({ ...prev, [key]: value }));
+    };
+    
+    return (
+        <div className="space-y-4">
+            <div>
+                <h4 className="text-sm font-orbitron text-text-muted mb-2">Dropbox</h4>
+                <label htmlFor="dropbox-client-id" className="block text-sm text-slate-300 mb-1">App Client ID</label>
+                <input
+                    type="text"
+                    id="dropbox-client-id"
+                    value={themeSettings.dropboxClientId}
+                    onChange={(e) => handleSettingChange('dropboxClientId', e.target.value)}
+                    placeholder="Enter your Dropbox Client ID"
+                    className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                />
+            </div>
+            <div>
+                <h4 className="text-sm font-orbitron text-text-muted mb-2">Google Drive</h4>
+                <label htmlFor="google-api-key" className="block text-sm text-slate-300 mb-1">API Key</label>
+                <input
+                    type="text"
+                    id="google-api-key"
+                    value={themeSettings.googleApiKey}
+                    onChange={(e) => handleSettingChange('googleApiKey', e.target.value)}
+                    placeholder="Enter your Google API Key"
+                    className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                />
+            </div>
+            <div>
+                <label htmlFor="google-client-id" className="block text-sm text-slate-300 mb-1">Client ID</label>
+                <input
+                    type="text"
+                    id="google-client-id"
+                    value={themeSettings.googleClientId}
+                    onChange={(e) => handleSettingChange('googleClientId', e.target.value)}
+                    placeholder="Enter your Google Client ID"
+                    className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-slate-200 text-sm"
+                />
+            </div>
+             <p className="text-xs text-text-muted">API keys are stored locally in your browser and are required for cloud storage access.</p>
+        </div>
+    );
+};
+
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { 
@@ -352,6 +400,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     </CollapsibleSection>
                     <CollapsibleSection title="Smart Home" icon={<HomeIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Smart Home"} onToggle={() => handleToggleSection("Smart Home")}>
                         <HomeAssistantSettingsPanel {...props} />
+                    </CollapsibleSection>
+                     <CollapsibleSection title="Integrations" icon={<DriveIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Integrations"} onToggle={() => handleToggleSection("Integrations")}>
+                        <IntegrationsPanel {...props} />
                     </CollapsibleSection>
                     <CollapsibleSection title="Conversation" icon={<ConversationIcon className="w-5 h-5 text-primary" />} isOpen={openSection === "Conversation"} onToggle={() => handleToggleSection("Conversation")}>
                         <button onClick={onClearChat} className="w-full flex items-center justify-center gap-3 p-2 rounded-md text-yellow-400 border border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-300 transition-all duration-300 group">

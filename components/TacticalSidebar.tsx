@@ -24,18 +24,12 @@ const DockButton: React.FC<{ label: string; icon: React.ReactNode; onClick: () =
         >
             {icon}
         </button>
-        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 w-max px-3 py-1.5 bg-panel border border-primary-t-20 rounded-md text-sm text-text-primary opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none animate-fade-in-fast" style={{ animationDelay: '300ms' }}>
-            {label}
-        </div>
     </div>
 );
 
 const TacticalSidebar: React.FC<TacticalSidebarProps> = ({ onTogglePanel, activePanels, onToggleView, currentView }) => {
     
-    const mainActions = [
-        { label: "Dashboard", view: 'DASHBOARD', icon: <HomeIcon className="w-7 h-7"/> },
-        { label: "Chat Focus", view: 'CHAT_FOCUS', icon: <ChatIcon className="w-7 h-7"/> },
-    ];
+    const isDashboard = currentView === 'DASHBOARD';
 
     const panelActions: { label: string; panel: PanelType; icon: React.ReactNode }[] = [
         { label: "Control Center", panel: 'CONTROL_CENTER', icon: <DashboardIcon className="w-7 h-7"/> },
@@ -53,15 +47,12 @@ const TacticalSidebar: React.FC<TacticalSidebarProps> = ({ onTogglePanel, active
     return (
         <aside className="hud-sidebar-dock flex flex-col items-center justify-between py-4">
              <div className="flex flex-col items-center gap-4">
-                {mainActions.map(action => (
-                    <DockButton 
-                        key={action.view}
-                        label={action.label}
-                        icon={action.icon}
-                        onClick={() => onToggleView(action.view as 'DASHBOARD' | 'CHAT_FOCUS')}
-                        isActive={currentView === action.view}
-                    />
-                ))}
+                <DockButton 
+                    label={isDashboard ? "Focus Chat" : "Dashboard"}
+                    icon={isDashboard ? <ChatIcon className="w-7 h-7" /> : <HomeIcon className="w-7 h-7" />}
+                    onClick={() => onToggleView(isDashboard ? 'CHAT_FOCUS' : 'DASHBOARD')}
+                    isActive={true}
+                />
                  <div className="w-8 h-px bg-primary-t-20 my-2"></div>
                 {panelActions.map(action => (
                     <DockButton 

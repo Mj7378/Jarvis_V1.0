@@ -9,7 +9,6 @@ export interface ControlCenterProps {
     onVisionMode: () => void;
     onClearChat: () => void;
     onGetWeather: () => void;
-    // FIX: Update prop types to accept a string argument for the prompt.
     onDesignMode: (prompt: string) => void;
     onSimulationMode: (prompt: string) => void;
     onDirectHomeStateChange: (params: { domain: string; service: string; entity_id: string; [key: string]: any }) => void;
@@ -232,7 +231,6 @@ const ControlCenter: React.FC<ControlCenterProps> = (props) => {
                     onOpenAppLauncher={props.onOpenAppLauncher}
                     onOpenTaskManager={props.onOpenTaskManager}
                 />
-                {/* FIX: Pass the props directly to the child component instead of creating new functions. */}
                 <GenerativeToolsModule 
                     onDesignMode={props.onDesignMode}
                     onSimulationMode={props.onSimulationMode}
