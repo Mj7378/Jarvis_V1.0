@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon, DriveIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -24,6 +25,7 @@ interface SettingsModalProps {
     onCalibrateVoice: () => void;
     onChangeActiveVoiceProfile: (profileId: string) => void;
     onDeleteVoiceProfile: (profileId: string) => void;
+    initialSection?: string;
 }
 
 
@@ -330,10 +332,10 @@ const IntegrationsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'on
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     const { 
-        isOpen, onClose, onShutdown, sounds, onClearChat,
+        isOpen, onClose, onShutdown, sounds, onClearChat, initialSection
     } = props;
     
-    const [openSection, setOpenSection] = useState<string>('Theme & Appearance');
+    const [openSection, setOpenSection] = useState<string>(initialSection || 'Theme & Appearance');
 
     const handleToggleSection = (sectionTitle: string) => {
         props.sounds.playClick();

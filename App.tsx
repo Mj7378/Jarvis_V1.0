@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 import { AnimatePresence } from 'framer-motion';
@@ -486,6 +488,7 @@ const App: React.FC = () => {
   // New panel-based UI state
   const [activePanels, setActivePanels] = useState<Set<PanelType>>(new Set());
   const [generativeStudioConfig, setGenerativeStudioConfig] = useState<{ prompt: string; mode: 'image' | 'video' } | null>(null);
+  const [initialSettingsSection, setInitialSettingsSection] = useState<string>('Theme & Appearance');
 
   
 
@@ -570,6 +573,10 @@ const App: React.FC = () => {
   // UI Panel Management
   const togglePanel = useCallback((panel: PanelType) => {
       sounds.playClick();
+      if (panel === 'SETTINGS') {
+          // When opening settings directly, reset the section to the default
+          setInitialSettingsSection('Theme & Appearance');
+      }
       setActivePanels(prev => {
           const newPanels = new Set(prev);
           if (newPanels.has(panel)) {
@@ -1147,6 +1154,28 @@ const App: React.FC = () => {
     executeCommand({ action: 'device_control', command: 'open_url', app: 'Browser', params: { url }, spoken_response: `Opening ${appName}.` });
     togglePanel('APP_LAUNCHER');
   };
+
+  const handleAnalyzeFileContent = useCallback((fileName: string, fileContent: string) => {
+    const prompt = `Sir, I've accessed the file "${fileName}". Please analyze the following content:\n\n---\n\n${fileContent}`;
+    handleSendMessage(prompt);
+    // Close the panel to show the chat
+    if (activePanels.has('STORAGE_WIZARD')) {
+        togglePanel('STORAGE_WIZARD');
+    }
+    if (currentView !== 'CHAT_FOCUS') {
+        setCurrentView('CHAT_FOCUS');
+    }
+  }, [activePanels, currentView, togglePanel]);
+
+  const handleNavigateToIntegrations = useCallback(() => {
+    setInitialSettingsSection('Integrations');
+    setActivePanels(prev => {
+        const newPanels = new Set(prev);
+        newPanels.delete('STORAGE_WIZARD');
+        newPanels.add('SETTINGS');
+        return newPanels;
+    });
+  }, []);
   
   const isMobileOrTablet = useMediaQuery('(max-width: 1024px)');
 
@@ -1238,9 +1267,9 @@ const App: React.FC = () => {
                                 {activePanels.has('APP_LAUNCHER') && <AppLauncher onClose={() => togglePanel('APP_LAUNCHER')} onAppSelect={handleAppSelect} />}
                                 {activePanels.has('TASK_MANAGER') && <TaskManager tasks={tasks} onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask} onClose={() => togglePanel('TASK_MANAGER')} />}
                                 {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} />}
-                                {activePanels.has('SETTINGS') && <SettingsModal isOpen={true} onClose={() => togglePanel('SETTINGS')} onShutdown={() => { togglePanel('SETTINGS'); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }} sounds={sounds} themeSettings={themeSettings} onThemeChange={setThemeSettings} onSetCustomBootVideo={handleSetCustomBootVideo} onRemoveCustomBootVideo={handleRemoveCustomBootVideo} onSetCustomShutdownVideo={handleSetCustomShutdownVideo} onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo} onCalibrateVoice={() => setIsCalibrationOpen(true)} onClearChat={handleClearChat} onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile} onDeleteVoiceProfile={handleDeleteVoiceProfile} onConnectHA={handleConnectHA} onDisconnectHA={handleDisconnectHA} haConnectionStatus={haConnectionStatus} />}
+                                {activePanels.has('SETTINGS') && <SettingsModal isOpen={true} onClose={() => togglePanel('SETTINGS')} onShutdown={() => { togglePanel('SETTINGS'); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }} sounds={sounds} themeSettings={themeSettings} onThemeChange={setThemeSettings} onSetCustomBootVideo={handleSetCustomBootVideo} onRemoveCustomBootVideo={handleRemoveCustomBootVideo} onSetCustomShutdownVideo={handleSetCustomShutdownVideo} onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo} onCalibrateVoice={() => setIsCalibrationOpen(true)} onClearChat={handleClearChat} onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile} onDeleteVoiceProfile={handleDeleteVoiceProfile} onConnectHA={handleConnectHA} onDisconnectHA={handleDisconnectHA} haConnectionStatus={haConnectionStatus} initialSection={initialSettingsSection} />}
                                 {activePanels.has('CONTROL_CENTER') && <ControlCenter onClose={() => togglePanel('CONTROL_CENTER')} onVisionMode={() => togglePanel('VISION')} onClearChat={handleClearChat} onGetWeather={() => processUserMessage("What's the weather like?")} onDesignMode={(p) => handleOpenGenerativeStudio(p, 'image')} onSimulationMode={(p) => handleOpenGenerativeStudio(p, 'video')} onDirectHomeStateChange={handleDirectHomeStateChange} onOpenSettings={() => togglePanel('SETTINGS')} onShowCameraFeed={(loc) => setCameraFeed({ location: loc })} smartHomeState={smartHomeState} onOpenAppLauncher={() => togglePanel('APP_LAUNCHER')} onOpenTaskManager={() => togglePanel('TASK_MANAGER')} />}
-                                {activePanels.has('STORAGE_WIZARD') && <StorageWizard onClose={() => togglePanel('STORAGE_WIZARD')} themeSettings={themeSettings} />}
+                                {activePanels.has('STORAGE_WIZARD') && <StorageWizard onClose={() => togglePanel('STORAGE_WIZARD')} themeSettings={themeSettings} onAnalyzeFile={handleAnalyzeFileContent} onNavigateToIntegrations={handleNavigateToIntegrations} />}
                                 {activePanels.has('GENERATIVE_STUDIO') && generativeStudioConfig && (
                                     <GenerativeStudio initialPrompt={generativeStudioConfig.prompt} initialMode={generativeStudioConfig.mode} onCancel={() => togglePanel('GENERATIVE_STUDIO')} onComplete={(prompt, type, dataUrl) => {
                                             togglePanel('GENERATIVE_STUDIO');

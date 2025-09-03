@@ -164,4 +164,11 @@ To enhance data persistence and cross-platform access, direct integration with c
 
 *   **Secure Authentication:** Implement robust OAuth 2.0 flows for both Google Drive and Dropbox, allowing users to securely connect their accounts.
 *   **File Management:** Users will be able to browse, select, upload, and download files from their cloud storage directly within the J.A.R.V.I.S. interface.
-*   **AI Analysis:** The core AI will be able to analyze documents and other files directly from the user's cloud storage, expanding its contextual understanding and utility.
+*   **AI Analysis:** The core AI will be able to analyze documents and other files from the user's cloud storage, expanding its contextual understanding and utility.
+
+### Proactive Information Synthesis
+To move beyond a purely reactive role, a future version of J.A.R.V.I.S. will integrate with personal information services like email and calendar. This will enable it to proactively warn you about upcoming meetings, automatically pull up relevant documents, and provide timely information without you ever asking.
+
+### Advanced Agency & Tool Use
+*   **Dynamic Action Chaining:** The current multi-tool protocol is powerful but static; it executes a pre-defined sequence of commands. A more advanced agent could dynamically chain actions, where the output of one step becomes the input for the next (e.g., "Find the top 3 Italian restaurants near me, check their ratings, and then book a table for two at the best one for 8 PM tonight.").
+*   **Screen Context Awareness:** A key feature of advanced agents is the ability to "see" your screen. This allows you to say things like, "Summarize the article I'm reading," or "What do you think of this design in Figma?"
