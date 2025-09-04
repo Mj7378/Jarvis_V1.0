@@ -1,4 +1,4 @@
-# J.A.R.V.I.S. V1.0 - AI Assistant
+# J.A.R.V.I.S. V1.0 - Advanced AI Assistant
 
 <div align="center">
   <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React Badge"/>
@@ -8,73 +8,67 @@
 </div>
 <br>
 
-A sophisticated, voice and text-enabled AI assistant inspired by Iron Man's J.A.R.V.I.S. This web application leverages the full power of the Google Gemini API for intelligent, real-time conversation and features a deeply customizable, futuristic Heads-Up Display (HUD).
+**J.A.R.V.I.S.** is a sophisticated, voice and text-enabled AI assistant inspired by Iron Man's iconic system. This web application demonstrates a powerful fusion of the Google Gemini API with a deeply customizable, futuristic Heads-Up Display (HUD), creating a feature-rich and immersive user experience.
 
-This project is a showcase of how to build a complex, feature-rich AI application using modern web technologies, advanced Gemini models, and a focus on immersive user experience.
+This project serves as a comprehensive showcase for building complex AI applications using modern web technologies, focusing on advanced model integration, robust system control, and a high-quality, responsive interface.
+
+---
+
+## Table of Contents
+
+- [Features](#-features)
+- [Technology Stack](#-technology-stack)
+- [Getting Started](#-getting-started)
+- [System Architecture](#-system-architecture)
+- [Troubleshooting](#-troubleshooting)
+- [Future Development](#-future-development)
 
 ---
 
 ## ✨ Features
 
 ### 🧠 Conversational AI Core
-*   **Gemini-Powered Intelligence:** At its core, J.A.R.V.I.S. uses the `gemini-2.5-flash` model for fast, witty, and context-aware conversational abilities.
-*   **Rich Persona:** A detailed system prompt establishes the iconic J.A.R.V.I.S. personality: confident, efficient, and casually brilliant.
-*   **Streaming Responses:** AI responses are streamed token-by-token for natural, real-time conversation flow.
-*   **Google Search Grounding:** J.A.R.V.I.S. can answer questions about recent events and trending topics by leveraging Google Search, ensuring up-to-date information.
+- **Gemini-Powered Intelligence:** Leverages the `gemini-2.5-flash` model for fast, context-aware conversations, powered by a detailed system prompt that establishes the iconic J.A.R.V.I.S. persona.
+- **Streaming Responses:** AI responses are streamed token-by-token for a natural, real-time conversational flow.
+- **Google Search Grounding:** Provides up-to-date answers on recent events and trending topics by integrating Google Search directly into the AI's knowledge base.
+- **Dynamic Persona:** Switch between the classic, helpful J.A.R.V.I.S. and the witty, sarcastic "Stark Protocol" to tailor your conversational experience.
 
-### 🎙️ Voice & Audio Interaction
-*   **Voice Commands:** Full speech-to-text integration allows you to speak commands naturally.
-*   **Voice Output:** J.A.R.V.I.S. responds with a synthesized voice, enhancing the assistant experience.
-*   **Voice Calibration:** A unique calibration module analyzes your speaking pace and clarity to adjust the AI's response speed, creating a more synchronized conversation.
-*   **Immersive UI Sounds:** Procedurally generated sound effects provide satisfying auditory feedback for all interactions.
+### 🎙️ Multimodal Interaction
+- **Voice Commands & Synthesis:** Full speech-to-text and text-to-speech capabilities enable hands-free operation and auditory feedback.
+- **Voice Calibration:** A unique module analyzes your speech patterns to adjust the AI's response speed for a more synchronized conversation.
+- **Versatile Attachments:** Go beyond text by uploading images for analysis, documents for summarization, audio for transcription, or sharing your location for contextual queries.
 
-### 🚀 Advanced Generative Modes
-*   **👁️ Vision Mode:** Activate your camera to stream video. Capture an image and ask J.A.R.V.I.S. to analyze and describe what it sees.
-*   **🎨 Image Studio (Design Mode):** Describe an initial concept and have J.A.R.V.I.S. generate an image. Then, use conversational commands to interactively edit the image—add objects, change colors, alter the background, and more, leveraging the `gemini-2.5-flash-image-preview` model.
-*   **🎬 Simulation Mode:** Describe a scenario (e.g., "a high-speed chase through a neon city") and watch J.A.R.V.I.S. generate a short video clip using the `veo-2.0-generate-001` model.
+### 🚀 Advanced Generative Suite
+- **👁️ Vision Mode:** Activate your camera to stream your surroundings, capture a frame, and ask J.A.R.V.I.S. to analyze and describe what it sees.
+- **🎨 Image Studio:** Generate images from a text prompt using `imagen-4.0-generate-001`. Then, conversationally edit the image by adding objects, changing backgrounds, and more with the `gemini-2.5-flash-image-preview` model.
+- **🎬 Simulation Mode:** Describe a scenario and generate a short video clip using the `veo-2.0-generate-001` model.
 
-### 📎 Versatile Input Methods
-J.A.R.V.I.S. accepts more than just text and voice commands. Use the attachment menu to:
-*   **Upload Media:** Analyze images from your gallery.
-*   **Analyze Documents:** Upload text files for summarization or analysis.
-*   **Transcribe Audio:** Provide an audio file for J.A.R.V.I.S. to transcribe.
-*   **Use Your Location:** Share your current location to get information about your surroundings and discover local spots.
-
-### ⚙️ System & Device Control
-*   **Reliable Command Protocol:** J.A.R.V.I.S. uses a strict JSON-only protocol for device commands, ensuring high reliability.
-*   **Web App Integration:** Issue commands to open a wide range of built-in websites and web apps, including YouTube, Gmail, Google Drive, GitHub, TradingView, WhatsApp, Replit, and Wikipedia.
-*   **Custom App Launcher:** Add your own favorite web apps to the launcher for quick, voice-activated access.
-*   **Integrated Search:** Directly ask J.A.R.V.I.S. to search Google or YouTube for specific queries.
-*   **System Functions:** Run simulated diagnostics or issue a shutdown command for a complete system lifecycle experience.
-*   **🏠 Home Automation Integration:** Connect directly to your Home Assistant instance via WebSockets. Control lights, locks, climate, fans, and scenes, and view camera feeds directly from the UI.
+### ⚙️ System Control & Integrations
+- **Reliable Command Protocol:** Utilizes a strict JSON-only protocol for device and system commands, ensuring high reliability and preventing conversational ambiguity.
+- **Web App Launcher:** Open a suite of integrated web apps (YouTube, Gmail, GitHub, etc.) via voice or text commands, with the ability to add your own custom apps.
+- **🏠 Home Automation:** Connects directly to your Home Assistant instance via WebSockets to control lights, locks, climate, and view camera feeds from the UI.
 
 ### 🎨 Futuristic HUD & Deep Customization
-*   **Dynamic Panel-Based UI:** A stunning and flexible interface built with React and Tailwind CSS. Major functions like Vision Mode, Settings, and the Control Center open in a dedicated side-panel, resizing the main chat view without ever overlapping it. This creates a true, non-colliding command center experience.
-*   **Sleek Animations:** The interface features smooth, responsive animations for opening and closing panels, making the UI feel alive and high-tech.
-*   **Theme Editor:** In-depth settings allow you to customize the entire look and feel:
-    *   **Colors:** Change the primary UI color and panel background colors with a color picker or choose from presets.
-    *   **Dynamic Persona:** Switch between the classic, helpful J.A.R.V.I.S. and the witty, sarcastic "Stark Protocol" persona to tailor your conversational experience.
-    *   **Theme:** Switch between "Dark" and "Light" modes.
-    *   **Visual Effects:** Toggle a background grid, scanline overlay, and a text flicker effect for the perfect sci-fi aesthetic.
-*   **Custom Boot Sequence:** Choose between a holographic boot animation or upload your own video for a personalized system startup.
+- **Dynamic Panel-Based UI:** A stunning and flexible interface built with React and Tailwind CSS. Modules open in a dedicated side-panel, resizing the main view for a true, non-colliding command center experience.
+- **In-Depth Theme Editor:** Customize the entire look and feel, including primary/panel colors, visual effects (grid, scanlines), and light/dark modes.
+- **Custom Boot/Shutdown:** Choose between a holographic animation or upload your own videos for a personalized system startup and shutdown sequence.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-*   **Frontend:** React, TypeScript
-*   **Styling:** Tailwind CSS with a highly customized, themeable design system.
-*   **AI Models:** Google Gemini API (`@google/genai`)
-    *   **Chat & Vision:** `gemini-2.5-flash`
-    *   **Image Generation:** `imagen-4.0-generate-001`
-    *   **Image Editing:** `gemini-2.5-flash-image-preview`
-    *   **Video Generation:** `veo-2.0-generate-001`
-*   **Browser Storage:** IndexedDB for storing custom boot/shutdown videos and user-added application definitions.
-*   **Web APIs:**
-    *   **Web Speech API:** `SpeechRecognition` for voice input and `SpeechSynthesis` for voice output.
-    *   **Web Audio API:** For generating procedural UI sound effects.
-    *   **MediaDevices API:** `getUserMedia` for camera access in Vision Mode.
-*   **Modules:** Loaded directly in the browser via `aistudiocdn.com` (no build step needed).
+-   **Frontend:** React, TypeScript
+-   **Styling:** Tailwind CSS with a highly customized, themeable design system.
+-   **AI Models:** Google Gemini API (`@google/genai`)
+    -   **Chat & Vision:** `gemini-2.5-flash`
+    -   **Image Generation:** `imagen-4.0-generate-001`
+    -   **Image Editing:** `gemini-2.5-flash-image-preview`
+    -   **Video Generation:** `veo-2.0-generate-001`
+-   **Browser Storage:** IndexedDB for storing custom media assets and user-defined application links.
+-   **Web APIs:**
+    -   **Web Speech API:** `SpeechRecognition` & `SpeechSynthesis`
+    -   **Web Audio API:** For procedural UI sound effects
+    -   **MediaDevices API:** `getUserMedia` for camera access
 
 ---
 
@@ -104,71 +98,54 @@ This project is designed to run directly in the browser without a build step.
     Navigate to the local server's address (e.g., `http://localhost:3000`).
 
 4.  **Grant Permissions:**
-    Upon first use of certain features, the application will request permission to use your **camera** (for Vision Mode) and **microphone** (for voice commands). You must grant these permissions for full functionality.
+    Upon first use, the application will request permission to use your **camera** and **microphone**. You must grant these permissions for full functionality.
 
 ---
 
-## 🤖 How It Works
+## 🤖 System Architecture
 
 ### The J.A.R.V.I.S. Protocol
+The core of the AI's functionality is defined by a detailed **system instruction** provided to the Gemini model. This prompt establishes the J.A.R.V.I.S. personality and defines a strict, JSON-first communication protocol.
 
-The core of the AI's functionality is defined by a detailed **system instruction** provided to the Gemini model (`services/aiOrchestrator.ts`). This prompt establishes the J.A.R.V.I.S. personality and defines a strict communication protocol. There are two main interaction modes:
+-   **Device Control:** When a command is interpreted as an action (e.g., opening a URL, controlling a smart device), the AI responds **only with a JSON object**. This structured data is then parsed by the frontend to execute the command, ensuring high reliability.
+-   **Conversational Interaction:** For all other queries, the AI engages in natural, text-based conversation, adopting the specified persona.
 
-1.  **Device Control Protocol:** When a user's command is interpreted as an action (like opening a URL or controlling a smart device), the AI is instructed to respond **only with a JSON object**. This structured data is then parsed by the frontend to execute the command. This prevents conversational filler and ensures reliable command execution.
+### Application Structure
+The UI is a single-page application built with React and controlled by a central state machine (`App.tsx`). This root component manages all state, user input, and orchestrates communication between services.
 
-2.  **Conversational Interaction:** For any other query, the AI engages in a natural, text-based conversation, adopting the J.A.R.V.I.S. persona.
-
-### Application State & Components
-
-The UI is controlled by a central `AppState` enum (`App.tsx`) which dictates the visual feedback for the user (e.g., `THINKING`, `LISTENING`, `SPEAKING`). The application is broken down into a series of modular components:
-
-*   `App.tsx`: The root component that manages all state, user input, and orchestrates communication with services and panels.
-*   `services/aiOrchestrator.ts`: A dedicated module for all interactions with the `@google/genai` SDK, containing the system prompt and API call logic.
-*   `hooks/`: Reusable hooks for managing sound effects, speech synthesis, and speech recognition.
-*   `components/`: A comprehensive library of UI components, including:
-    *   `ChatLog.tsx`: The scrollable chat history panel.
-    *   `TacticalSidebar.tsx`: The icon-based sidebar for launching modules.
-    *   **Module Panels** (`VisionMode.tsx`, `GenerativeStudio.tsx`, etc.): Self-contained panels for the application's advanced features that appear in a dedicated screen area.
+-   **`services/`:** Contains modules for all external interactions, most notably `aiOrchestrator.ts`, which handles all communication with the `@google/genai` SDK.
+-   **`hooks/`:** Reusable hooks for managing sound effects, speech synthesis, and speech recognition.
+-   **`components/`:** A comprehensive library of UI components, including the main chat log, the tactical sidebar, and self-contained panels for advanced features like Vision Mode and the Generative Studio.
 
 ---
 
 ## 🔧 Troubleshooting
 
-*   **API Key Not Valid Error:** This means the `API_KEY` environment variable is either not set or incorrect. Please double-check your setup from the [Getting Started](#getting-started) section.
-*   **Quota Exceeded Error:** You have made too many requests to the Gemini API in a short period. Please check your Google AI Platform quotas and billing status.
-*   **Microphone/Camera Not Working:**
-    *   Ensure you have granted the necessary permissions when the browser prompted you.
-    *   If you denied them by accident, you'll need to go into your browser's site settings for this page and manually allow camera and microphone access.
-    *   The Web Speech API for voice recognition is not supported in all browsers. For the best experience, use a modern version of Google Chrome.
-*   **Custom Boot Video Fails to Load:** The video might be in an unsupported format, or there could be an issue with your browser's IndexedDB storage. Try using a standard `.mp4` file or clearing the site's storage data and re-uploading.
+-   **API Key Not Valid Error:** The `API_KEY` environment variable is either not set or incorrect. Please double-check your setup.
+-   **Quota Exceeded Error:** You have exceeded your request limit for the Gemini API. Check your Google AI Platform quotas and billing status.
+-   **Microphone/Camera Not Working:**
+    -   Ensure you have granted the necessary browser permissions. If you denied them accidentally, you must change the site settings for this page in your browser to allow access.
+    -   The Web Speech API is not supported in all browsers. For the best experience, use a modern version of Google Chrome.
+-   **Custom Boot Video Fails to Load:** The video may be in an unsupported format, or there could be an issue with IndexedDB storage. Try using a standard `.mp4` file or clearing the site's storage data and re-uploading.
 
 ---
 
-## 🗺️ Future Roadmap
+## 🗺️ Future Development
 
-This section outlines potential future development paths for the J.A.R.V.I.S. project, ensuring architectural decisions made today facilitate long-term goals.
+This section outlines potential future development paths for the project.
 
-### Mobile Application (React Native)
+-   **Mobile Application (React Native)**
+    -   **Shared Core Logic:** The platform-agnostic TypeScript logic (e.g., `aiOrchestrator.ts`) can be extracted into a shared library.
+    -   **Native UI Layer:** A new UI layer built with React Native for a truly native experience on iOS and Android.
+    -   **Native Modules:** Leverage native capabilities for features like secure authentication, background tasks, and deeper system integration.
 
-To bring the J.A.R.V.I.S. experience to mobile devices, a native application is the logical next step. The current architecture has been designed with this in mind.
+-   **Cloud Storage Integration (Dropbox, Google Drive)**
+    -   **Secure Authentication:** Implement robust OAuth 2.0 flows for users to securely connect their accounts.
+    -   **File Management & Analysis:** Allow users to browse, select, and have the AI analyze documents directly from their cloud storage.
 
-*   **Shared Core Logic:** The application's core intelligence—including the AI interaction logic in `aiOrchestrator.ts`, system prompts, and utility functions—is written in platform-agnostic TypeScript. This logic can be extracted into a shared library or module.
-*   **Decoupled UI Layers:**
-    *   **Web (Current):** The existing React application serves as the UI layer for web browsers.
-    *   **Mobile (Future):** A new UI layer will be built using **React Native**. This will allow for a truly native look, feel, and performance on both iOS and Android.
-*   **Native Module Integration:** A React Native version would leverage native device capabilities. This is where libraries such as `react-native-app-auth` would be used to handle secure, native authentication flows, providing a more seamless user experience than web-based OAuth redirects.
+-   **Proactive Information Synthesis**
+    -   Integrate with personal information services (e.g., email, calendar) to proactively provide warnings, surface relevant documents for upcoming meetings, and offer timely information without being prompted.
 
-### Cloud Storage Integration (Dropbox, Google Drive)
-
-To enhance data persistence and cross-platform access, direct integration with cloud storage providers is planned. This will enable J.A.R.V.I.S. to access and analyze user-provided documents from their cloud accounts securely.
-
-*   **Secure Authentication:** Implement robust OAuth 2.0 flows for both Google Drive and Dropbox, allowing users to securely connect their accounts.
-*   **File Management:** Users will be able to browse, select, upload, and download files from their cloud storage directly within the J.A.R.V.I.S. interface.
-*   **AI Analysis:** The core AI will be able to analyze documents and other files from the user's cloud storage, expanding its contextual understanding and utility.
-
-### Proactive Information Synthesis
-To move beyond a purely reactive role, a future version of J.A.R.V.I.S. will integrate with personal information services like email and calendar. This will enable it to proactively warn you about upcoming meetings, automatically pull up relevant documents, and provide timely information without you ever asking.
-
-### Advanced Agency & Tool Use
-*   **Dynamic Action Chaining:** The current multi-tool protocol is powerful but static; it executes a pre-defined sequence of commands. A more advanced agent could dynamically chain actions, where the output of one step becomes the input for the next (e.g., "Find the top 3 Italian restaurants near me, check their ratings, and then book a table for two at the best one for 8 PM tonight.").
-*   **Screen Context Awareness:** A key feature of advanced agents is the ability to "see" your screen. This allows you to say things like, "Summarize the article I'm reading," or "What do you think of this design in Figma?"
+-   **Advanced Agency & Tool Use**
+    -   Implement dynamic action chaining, where the output of one tool can be used as the input for the next, enabling more complex, multi-step tasks.
+    -   Explore screen context awareness to allow J.A.R.V.I.S. to "see" and interact with the content the user is currently viewing.
