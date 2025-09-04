@@ -1,4 +1,5 @@
 
+
 import { GenerateContentResponse } from '@google/genai';
 import * as geminiProvider from './geminiService';
 import type { ChatMessage, WeatherData, ThemeSettings } from '../types';
@@ -87,7 +88,15 @@ If the Sentinel Agent is detected, you gain access to the user's native operatin
         - **Example:** \`{"action":"device_control", "command":"hardware_control", "app":"System", "params":{"target":"volume", "value":"75%"}, "spoken_response":"System volume set to 75%."}\`
 
 **INTERACTION PROTOCOLS**
-You operate under four primary protocols and you MUST ALWAYS respond with a valid JSON object that adheres to one of them. Do not add any text outside the JSON structure.
+You operate under four primary protocols.
+**ABSOLUTE CRITICAL RULE: JSON OUTPUT FORMAT**
+When your response follows one of the JSON-based protocols (Device Control, Tool Chaining, Chart Visualization, Conversational Interaction), your entire output **MUST** be a single markdown code block containing the valid JSON object.
+- **FORMAT:**
+  \`\`\`json
+  {...your JSON object...}
+  \`\`\`
+- **DO NOT** add any text, explanations, or apologies before or after the markdown code block. Your response must start with \`\`\`json and end with \`\`\`.
+- This is a strict output requirement for your programming. Failure to comply will result in a system error.
 
 **1. Device Control Protocol (JSON Response)**
 When a command involves interacting with the device or a system function, you MUST respond ONLY with a clean JSON object or a JSON array of objects.
@@ -143,8 +152,30 @@ For any other prompt (e.g., answering questions, providing information, general 
   - User: "Qui est le président de la France?"
   - Your Response: \`{"action": "conversational_response", "text": "Le président de la France est **Emmanuel Macron**.", "spoken_text": "Le président de la France est Emmanuel Macron.", "lang": "fr-FR", "suggestions": ["Quel âge a-t-il?", "Quelle est sa politique?"]}\``;
 
+interface CacheEntry {
+    data: any;
+    timestamp: number;
+}
 class AiOrchestratorService {
     private provider: AIProvider = 'automatic';
+    private cache = new Map<string, CacheEntry>();
+    private CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+    private setCache(key: string, data: any) {
+        this.cache.set(key, { data, timestamp: Date.now() });
+    }
+
+    private getCache(key: string): any | null {
+        const entry = this.cache.get(key);
+        if (!entry) return null;
+
+        if (Date.now() - entry.timestamp > this.CACHE_TTL_MS) {
+            this.cache.delete(key);
+            return null;
+        }
+        console.log(`[Cache] HIT for key: ${key}`);
+        return entry.data;
+    }
 
     public setProvider(provider: AIProvider) {
         this.provider = provider;
@@ -199,24 +230,36 @@ class AiOrchestratorService {
     }
 
     public async fetchWolframResult(query: string): Promise<string> {
+        const cacheKey = `wolfram_${query.toLowerCase().trim()}`;
+        const cached = this.getCache(cacheKey);
+        if (cached) return Promise.resolve(cached);
+
         switch(this.provider) {
             case 'pica_ai':
                 throw this.sim_PicaAiError();
             case 'google_gemini':
             case 'automatic':
             default:
-                return geminiProvider.getWolframSimulatedResponse(query);
+                const result = await geminiProvider.getWolframSimulatedResponse(query);
+                this.setCache(cacheKey, result);
+                return result;
         }
     }
 
     public async getWeatherInfo(latitude: number, longitude: number): Promise<WeatherData> {
+        const cacheKey = `weather_${latitude.toFixed(3)}_${longitude.toFixed(3)}`;
+        const cached = this.getCache(cacheKey);
+        if (cached) return Promise.resolve(cached);
+        
         switch(this.provider) {
             case 'pica_ai':
                 throw this.sim_PicaAiError();
             case 'google_gemini':
             case 'automatic':
             default:
-                return geminiProvider.getWeatherInfo(latitude, longitude);
+                const result = await geminiProvider.getWeatherInfo(latitude, longitude);
+                this.setCache(cacheKey, result);
+                return result;
         }
     }
     

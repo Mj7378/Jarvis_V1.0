@@ -61,6 +61,22 @@ const handleGeminiError = (error: unknown, context: string): Error => {
     return customError;
 };
 
+// --- Resiliency Utility ---
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, context = 'operation'): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0) {
+      console.warn(`[${context}] Error detected. Retrying in ${delay}ms... (${retries} retries left)`);
+      await new Promise(res => setTimeout(res, delay));
+      // Recursively call with one less retry and double the delay (exponential backoff)
+      return withRetry(fn, retries - 1, delay * 2, context);
+    }
+    // If all retries fail, throw the final error
+    throw error;
+  }
+}
+
 export async function getAiResponseStream(
   prompt: string, 
   history: ChatMessage[],
@@ -68,56 +84,58 @@ export async function getAiResponseStream(
   systemInstruction: string,
   images?: { mimeType: string; data: string }[],
 ): Promise<AsyncGenerator<GenerateContentResponse>> {
-  try {
-    const contents: Content[] = history.map(msg => {
-      const parts: ({ text: string } | { inlineData: { mimeType: string, data: string } })[] = [{ text: msg.content }];
-      if (msg.imageUrl) {
-        // The app uses jpeg data URLs from camera capture and image generation.
-        parts.push({
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: msg.imageUrl.split(',')[1],
-          },
-        });
-      }
-      return {
-        role: msg.role,
-        parts,
-      };
-    });
-
-    const userParts: ({ text: string; } | { inlineData: { mimeType: string; data: string; }; })[] = [{ text: prompt }];
-    if (images && images.length > 0) {
-      for (const image of images) {
-          userParts.push({
+  const operation = async () => {
+      const contents: Content[] = history.map(msg => {
+        const parts: ({ text: string } | { inlineData: { mimeType: string, data: string } })[] = [{ text: msg.content }];
+        if (msg.imageUrl) {
+          parts.push({
             inlineData: {
-              mimeType: image.mimeType,
-              data: image.data,
+              mimeType: 'image/jpeg',
+              data: msg.imageUrl.split(',')[1],
             },
           });
+        }
+        return {
+          role: msg.role,
+          parts,
+        };
+      });
+
+      const userParts: ({ text: string; } | { inlineData: { mimeType: string; data: string; }; })[] = [{ text: prompt }];
+      if (images && images.length > 0) {
+        for (const image of images) {
+            userParts.push({
+              inlineData: {
+                mimeType: image.mimeType,
+                data: image.data,
+              },
+            });
+        }
       }
-    }
-    contents.push({ role: 'user', parts: userParts });
+      contents.push({ role: 'user', parts: userParts });
 
-    const config: GenerateContentConfig = {
-      systemInstruction: systemInstruction,
-      tools: [{googleSearch: {}}],
-    };
+      const config: GenerateContentConfig = {
+        systemInstruction: systemInstruction,
+        tools: [{googleSearch: {}}],
+      };
 
-    const response = await ai.models.generateContentStream({
-      model: model,
-      contents: contents,
-      config: config,
-    });
-
-    return response;
+      const response = await ai.models.generateContentStream({
+        model: model,
+        contents: contents,
+        config: config,
+      });
+      return response;
+  };
+  
+  try {
+      return await withRetry(operation, 3, 1000, 'AI Response Stream');
   } catch (error) {
-    throw handleGeminiError(error, "AI Response Stream");
+      throw handleGeminiError(error, "AI Response Stream");
   }
 }
 
 export async function getQuickDescription(imageBase64: string): Promise<string> {
-  try {
+  const operation = async () => {
     const imagePart = { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } };
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -127,6 +145,9 @@ export async function getQuickDescription(imageBase64: string): Promise<string> 
       }
     });
     return response.text;
+  };
+   try {
+    return await withRetry(operation, 2, 500, 'Quick Description');
   } catch (error) {
     console.error("Quick description failed:", error);
     return "Analysis temporarily unavailable.";
@@ -134,7 +155,7 @@ export async function getQuickDescription(imageBase64: string): Promise<string> 
 }
 
 export async function getWolframSimulatedResponse(query: string): Promise<string> {
-    try {
+    const operation = async () => {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{
@@ -146,13 +167,16 @@ export async function getWolframSimulatedResponse(query: string): Promise<string
             },
         });
         return response.text;
+    };
+    try {
+        return await withRetry(operation, 2, 1000, 'Wolfram Simulation');
     } catch (error) {
         throw handleGeminiError(error, "Wolfram Alpha Simulation");
     }
 }
 
 export async function getWeatherInfo(latitude: number, longitude: number): Promise<WeatherData> {
-    try {
+    const operation = async () => {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Based on the location latitude ${latitude} and longitude ${longitude}, provide the current weather information. I need the current temperature in Celsius, a brief weather condition description (e.g., "Cloudy", "Sunny", "Rain", "Snow"), the high and low temperatures for the day in Celsius, the chance of precipitation as a percentage, the city name, and the current day of the week.`,
@@ -177,14 +201,17 @@ export async function getWeatherInfo(latitude: number, longitude: number): Promi
         const jsonStr = response.text.trim();
         const weatherData = JSON.parse(jsonStr);
         return weatherData;
+    };
 
+    try {
+        return await withRetry(operation, 2, 1000, 'Weather Info');
     } catch (error) {
         throw handleGeminiError(error, "Weather Information");
     }
 }
 
 export async function streamTranslateText(text: string): Promise<AsyncGenerator<GenerateContentResponse>> {
-  try {
+  const operation = async () => {
     const response = await ai.models.generateContentStream({
       model: 'gemini-2.5-flash',
       contents: [{
@@ -196,13 +223,16 @@ export async function streamTranslateText(text: string): Promise<AsyncGenerator<
       },
     });
     return response;
+  };
+  try {
+    return await withRetry(operation, 3, 500, 'Stream Translation');
   } catch (error) {
     throw handleGeminiError(error, "Stream Translation");
   }
 }
 
 export async function transcribeAudio(base64Data: string, mimeType: string): Promise<string> {
-    try {
+    const operation = async () => {
         const audioPart = {
             inlineData: {
                 mimeType,
@@ -227,13 +257,16 @@ export async function transcribeAudio(base64Data: string, mimeType: string): Pro
         });
 
         return response.text;
+    };
+    try {
+        return await withRetry(operation, 2, 1000, 'Audio Transcription');
     } catch (error) {
         throw handleGeminiError(error, "Audio Transcription");
     }
 }
 
 export async function generateImage(prompt: string): Promise<string> {
-    try {
+    const operation = async () => {
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: prompt,
@@ -246,13 +279,16 @@ export async function generateImage(prompt: string): Promise<string> {
 
         const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
         return `data:image/jpeg;base64,${base64ImageBytes}`;
+    };
+    try {
+        return await withRetry(operation, 2, 2000, 'Image Generation');
     } catch (error) {
         throw handleGeminiError(error, "Image Generation");
     }
 }
 
 export async function editImage(prompt: string, imageBase64: string): Promise<string> {
-    try {
+    const operation = async () => {
         const imagePart = {
             inlineData: {
                 mimeType: 'image/jpeg', // The app always generates/uses jpeg
@@ -269,7 +305,6 @@ export async function editImage(prompt: string, imageBase64: string): Promise<st
             },
         });
 
-        // Find the image part in the response
         for (const part of response.candidates[0].content.parts) {
             if (part.inlineData) {
                 return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
@@ -277,9 +312,11 @@ export async function editImage(prompt: string, imageBase64: string): Promise<st
         }
         
         throw new Error("AI did not return an image. It may have refused the request.");
+    };
 
+    try {
+        return await withRetry(operation, 2, 2000, 'Image Editing');
     } catch (error) {
-        // Check if the error is from the API about safety settings
         if (error instanceof Error && (error.message.includes('safety policy') || error.message.includes('blocked'))) {
              const customError = new Error("The edit could not be completed due to safety restrictions.");
             (customError as any).appError = {
@@ -307,7 +344,7 @@ export async function generateVideo(prompt: string, imageBase64?: string): Promi
         if (imageBase64) {
             requestPayload.image = {
                 imageBytes: imageBase64,
-                mimeType: 'image/jpeg', // The app always generates/uses jpeg
+                mimeType: 'image/jpeg',
             };
         }
 

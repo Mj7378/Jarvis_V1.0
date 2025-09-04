@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon, DriveIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -257,23 +256,28 @@ const AIEngineSettingsPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' |
     };
 
     const providers = [
-        { id: 'automatic' as const, name: 'Automatic Selection' },
-        { id: 'google_gemini' as const, name: 'Google Gemini (Primary)' },
-        { id: 'pica_ai' as const, name: 'Pica AI (Secondary)' },
+        { id: 'automatic' as const, name: 'Automatic Selection', desc: 'Allows J.A.R.V.I.S. to dynamically select the best AI for the task, balancing speed, cost, and capability. Recommended for optimal performance.' },
+        { id: 'google_gemini' as const, name: 'Google Gemini (Primary)', desc: 'Forces all requests to use the primary, high-performance Gemini model. Use for tasks requiring maximum intelligence.' },
+        { id: 'pica_ai' as const, name: 'Pica AI (Secondary Fallback)', desc: 'Simulates switching to a secondary, lower-cost model. Demonstrates the system\'s ability to fall back if the primary AI is unavailable.' },
     ];
 
     return (
         <div className="space-y-2">
-            <p className="text-sm text-text-muted">Select the primary AI engine. "Automatic" allows J.A.R.V.I.S. to choose the best model for the task.</p>
-            <div className="space-y-2">
+            <p className="text-sm text-text-muted">
+                J.A.R.V.I.S. employs a hybrid AI strategy, switching between models to ensure resilience and efficiency. This aligns with your suggestions for combining multiple services and implementing fallback logic.
+            </p>
+            <div className="space-y-2 pt-2">
                 {providers.map(provider => (
                     <button 
                         key={provider.id} 
                         onClick={() => handleProviderChange(provider.id)}
-                        className={`w-full text-left p-2 rounded-md border transition-all duration-200 flex items-center justify-between ${themeSettings.aiProvider === provider.id ? 'bg-primary-t-20 border-primary' : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/80'}`}
+                        className={`w-full text-left p-3 rounded-md border transition-all duration-200 ${themeSettings.aiProvider === provider.id ? 'bg-primary-t-20 border-primary' : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/80'}`}
                     >
-                        <span>{provider.name} {provider.id === 'pica_ai' && <span className="text-xs text-yellow-400">(Simulated)</span>}</span>
-                        {themeSettings.aiProvider === provider.id && <CheckIcon className="w-5 h-5 text-primary"/>}
+                        <div className="flex justify-between items-center">
+                            <span className="font-bold">{provider.name} {provider.id === 'pica_ai' && <span className="text-xs text-yellow-400">(Simulated)</span>}</span>
+                            {themeSettings.aiProvider === provider.id && <CheckIcon className="w-5 h-5 text-primary"/>}
+                        </div>
+                        <p className="text-xs text-text-muted mt-1 pr-4">{provider.desc}</p>
                     </button>
                 ))}
             </div>
