@@ -190,6 +190,7 @@ declare global {
     webkitAudioContext: typeof AudioContext;
     SpeechRecognition: any;
     webkitSpeechRecognition: any;
+
     gapi: any;
     google: any;
   }

@@ -1,5 +1,6 @@
 
 
+
 import { GenerateContentResponse } from '@google/genai';
 import * as geminiProvider from './geminiService';
 import type { ChatMessage, WeatherData, ThemeSettings } from '../types';

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon, DriveIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -128,6 +129,14 @@ const VoiceAudioPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onTh
                         <span className="text-sm">Calibrate New Voice</span>
                     </button>
                 </div>
+            </div>
+            <div>
+                <h4 className="text-sm font-orbitron text-text-muted mb-2">Wake Word</h4>
+                <ToggleSwitch id="wake-word" label="Enable Wake Word" checked={themeSettings.wakeWordEnabled} onChange={v => handleSettingChange('wakeWordEnabled', v)} />
+                 <div className="p-2">
+                    <label htmlFor="wake-word-input" className="block text-sm text-slate-300 mb-1">Phrase</label>
+                    <input id="wake-word-input" type="text" value={themeSettings.wakeWord} onChange={e => handleSettingChange('wakeWord', e.target.value)} disabled={!themeSettings.wakeWordEnabled} className="w-full bg-slate-800/80 border border-primary-t-20 rounded-md p-2 focus:ring-2 ring-primary focus:outline-none text-sm disabled:opacity-50"/>
+                 </div>
             </div>
         </div>
     );

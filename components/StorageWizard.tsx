@@ -64,7 +64,7 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
              setDropboxToken(null);
              removeToken("dropbox_token");
         } else {
-             setError(`Dropbox error: ${e.message}`);
+             setError(`Dropbox error: ${e.message || 'An unknown error occurred.'}`);
         }
         console.error(e);
     }
@@ -72,7 +72,7 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
     // Google Drive
     try {
          if (gglToken) {
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${currentPath.google}' in parents&pageSize=50&fields=files(id,name,mimeType)`, {
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${currentPath.google}' in parents and trashed = false&pageSize=50&fields=files(id,name,mimeType)`, {
                 headers: { Authorization: `Bearer ${gglToken}` }
             });
             if (res.status === 401) {
@@ -91,19 +91,13 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
             newFiles.push(...mapped);
         }
     } catch (e: any) {
-         if (!error) setError(`Google Drive error: ${e.message}`);
+         if (!error) setError(`Google Drive error: ${e.message || 'An unknown error occurred.'}`);
          console.error(e);
     }
     
     setFiles(newFiles.sort((a,b) => a.name.localeCompare(b.name)));
     setIsLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPath, error]);
-
-  useEffect(() => {
-    setDropboxToken(getToken("dropbox_token"));
-    setGoogleToken(getToken("google_token"));
-  }, []);
+  }, [currentPath.dropbox, currentPath.google, dropboxToken, googleToken, error]);
 
   // OAuth redirect handler
   useEffect(() => {
@@ -112,16 +106,58 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
         if (event.data.type === 'oauth-token' && event.data.hash) {
             const params = new URLSearchParams(event.data.hash.substring(1));
             const token = params.get('access_token');
-            if (token) {
+            const state = params.get('state');
+
+            if (token && state === 'dropbox') {
                 saveToken("dropbox_token", token);
                 setDropboxToken(token);
                 listFiles(token, googleToken);
+            }
+             if (token && state === 'google') {
+                saveToken("google_token", token);
+                setGoogleToken(token);
+                listFiles(dropboxToken, token);
             }
         }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [googleToken, listFiles]);
+  }, [googleToken, dropboxToken, listFiles]);
+  
+  // Effect to load tokens and files on mount
+  useEffect(() => {
+    const dbxToken = getToken("dropbox_token");
+    const gglToken = getToken("google_token");
+    if (dbxToken) setDropboxToken(dbxToken);
+    if (gglToken) setGoogleToken(gglToken);
+    if (dbxToken || gglToken) {
+        listFiles(dbxToken, gglToken);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleConnectDropbox = () => {
+    if (!themeSettings.dropboxClientId) {
+        setError("Dropbox Client ID is not configured in settings.");
+        onNavigateToIntegrations();
+        return;
+    }
+    const redirectUri = window.location.origin + '/redirect.html';
+    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${themeSettings.dropboxClientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&state=dropbox`;
+    window.open(authUrl, 'dropbox-auth', 'width=600,height=700,popup');
+  };
+
+  const handleConnectGoogle = () => {
+      if (!themeSettings.googleClientId) {
+          setError("Google Client ID is not configured in settings.");
+          onNavigateToIntegrations();
+          return;
+      }
+      const redirectUri = window.location.origin + '/redirect.html';
+      const scope = 'https://www.googleapis.com/auth/drive.readonly';
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${themeSettings.googleClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&state=google`;
+      window.open(authUrl, 'google-auth', 'width=600,height=700,popup');
+  };
   
   const disconnectDropbox = () => {
     removeToken("dropbox_token");
@@ -163,8 +199,8 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
         } else {
             throw new Error("Could not retrieve file content.");
         }
-    } catch (e) {
-        setError("Could not analyze file. It might be too large or not a text file.");
+    } catch (e: any) {
+        setError(e.message || "Could not analyze file. It might be too large or not a text file.");
         console.error(e);
     } finally {
         setIsLoading(false);
@@ -189,7 +225,7 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
         <div className="grid grid-cols-2 gap-4">
             <div className="relative">
                 <button
-                    onClick={!dropboxToken ? onNavigateToIntegrations : undefined}
+                    onClick={handleConnectDropbox}
                     disabled={!!dropboxToken}
                     className="w-full px-4 py-2 bg-blue-600/20 rounded-lg hover:bg-blue-600/40 border border-blue-500/50 text-blue-300 transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
                 >
@@ -199,7 +235,7 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
             </div>
             <div className="relative">
                  <button
-                    onClick={!googleToken ? onNavigateToIntegrations : undefined}
+                    onClick={handleConnectGoogle}
                     disabled={!!googleToken}
                     className="w-full px-4 py-2 bg-green-600/20 rounded-lg hover:bg-green-600/40 border border-green-500/50 text-green-300 transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
                  >
@@ -249,9 +285,12 @@ const StorageWizard: React.FC<StorageWizardProps> = ({ onClose, themeSettings, o
 
     {previewUrl && (
         <motion.div
-          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 animate-fade-in-fast"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          // FIX: Spreading motion props to work around a TypeScript type inference issue with framer-motion.
+          {...{
+            initial: { opacity: 0 },
+            animate: { opacity: 1 },
+            className: "fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 animate-fade-in-fast",
+          }}
         >
           <div className="holographic-panel w-full max-w-4xl h-[80vh] flex flex-col relative">
             <button

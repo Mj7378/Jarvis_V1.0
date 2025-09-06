@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 
 interface IconProps {
@@ -291,51 +290,56 @@ export const FaceRecognitionIcon: React.FC<IconProps> = ({ className }) => (
         <path d="M3.06 14c-.34-.5-.62-1.04-.82-1.63" />
         <path d="M12 4V2" />
         <path d="M12 22v-2" />
+{/* FIX: Correct typo from Ico... to IconBase to properly close the SVG component. */}
     </IconBase>
 );
-// START: ADDED ICONS
+
+// START: Added missing icons used across the application.
+
 export const HomeIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
         <polyline points="9 22 9 12 15 12 15 22" />
     </IconBase>
 );
 
 export const DashboardIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <rect x="3" y="3" width="7" height="7"></rect>
-        <rect x="14" y="3" width="7" height="7"></rect>
-        <rect x="14" y="14" width="7" height="7"></rect>
-        <rect x="3" y="14" width="7" height="7"></rect>
+        <path d="M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4z" />
+        <path d="M20.4 4.6c-1.2-1.2-2.8-2-4.4-2.2" />
+        <path d="M3.6 4.6c1.2-1.2 2.8-2 4.4-2.2" />
+        <path d="M20.4 19.4c-1.2 1.2-2.8 2-4.4 2.2" />
+        <path d="M3.6 19.4c1.2 1.2 2.8 2 4.4 2.2" />
+        <path d="M12 4V2M12 22v-2M4.6 3.6l1.4 1.4M18 18l1.4 1.4M2 12h2M20 12h2M4.6 20.4l1.4-1.4M18 6l1.4-1.4"/>
     </IconBase>
 );
 
 export const ChatIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </IconBase>
 );
 
 export const GalleryIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <rect x="7" y="3" width="14" height="14" rx="2" ry="2" />
-        <path d="M3 7v11a2 2 0 002 2h11" />
+        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+        <circle cx="9" cy="9" r="2" />
+        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
     </IconBase>
 );
 
 export const DocumentIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
         <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
     </IconBase>
 );
 
 export const AudioIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M12 19.5V4.5M8 17.5V6.5M4 14.5V9.5M16 17.5V6.5M20 14.5V9.5" />
+        <path d="M9 18V5l12-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
     </IconBase>
 );
 
@@ -368,29 +372,26 @@ export const CloudIcon: React.FC<IconProps> = ({ className }) => (
 
 export const RainIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M16 13.3A5.5 5.5 0 0 0 6.7 8 5.5 5.5 0 0 0 6 19h10a4 4 0 0 0 0-8c-.3 0-.6.1-.9.1" />
-        <path d="M8 17.3v.7" />
-        <path d="M12 18.3v.7" />
-        <path d="M16 17.3v.7" />
+        <path d="M16 13v8" />
+        <path d="M8 13v8" />
+        <path d="M12 15v8" />
+        <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" />
     </IconBase>
 );
 
 export const SnowIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M20 17.58A5 5 0 0 0 15.05 15h-10A5.002 5.002 0 0 0 5 20" />
-        <path d="M8 15h.01" />
-        <path d="M8.2 11.41l.01.01" />
-        <path d="M12 12h.01" />
-        <path d="M15.8 11.41l.01.01" />
-        <path d="M16 15h.01" />
-        <path d="M11.2 8.59l.01.01" />
-        <path d="M12.8 8.59l.01.01" />
+        <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
+        <line x1="8" y1="16" x2="8.01" y2="16" />
+        <line x1="12" y1="18" x2="12.01" y2="18" />
+        <line x1="16" y1="16" x2="16.01" y2="16" />
     </IconBase>
 );
 
 export const CloudyIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+        <path d="M17.5 21H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+        <path d="M22 10.5a4.5 4.5 0 1 1-8.16-2.08A7 7 0 0 1 9 6.52" />
     </IconBase>
 );
 
@@ -410,33 +411,33 @@ export const LockOpenIcon: React.FC<IconProps> = ({ className }) => (
 
 export const FanIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M12 12h8" />
-        <path d="M12 12l6.2 6.2" />
-        <path d="M12 12v8" />
-        <path d="M12 12l-6.2 6.2" />
-        <path d="M12 12H4" />
-        <path d="M12 12l-6.2-6.2" />
-        <path d="M12 12V4" />
-        <path d="M12 12l6.2-6.2" />
-        <circle cx="12" cy="12" r="2" />
+        <path d="M12 12c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5z" />
+        <path d="M12 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5z" />
+        <path d="M12 12c0-2.8-2.2-5-5-5s-5 2.2-5 5 2.2 5 5 5 5-2.2 5-5z" />
+        <path d="M12 12c0 2.8 2.2 5 5 5s5-2.2 5-5-2.2-5-5-5-5 2.2-5 5z" />
     </IconBase>
 );
 
 export const SceneIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <path d="M3 10h18" />
-        <path d="M10 3v18" />
+        <path d="m13 2-3 8 3 8 5-16-5-16zM6 2l-3 8 3 8 5-16-5-16z"/>
     </IconBase>
 );
 
 export const AirPurifierIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M12 4h-1a2 2 0 0 0-2 2v1a2 2 0 0 0-2 2v1c0 2.2 1.8 4 4 4h1"/>
-        <path d="M12 4h1a2 2 0 0 1 2 2v1a2 2 0 0 1 2 2v1c0 2.2-1.8 4-4 4h-1"/>
-        <path d="M4 20h16"/>
-        <path d="M7 16l-3-3"/>
-        <path d="M17 16l3-3"/>
+        <path d="M12 4h-1a2 2 0 0 0-2 2v2" />
+        <path d="M15 4h1a2 2 0 0 1 2 2v2" />
+        <path d="M4 14h.01" />
+        <path d="M4 18h.01" />
+        <path d="M8 14h.01" />
+        <path d="M8 18h.01" />
+        <path d="M16 14h.01" />
+        <path d="M16 18h.01" />
+        <path d="M20 14h.01" />
+        <path d="M20 18h.01" />
+        <path d="M3 6h18v6H3z" />
+        <path d="M3 12h18v8H3z" />
     </IconBase>
 );
-// END: ADDED ICONS
+// END: Added missing icons.

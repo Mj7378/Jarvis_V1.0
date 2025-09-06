@@ -47,6 +47,7 @@ This project serves as a comprehensive showcase for building complex AI applicat
 - **Reliable Command Protocol:** Utilizes a strict JSON-only protocol for device and system commands, ensuring high reliability and preventing conversational ambiguity.
 - **Web App Launcher:** Open a suite of integrated web apps (YouTube, Gmail, GitHub, etc.) via voice or text commands, with the ability to add your own custom apps.
 - **🏠 Home Automation:** Connects directly to your Home Assistant instance via WebSockets to control lights, locks, climate, and view camera feeds from the UI.
+- **☁️ Cloud Storage Wizard:** Securely connect your Dropbox and Google Drive accounts via OAuth. Browse your files in a dedicated panel and ask J.A.R.V.I.S. to analyze the content of your documents directly from the cloud.
 
 ### 🎨 Futuristic HUD & Deep Customization
 - **Dynamic Panel-Based UI:** A stunning and flexible interface built with React and Tailwind CSS. Modules open in a dedicated side-panel, resizing the main view for a true, non-colliding command center experience.
@@ -75,29 +76,23 @@ This project serves as a comprehensive showcase for building complex AI applicat
 ## 🚀 Getting Started
 
 ### Prerequisites
-
-1.  A modern web browser (Chrome recommended for best Web API compatibility).
-2.  A valid Google Gemini API key.
+A modern web browser (Chrome recommended for best Web API compatibility).
 
 ### Installation & Running
 
-This project is designed to run directly in the browser without a build step.
+This project is designed to run directly in the browser without a build step. The environment is pre-configured with the necessary Google Gemini API key.
 
-1.  **Set up Environment Variables:**
-    The application requires your Google Gemini API key to be configured as an environment variable. You must ensure this variable is available in the environment where you serve the application.
-    *   `API_KEY`: Your Google Gemini API key.
-
-2.  **Serve the files:**
+1.  **Serve the files:**
     Use any simple static file server to serve the project's root directory.
     ```bash
     # If you have Node.js installed, you can use the `serve` package
     npx serve
     ```
 
-3.  **Open in Browser:**
+2.  **Open in Browser:**
     Navigate to the local server's address (e.g., `http://localhost:3000`).
 
-4.  **Grant Permissions:**
+3.  **Grant Permissions:**
     Upon first use, the application will request permission to use your **camera** and **microphone**. You must grant these permissions for full functionality.
 
 ---
@@ -138,10 +133,6 @@ This section outlines potential future development paths for the project.
     -   **Shared Core Logic:** The platform-agnostic TypeScript logic (e.g., `aiOrchestrator.ts`) can be extracted into a shared library.
     -   **Native UI Layer:** A new UI layer built with React Native for a truly native experience on iOS and Android.
     -   **Native Modules:** Leverage native capabilities for features like secure authentication, background tasks, and deeper system integration.
-
--   **Cloud Storage Integration (Dropbox, Google Drive)**
-    -   **Secure Authentication:** Implement robust OAuth 2.0 flows for users to securely connect their accounts.
-    -   **File Management & Analysis:** Allow users to browse, select, and have the AI analyze documents directly from their cloud storage.
 
 -   **Proactive Information Synthesis**
     -   Integrate with personal information services (e.g., email, calendar) to proactively provide warnings, surface relevant documents for upcoming meetings, and offer timely information without being prompted.

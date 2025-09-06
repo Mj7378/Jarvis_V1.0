@@ -44,6 +44,9 @@ const TacticalSidebar: React.FC<TacticalSidebarProps> = ({ onTogglePanel, active
         { label: "Settings", panel: 'SETTINGS', icon: <SettingsIcon className="w-7 h-7" /> },
     ];
 
+    const controlCenterAction = panelActions.find(action => action.panel === 'CONTROL_CENTER');
+    const otherPanelActions = panelActions.filter(action => action.panel !== 'CONTROL_CENTER');
+
     return (
         <aside className="hud-sidebar-dock flex flex-col items-center justify-between py-4">
              <div className="flex flex-col items-center gap-4">
@@ -53,8 +56,17 @@ const TacticalSidebar: React.FC<TacticalSidebarProps> = ({ onTogglePanel, active
                     onClick={() => onToggleView(isDashboard ? 'CHAT_FOCUS' : 'DASHBOARD')}
                     isActive={true}
                 />
+                 {controlCenterAction && (
+                    <DockButton 
+                        key={controlCenterAction.panel}
+                        label={controlCenterAction.label}
+                        icon={controlCenterAction.icon}
+                        onClick={() => onTogglePanel(controlCenterAction.panel)}
+                        isActive={activePanels.has(controlCenterAction.panel)}
+                    />
+                )}
                  <div className="w-8 h-px bg-primary-t-20 my-2"></div>
-                {panelActions.map(action => (
+                {otherPanelActions.map(action => (
                     <DockButton 
                         key={action.panel}
                         label={action.label}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PowerIcon, SettingsIcon, DashboardIcon, ChatIcon } from './Icons';
+import { SettingsIcon } from './Icons';
 import Logo from './Logo';
 import WeatherWidget from './WeatherWidget';
 
@@ -83,13 +83,6 @@ const Header: React.FC<{
                     </div>
                     {/* Controls */}
                     <div className="header-controls h-full flex items-center pr-4 md:pr-6 pl-4 md:pl-6 border-l-2 border-primary-t-20 gap-2 md:gap-4">
-                        <button
-                            onClick={onToggleControlCenter}
-                            className="header-control-button w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50 transform hover:scale-110 active:scale-100"
-                            aria-label={'Toggle Control Center'}
-                        >
-                           <DashboardIcon className="w-6 h-6" />
-                        </button>
                         <button
                             onClick={onOpenSettings}
                             className="header-control-button w-10 h-10 rounded-full flex items-center justify-center text-primary/70 hover:bg-primary/20 hover:text-primary border border-primary/50 hover:border-primary transition-all duration-300 hover:shadow-[0_0_15px] hover:shadow-primary/50 transform hover:scale-110 active:scale-100"

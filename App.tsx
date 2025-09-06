@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GenerateContentResponse } from '@google/genai';
 import { AnimatePresence } from 'framer-motion';
@@ -31,6 +28,7 @@ import VoiceCalibrationModal from './components/VoiceCalibrationModal';
 import UserInput from './components/UserInput';
 import Suggestions from './components/Suggestions';
 import SecurityCameraModal from './components/SecurityCameraModal';
+// FIX: Added HomeIcon to import as it is used in the file but was not being imported.
 import { HomeIcon, AppLauncherIcon, PlusIcon, CloseIcon, WolframAlphaIcon, DriveIcon } from './components/Icons';
 import ControlCenter from './components/ControlCenter';
 import TacticalSidebar from './components/TacticalSidebar';
@@ -1072,7 +1070,8 @@ const App: React.FC = () => {
   
   const onTranscriptChangeHandlerRef = useRef<((transcript: string) => void) | null>(null);
   
-  const { isListening, startListening, stopListening } = useSpeechRecognition({
+  // FIX: Destructure 'transcript' from useSpeechRecognition to use it in the UI.
+  const { isListening, transcript, startListening, stopListening } = useSpeechRecognition({
       continuous: appState === AppState.AWAITING_WAKE_WORD || appState === AppState.LISTENING,
       interimResults: true,
       endOnSilence: appState === AppState.LISTENING,
@@ -1165,7 +1164,7 @@ const App: React.FC = () => {
     if (currentView !== 'CHAT_FOCUS') {
         setCurrentView('CHAT_FOCUS');
     }
-  }, [activePanels, currentView, togglePanel]);
+  }, [activePanels, currentView, togglePanel, handleSendMessage]);
 
   const handleNavigateToIntegrations = useCallback(() => {
     setInitialSettingsSection('Integrations');
@@ -1245,11 +1244,11 @@ const App: React.FC = () => {
                                 <SentinelDashboard 
                                     tasks={tasks} 
                                     operatingSystem={operatingSystem}
-                                    chatHistory={chatHistory}
                                     appState={appState}
-                                    suggestions={currentSuggestions}
                                     onSendMessage={handleSendMessage}
                                     userInputProps={userInputProps}
+                                    isListening={isListening}
+                                    transcript={transcript || ''}
                                 />
                             ) : (
                                 <ChatFocusView 

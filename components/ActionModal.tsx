@@ -134,12 +134,15 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ id, title,
 
 
   return (
+    // FIX: Spread motion props to work around a TypeScript type inference issue with framer-motion.
     <motion.div
-        layout
-        initial={{ opacity: 0, x: 50, scale: 0.9 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: 50, scale: 0.9, transition: { duration: 0.2 } }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        {...{
+            layout: true,
+            initial: { opacity: 0, x: 50, scale: 0.9 },
+            animate: { opacity: 1, x: 0, scale: 1 },
+            exit: { opacity: 0, x: 50, scale: 0.9, transition: { duration: 0.2 } },
+            transition: { type: 'spring', stiffness: 300, damping: 30 }
+        }}
         className="holographic-panel w-full max-w-sm !p-3 pointer-events-auto"
     >
         <div className="flex items-start gap-3">
