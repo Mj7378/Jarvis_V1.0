@@ -114,8 +114,59 @@ const ChartRenderer: React.FC<{ data: ChartData }> = ({ data }) => {
     );
 };
 
+const tryParseJson = (text: string): any | null => {
+    try {
+        let jsonString = text.trim();
+        
+        const markdownMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (markdownMatch && markdownMatch[1]) {
+            jsonString = markdownMatch[1];
+        } else {
+            const firstBrace = jsonString.indexOf('{');
+            const firstBracket = jsonString.indexOf('[');
+
+            if (firstBrace === -1 && firstBracket === -1) {
+                return null;
+            }
+
+            let startIndex = (firstBrace === -1) ? firstBracket : (firstBracket === -1 ? firstBrace : Math.min(firstBrace, firstBracket));
+            jsonString = jsonString.substring(startIndex);
+        }
+
+        return JSON.parse(jsonString);
+
+    } catch (e) {
+        // Not valid JSON
+    }
+    return null;
+};
+
 
 export const FormattedMessage: React.FC<{ text: string }> = React.memo(({ text }) => {
+    const parsedJson = tryParseJson(text);
+
+    if (parsedJson) {
+        if (parsedJson.action === 'conversational_response' && typeof parsedJson.text === 'string') {
+            return <FormattedMessage text={parsedJson.text} />;
+        }
+        
+        const prettyJson = JSON.stringify(parsedJson, null, 2);
+        return (
+            <div className="relative my-2 bg-[#1e1e1e] rounded-lg overflow-hidden border border-slate-700">
+               <CopyButton textToCopy={prettyJson} />
+               <SyntaxHighlighter
+                    language={'json'}
+                    style={vscDarkPlus}
+                    showLineNumbers
+                    customStyle={{ margin: 0, borderRadius: 0, padding: '1rem', backgroundColor: 'transparent' }}
+                    codeTagProps={{ style: { fontFamily: 'monospace' }}}
+               >
+                   {prettyJson.trimEnd()}
+               </SyntaxHighlighter>
+            </div>
+        );
+    }
+    
     const renderInline = (line: string) => {
         const parts = line.split(/(`.*?`|\*\*.*?\*\*)/g);
         return parts.map((part, i) => {
@@ -255,7 +306,7 @@ const ChatLog: React.FC<ChatLogProps> = ({ history, appState }) => {
           return (
             <div key={index} className={`flex ${isModel ? 'justify-start' : 'justify-end'}`}>
               <div
-                className={`max-w-[85%] sm:max-w-md lg:max-w-2xl p-2 px-3 rounded-2xl animate-fade-in-fast ${
+                className={`max-w-[90%] md:max-w-[80%] lg:max-w-[70%] xl:max-w-4xl p-2 px-3 rounded-2xl animate-fade-in-fast ${
                   isModel
                     ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-text-primary rounded-bl-md shadow-lg shadow-black/20 border border-slate-700'
                     : 'bg-gradient-to-br from-amber-500 to-yellow-600 text-black rounded-br-md shadow-lg shadow-yellow-500/20'

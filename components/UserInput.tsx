@@ -27,7 +27,7 @@ const EmojiPicker: React.FC<{
 
   return (
     <div ref={pickerRef} className="absolute bottom-full left-10 mb-2 z-10 animate-pop-in">
-      <div className="w-64 p-2 bg-panel border border-primary-t-20 rounded-xl shadow-lg">
+      <div className="w-[calc(100vw-2rem)] max-w-xs p-2 bg-panel border border-primary-t-20 rounded-xl shadow-lg">
         <div className="grid grid-cols-5 gap-1">
           {EMOJI_LIST.map(emoji => (
             <button
@@ -61,6 +61,7 @@ interface UserInputProps {
   onAudioClick: () => void;
   onLocationClick: () => void;
   onGenerativeStudioClick: () => void;
+  onStorageWizardClick: () => void;
   wakeWord: string;
 }
 
@@ -173,17 +174,17 @@ const UserInput: React.FC<UserInputProps> = (props) => {
 
         <form 
             onSubmit={handleSubmit} 
-            className="w-full flex items-end gap-2 p-1.5 bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-lg rounded-full border border-primary-t-20 shadow-[0_0_25px_rgba(var(--primary-color-rgb),0.25)] transition-all duration-300"
+            className="w-full flex items-end gap-2 p-1 sm:p-1.5 bg-[rgba(var(--primary-color-rgb),0.05)] backdrop-blur-lg rounded-full border border-primary-t-20 shadow-[0_0_25px_rgba(var(--primary-color-rgb),0.25)] transition-all duration-300"
         >
           <div className="relative flex-shrink-0 flex items-center">
               {/* Attachment Button */}
               <button
                   type="button"
                   onClick={toggleAttachmentMenu}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-primary-t-20 transition-colors"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-primary-t-20 transition-colors"
                   aria-label="Attachments"
               >
-                <PaperclipIcon className="w-6 h-6" />
+                <PaperclipIcon className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
               {isAttachmentMenuOpen && <AttachmentMenu {...props} onClose={() => setIsAttachmentMenuOpen(false)} />}
               
@@ -191,10 +192,10 @@ const UserInput: React.FC<UserInputProps> = (props) => {
               <button
                   type="button"
                   onClick={toggleEmojiPicker}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-primary-t-20 transition-colors"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-primary-t-20 transition-colors"
                   aria-label="Add emoji"
               >
-                <SmileyIcon className="w-6 h-6" />
+                <SmileyIcon className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
               {isEmojiPickerOpen && <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setIsEmojiPickerOpen(false)} />}
           </div>

@@ -12,7 +12,7 @@ const BOOT_SEQUENCE = [
   { text: '[OK] Gemini 2.5 Flash Model loaded.', delay: 150 },
   { text: 'Initializing user interface...', delay: 600 },
   { text: '[OK] HUD ready.', delay: 150 },
-  { text: 'Establishing secure connection to MJ Industries network...', delay: 1000 },
+  { text: 'Establishing secure connection to Stark Industries network...', delay: 1000 },
   { text: '[OK] Connection verified.', delay: 150 },
   { text: 'Loading HUD assets...', delay: 700 },
   { text: '[COMPLETE] All systems nominal.', delay: 200 },

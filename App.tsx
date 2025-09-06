@@ -224,7 +224,7 @@ const AppLauncher: React.FC<{
         </div>
         <div className="flex-1 overflow-y-auto styled-scrollbar -mr-2 pr-2">
             {filteredApps.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                      <button
                         onClick={() => setIsAddModalOpen(true)}
                         className="group flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-primary-t-20 hover:border-primary hover:bg-primary-t-20 transition-all duration-200"
@@ -369,7 +369,6 @@ const DEFAULT_THEME: ThemeSettings = {
   hasCustomBootVideo: false,
   hasCustomShutdownVideo: false,
   bootupAnimation: 'holographic',
-  voiceOutputEnabled: true,
   uiSoundsEnabled: true,
   soundProfile: 'default',
   voiceProfiles: [DEFAULT_PROFILE],
@@ -575,16 +574,29 @@ const App: React.FC = () => {
           // When opening settings directly, reset the section to the default
           setInitialSettingsSection('Theme & Appearance');
       }
-      setActivePanels(prev => {
-          const newPanels = new Set(prev);
-          if (newPanels.has(panel)) {
-              newPanels.delete(panel);
-              if (panel === 'GENERATIVE_STUDIO') setGenerativeStudioConfig(null);
-              sounds.playClose();
-          } else {
-              newPanels.clear(); 
+      setActivePanels(prevActivePanels => {
+          const newPanels = new Set(prevActivePanels);
+          const isOpening = !newPanels.has(panel);
+
+          if (isOpening) {
+              newPanels.clear();
               newPanels.add(panel);
               sounds.playOpen();
+              
+              if (panel === 'GENERATIVE_STUDIO') {
+                  // Use a functional update to avoid overwriting a config that might have been set
+                  // in the same render cycle (e.g., by handleOpenGenerativeStudio).
+                  // If no config exists, set a default.
+                  setGenerativeStudioConfig(prevConfig => 
+                      prevConfig || { prompt: 'A beautiful landscape', mode: 'image' }
+                  );
+              }
+          } else { // Closing panel
+              newPanels.delete(panel);
+              sounds.playClose();
+              if (panel === 'GENERATIVE_STUDIO') {
+                  setGenerativeStudioConfig(null);
+              }
           }
           return newPanels;
       });
@@ -618,6 +630,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const notifiedThisSession = new Set<string>();
     const interval = setInterval(() => {
+      // FIX: Defined 'now' to get the current timestamp for comparison.
       const now = Date.now();
       setTasks(prev => {
         // FIX: Correctly reference the previous state 'prev' from the setTasks callback.
@@ -742,12 +755,10 @@ const App: React.FC = () => {
         } else {
             const errorMsg = `I couldn't find a device named "${target.name || ''}" in the "${target.area || ''}" area.`;
             addMessage({ role: 'model', content: errorMsg });
-            if (themeSettings.voiceOutputEnabled) {
-                setAppState(AppState.SPEAKING);
-                queueSpeech(errorMsg);
-            }
+            setAppState(AppState.SPEAKING);
+            queueSpeech(errorMsg);
         }
-  }, [findEntityId, addMessage, queueSpeech, themeSettings.voiceOutputEnabled]);
+  }, [findEntityId, addMessage, queueSpeech]);
 
   const handleOpenGenerativeStudio = useCallback((prompt: string, mode: 'image' | 'video') => {
     setGenerativeStudioConfig({ prompt, mode });
@@ -817,7 +828,6 @@ const App: React.FC = () => {
             const theme = FULL_THEMES.find(t => t.name.toLowerCase() === value.toLowerCase());
             if (theme) setThemeSettings(p => ({ ...p, ...theme }));
             break;
-        case 'toggle_voice': setThemeSettings(p => ({ ...p, voiceOutputEnabled: value === 'on' })); break;
         case 'toggle_sounds': setThemeSettings(p => ({ ...p, uiSoundsEnabled: value === 'on' })); break;
         case 'set_primary_color': setThemeSettings(p => ({ ...p, primaryColor: value })); break;
         case 'upload_document': handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload); break;
@@ -832,19 +842,17 @@ const App: React.FC = () => {
     try {
         const detailedContent = await aiOrchestrator.fetchWolframResult(cmd.params.query);
         updateLastMessage({ content: detailedContent });
-        if (themeSettings.voiceOutputEnabled && cmd.spoken_response) {
+        if (cmd.spoken_response) {
             setAppState(AppState.SPEAKING);
             queueSpeech(cmd.spoken_response, cmd.lang);
         }
     } catch (e: any) {
         const errorMsg = "My apologies, I'm having trouble connecting to the computational knowledge engine.";
         updateLastMessage({ content: errorMsg });
-        if (themeSettings.voiceOutputEnabled) {
-            setAppState(AppState.SPEAKING);
-            queueSpeech(errorMsg);
-        }
+        setAppState(AppState.SPEAKING);
+        queueSpeech(errorMsg);
     }
-  }, [queueSpeech, themeSettings.voiceOutputEnabled, updateLastMessage]);
+  }, [queueSpeech, updateLastMessage]);
 
   const executeCommand = useCallback((cmd: DeviceControlCommand) => {
     sounds.playActivate();
@@ -985,7 +993,7 @@ const App: React.FC = () => {
           spokenResponse = stripMarkdown(fullResponse);
           updateLastMessage({ content: fullResponse });
       }
-      if (themeSettings.voiceOutputEnabled && spokenResponse) {
+      if (spokenResponse) {
           setAppState(AppState.SPEAKING);
           queueSpeech(spokenResponse, spokenLang);
       } else {
@@ -1025,7 +1033,7 @@ const App: React.FC = () => {
     } else {
         await startStreamingFlow(prompt, imagesForAi);
     }
-  }, [addMessage, appendToLastMessage, cancelSpeech, chatHistory, queueSpeech, themeSettings.voiceOutputEnabled, themeSettings.persona, updateLastMessage, removeLastMessage, executeCommandsSequentially, operatingSystem, pinnedImage, executeToolChain]);
+  }, [addMessage, appendToLastMessage, cancelSpeech, chatHistory, queueSpeech, themeSettings.persona, updateLastMessage, removeLastMessage, executeCommandsSequentially, operatingSystem, pinnedImage, executeToolChain]);
   
   useEffect(() => {
     if (appState === AppState.SPEAKING && !isSpeaking) {
@@ -1146,8 +1154,13 @@ const App: React.FC = () => {
     setToasts(prev => [...prev, { id: `clear_${Date.now()}`, title: 'Conversation Cleared', message: 'Your chat history has been reset.' }]);
   };
 
-  const handleConnectHA = () => haServiceRef.current?.connect(themeSettings.homeAssistantUrl, themeSettings.homeAssistantToken);
-  const handleDisconnectHA = () => haServiceRef.current?.disconnect();
+  const handleConnectHA = useCallback(() => {
+    haServiceRef.current?.connect(themeSettings.homeAssistantUrl, themeSettings.homeAssistantToken);
+  }, [themeSettings.homeAssistantUrl, themeSettings.homeAssistantToken]);
+
+  const handleDisconnectHA = useCallback(() => {
+    haServiceRef.current?.disconnect();
+  }, []);
 
   const handleAppSelect = (url: string, appName: string) => {
     executeCommand({ action: 'device_control', command: 'open_url', app: 'Browser', params: { url }, spoken_response: `Opening ${appName}.` });
@@ -1223,14 +1236,15 @@ const App: React.FC = () => {
                 onDocumentClick: () => handleFileUpload('.txt,.md,.json,.js,.ts,.html,.css', handleDocumentUpload), 
                 onAudioClick: () => handleFileUpload('audio/*', handleAudioUpload), 
                 onLocationClick: handleLocationRequest, 
-                onGenerativeStudioClick: () => handleOpenGenerativeStudio('A beautiful landscape', 'image'), 
+                onGenerativeStudioClick: () => handleOpenGenerativeStudio('A beautiful landscape', 'image'),
+                onStorageWizardClick: () => togglePanel('STORAGE_WIZARD'), 
                 wakeWord: themeSettings.wakeWord
             };
             return (
                 <div className={`w-full h-screen transition-colors duration-500 ${themeSettings.themeMode}`}>
                     {isMobileOrTablet && activePanels.size > 0 && (
                         <div
-                            className="fixed inset-0 bg-black/50 z-[49] animate-fade-in-fast"
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[49] animate-fade-in-fast"
                             onClick={closeAllPanels}
                             aria-hidden="true"
                         />
@@ -1245,6 +1259,7 @@ const App: React.FC = () => {
                                     tasks={tasks} 
                                     operatingSystem={operatingSystem}
                                     appState={appState}
+                                    // FIX: Pass the handleSendMessage function to the onSendMessage prop.
                                     onSendMessage={handleSendMessage}
                                     userInputProps={userInputProps}
                                     isListening={isListening}
@@ -1255,6 +1270,7 @@ const App: React.FC = () => {
                                     history={chatHistory} 
                                     appState={appState} 
                                     suggestions={currentSuggestions} 
+                                    // FIX: Pass the handleSendMessage function to the onSendMessage prop.
                                     onSendMessage={handleSendMessage} 
                                     userInputProps={userInputProps} 
                                 />
@@ -1265,7 +1281,7 @@ const App: React.FC = () => {
                             <aside className="panels-area">
                                 {activePanels.has('APP_LAUNCHER') && <AppLauncher onClose={() => togglePanel('APP_LAUNCHER')} onAppSelect={handleAppSelect} />}
                                 {activePanels.has('TASK_MANAGER') && <TaskManager tasks={tasks} onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask} onClose={() => togglePanel('TASK_MANAGER')} />}
-                                {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} />}
+                                {activePanels.has('VISION') && <VisionIntelligence onClose={() => togglePanel('VISION')} onLogToChat={handleLogVisionAnalysis} queueSpeech={queueSpeech} />}
                                 {activePanels.has('SETTINGS') && <SettingsModal isOpen={true} onClose={() => togglePanel('SETTINGS')} onShutdown={() => { togglePanel('SETTINGS'); executeCommand({ action: 'device_control', command: 'shutdown', app: 'System', params: {}, spoken_response: '' }); }} sounds={sounds} themeSettings={themeSettings} onThemeChange={setThemeSettings} onSetCustomBootVideo={handleSetCustomBootVideo} onRemoveCustomBootVideo={handleRemoveCustomBootVideo} onSetCustomShutdownVideo={handleSetCustomShutdownVideo} onRemoveCustomShutdownVideo={handleRemoveCustomShutdownVideo} onCalibrateVoice={() => setIsCalibrationOpen(true)} onClearChat={handleClearChat} onChangeActiveVoiceProfile={handleChangeActiveVoiceProfile} onDeleteVoiceProfile={handleDeleteVoiceProfile} onConnectHA={handleConnectHA} onDisconnectHA={handleDisconnectHA} haConnectionStatus={haConnectionStatus} initialSection={initialSettingsSection} />}
                                 {activePanels.has('CONTROL_CENTER') && <ControlCenter onClose={() => togglePanel('CONTROL_CENTER')} onVisionMode={() => togglePanel('VISION')} onClearChat={handleClearChat} onGetWeather={() => processUserMessage("What's the weather like?")} onDesignMode={(p) => handleOpenGenerativeStudio(p, 'image')} onSimulationMode={(p) => handleOpenGenerativeStudio(p, 'video')} onDirectHomeStateChange={handleDirectHomeStateChange} onOpenSettings={() => togglePanel('SETTINGS')} onShowCameraFeed={(loc) => setCameraFeed({ location: loc })} smartHomeState={smartHomeState} onOpenAppLauncher={() => togglePanel('APP_LAUNCHER')} onOpenTaskManager={() => togglePanel('TASK_MANAGER')} />}
                                 {activePanels.has('STORAGE_WIZARD') && <StorageWizard onClose={() => togglePanel('STORAGE_WIZARD')} themeSettings={themeSettings} onAnalyzeFile={handleAnalyzeFileContent} onNavigateToIntegrations={handleNavigateToIntegrations} />}

@@ -1,6 +1,8 @@
 
 
 
+
+
 import { GenerateContentResponse } from '@google/genai';
 import * as geminiProvider from './geminiService';
 import type { ChatMessage, WeatherData, ThemeSettings } from '../types';
@@ -118,7 +120,6 @@ When a command involves interacting with the device or a system function, you MU
         *   **Generative Modes:** \`design_mode\`, \`simulation_mode\`.
         *   **Settings:**
             *   \`change_theme\`: \`value\` MUST be one of 'J.A.R.V.I.S.', 'Code Red', 'Arc Reactor', 'Stealth', 'Stark Light', 'Cosmic'.
-            *   \`toggle_voice\`: \`value\` MUST be "on" or "off". Example: "Mute yourself." -> \`"value":"off"\`.
             *   \`toggle_sounds\`: \`value\` MUST be "on" or "off".
             *   \`set_primary_color\`: \`value\` MUST be a valid hex color code. You must convert color names to hex. Example: "Set the UI color to orange." -> \`"value":"#FFA500"\`.
         *   **Data Input:** (No value needed for these)

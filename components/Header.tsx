@@ -42,7 +42,9 @@ const Header: React.FC<{
         <header className="hud-header flex items-center justify-between relative">
             {/* Left side: Logo */}
             <div className="flex justify-start">
-                <Logo />
+                <div className="w-36 sm:w-48">
+                    <Logo />
+                </div>
             </div>
 
             {/* Center: Weather Widget (hidden on smaller screens) */}
@@ -55,20 +57,20 @@ const Header: React.FC<{
                 <div className="flex items-center h-full text-sm text-text-primary">
                     {/* Upgraded System Clock */}
                     <div className="system-clock pl-4 pr-4 md:pl-6 md:pr-6 flex items-center gap-2 md:gap-4 h-full">
-                        <div className="text-right">
+                        <div className="text-right flex flex-col">
                             <div 
-                                className="time-display font-orbitron text-xl sm:text-2xl md:text-3xl text-primary tracking-wider flex items-baseline justify-end"
+                                className="time-display font-orbitron text-3xl text-primary tracking-wider flex items-baseline justify-end"
                                 style={{ textShadow: '0 0 8px var(--primary-color-hex), 0 0 15px rgba(var(--primary-color-rgb), 0.7), 0 0 25px rgba(var(--primary-color-rgb), 0.5)' }}
                             >
                                 <span>{hours}</span>
                                 <span className="animate-pulse mx-0.5">:</span>
                                 <span>{minutes}</span>
-                                <span className="animate-pulse mx-0.5">:</span>
-                                <span>{seconds}</span>
+                                <span className="animate-pulse mx-0.5 hidden md:inline-block">:</span>
+                                <span className="hidden md:inline-block">{seconds}</span>
                                 <span className="ampm-display font-orbitron text-lg ml-2">{ampm}</span>
                             </div>
                             <div 
-                                className="date-display font-orbitron text-sm text-primary opacity-80 tracking-widest mt-1 hidden sm:flex items-baseline justify-end"
+                                className="date-display font-orbitron text-sm text-primary opacity-80 tracking-widest flex items-baseline justify-end"
                                 style={{ textShadow: '0 0 5px rgba(var(--primary-color-rgb), 0.7)' }}
                             >
                                 <span>{dayOfWeek}</span>

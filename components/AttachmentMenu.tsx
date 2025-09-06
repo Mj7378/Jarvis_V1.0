@@ -8,6 +8,7 @@ interface AttachmentMenuProps {
   onAudioClick: () => void;
   onLocationClick: () => void;
   onGenerativeStudioClick: () => void;
+  onStorageWizardClick: () => void;
   onClose: () => void;
 }
 
@@ -17,7 +18,8 @@ const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
     onDocumentClick,
     onAudioClick,
     onLocationClick,
-    onGenerativeStudioClick, 
+    onGenerativeStudioClick,
+    onStorageWizardClick, 
     onClose
 }) => {
     
@@ -89,25 +91,25 @@ const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
         {
             label: 'Google Drive',
             icon: <DriveIcon className="w-7 h-7" />,
-            action: () => {},
+            action: () => handleAction(onStorageWizardClick),
             color: 'text-blue-400',
             bg: 'bg-blue-400/20',
-            disabled: true,
+            disabled: false,
         },
         {
             label: 'Dropbox',
             icon: <DropboxIcon className="w-7 h-7" />,
-            action: () => {},
+            action: () => handleAction(onStorageWizardClick),
             color: 'text-cyan-400',
             bg: 'bg-cyan-400/20',
-            disabled: true,
+            disabled: false,
         }
     ];
 
     return (
         <div ref={menuRef} className="absolute bottom-full left-0 mb-2 z-10 animate-pop-in">
-            <div className="w-80 p-2 bg-panel border border-primary-t-20 rounded-xl shadow-lg">
-                <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="w-[90vw] max-w-xs p-2 bg-panel border border-primary-t-20 rounded-xl shadow-lg">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-center">
                     {menuItems.map(item => (
                         <div key={item.label} className="relative group">
                             <button

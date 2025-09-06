@@ -18,9 +18,20 @@ interface VisionMessage {
 interface VisionIntelligenceProps {
   onLogToChat: (prompt: string, imageUrl: string, response: string) => void;
   onClose: () => void;
+  queueSpeech: (text: string, lang?: string) => void;
 }
 
-const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, onClose }) => {
+// Helper function to remove markdown for clean speech.
+const stripMarkdown = (text: string): string => {
+    return text
+        .replace(/^(# |## |### |> )/gm, '')
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/^\s*[-*]\s+/gm, '');
+};
+
+
+const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, onClose, queueSpeech }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const bottomOfChatRef = useRef<HTMLDivElement>(null);
@@ -48,12 +59,18 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
         try {
             const stream = await aiOrchestrator.getAiResponseStream(prompt, historyForAI, image ? [image] : undefined);
             
+            let fullResponseText = '';
             for await (const chunk of stream) {
+                fullResponseText += chunk.text;
                 setVisionHistory(prev => prev.map(msg => 
                     msg.id === modelMessageId 
                         ? { ...msg, content: msg.content + chunk.text } 
                         : msg
                 ));
+            }
+
+            if (fullResponseText) {
+                queueSpeech(stripMarkdown(fullResponseText));
             }
 
         } catch (err) {
@@ -64,6 +81,7 @@ const VisionIntelligence: React.FC<VisionIntelligenceProps> = ({ onLogToChat, on
                     ? { ...msg, content: errorContent } 
                     : msg
             ));
+            queueSpeech(errorContent);
         } finally {
             setIsAnalyzing(false);
         }

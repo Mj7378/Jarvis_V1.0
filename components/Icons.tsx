@@ -290,7 +290,6 @@ export const FaceRecognitionIcon: React.FC<IconProps> = ({ className }) => (
         <path d="M3.06 14c-.34-.5-.62-1.04-.82-1.63" />
         <path d="M12 4V2" />
         <path d="M12 22v-2" />
-{/* FIX: Correct typo from Ico... to IconBase to properly close the SVG component. */}
     </IconBase>
 );
 
@@ -305,12 +304,10 @@ export const HomeIcon: React.FC<IconProps> = ({ className }) => (
 
 export const DashboardIcon: React.FC<IconProps> = ({ className }) => (
     <IconBase className={className}>
-        <path d="M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4z" />
-        <path d="M20.4 4.6c-1.2-1.2-2.8-2-4.4-2.2" />
-        <path d="M3.6 4.6c1.2-1.2 2.8-2 4.4-2.2" />
-        <path d="M20.4 19.4c-1.2 1.2-2.8 2-4.4 2.2" />
-        <path d="M3.6 19.4c1.2 1.2 2.8 2 4.4 2.2" />
-        <path d="M12 4V2M12 22v-2M4.6 3.6l1.4 1.4M18 18l1.4 1.4M2 12h2M20 12h2M4.6 20.4l1.4-1.4M18 6l1.4-1.4"/>
+        <rect x="3" y="3" width="7" height="9" />
+        <rect x="14" y="3" width="7" height="5" />
+        <rect x="14" y="12" width="7" height="9" />
+        <rect x="3" y="16" width="7" height="5" />
     </IconBase>
 );
 
@@ -440,4 +437,31 @@ export const AirPurifierIcon: React.FC<IconProps> = ({ className }) => (
         <path d="M3 12h18v8H3z" />
     </IconBase>
 );
-// END: Added missing icons.
+
+export const RefreshCwIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        <path d="M21 3v5h-5" />
+    </IconBase>
+);
+
+export const LightbulbIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M15 13a3 3 0 1 1-6 0h6Z" />
+        <path d="M10 17c.83.83 2.17.83 3 0" />
+        <path d="M12 2a7 7 0 0 0-5 2l.3.3a5 5 0 0 1 9.4 0l.3-.3a7 7 0 0 0-5-2Z" />
+        <path d="M8 13a4 4 0 0 0 4 4 4 4 0 0 0 4-4H8Z" />
+    </IconBase>
+);
+
+export const ThermometerIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" />
+    </IconBase>
+);
+
+export const ChevronDownIcon: React.FC<IconProps> = ({ className }) => (
+    <IconBase className={className}>
+        <path d="m6 9 6 6 6-6" />
+    </IconBase>
+);

@@ -1,6 +1,8 @@
 
 
 
+
+
 export interface Source {
   uri: string;
   title?: string;
@@ -104,7 +106,6 @@ export interface ThemeSettings {
   hasCustomBootVideo: boolean;
   hasCustomShutdownVideo: boolean;
   bootupAnimation: 'holographic' | 'video';
-  voiceOutputEnabled: boolean;
   uiSoundsEnabled: boolean;
   soundProfile: 'default' | 'futuristic' | 'retro';
   voiceProfiles: VoiceProfile[];

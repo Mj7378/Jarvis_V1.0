@@ -30,7 +30,7 @@ const AICore: React.FC<{ appState: AppState }> = ({ appState }) => {
     }
     
     return (
-        <div className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 pointer-events-none">
+        <div className="relative w-[90vw] sm:w-4/5 md:w-3/5 lg:w-1/2 max-w-md aspect-square pointer-events-none">
             <svg viewBox="0 0 400 400" className="w-full h-full">
                 <defs>
                     <radialGradient id="core-glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
@@ -64,7 +64,7 @@ const LiveTranscript: React.FC<{ transcript: string }> = ({ transcript }) => {
     if (!transcript) return null;
     return (
         <div className="absolute bottom-[25%] md:bottom-1/4 left-4 right-4 text-center pointer-events-none animate-fade-in-fast">
-            <p className="font-orbitron text-xl md:text-2xl lg:text-3xl text-text-primary/80 transition-all" style={{ textShadow: '0 0 10px rgba(var(--primary-color-rgb), 0.5)' }}>
+            <p className="live-transcript-text font-orbitron text-text-primary/80 transition-all" style={{ textShadow: '0 0 10px rgba(var(--primary-color-rgb), 0.5)' }}>
                 {transcript}
             </p>
         </div>

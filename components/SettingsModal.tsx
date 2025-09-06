@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { PowerIcon, SettingsIcon, CloseIcon, HomeIcon, CheckIcon, GeminiIcon, ConversationIcon, TrashIcon, PaletteIcon, PlusIcon, DriveIcon } from './Icons';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -103,7 +105,6 @@ const VoiceAudioPanel: React.FC<Pick<SettingsModalProps, 'themeSettings' | 'onTh
     return (
         <div className="space-y-4">
             <div>
-                <ToggleSwitch id="voice-output" label="Voice Output" checked={themeSettings.voiceOutputEnabled} onChange={v => handleSettingChange('voiceOutputEnabled', v)} />
                 <ToggleSwitch id="ui-sounds" label="UI Sounds" checked={themeSettings.uiSoundsEnabled} onChange={v => handleSettingChange('uiSoundsEnabled', v)} />
             </div>
             <div>
